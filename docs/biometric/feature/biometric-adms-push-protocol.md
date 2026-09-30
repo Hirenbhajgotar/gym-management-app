@@ -1,0 +1,270 @@
+---
+feature: Biometric ADMS Push Protocol
+status: accepted
+last_updated: 2026-09-23
+author: docs-agent
+related_docs:
+  - ../architecture/ADR-004-adms-push-protocol-and-lifecycle.md
+  - ../architecture/ADR-002-door-access-attendance-integrity.md
+  - ../database/adms-device-commands-fields.md
+  - ../database/biometric-devices-fields.md
+  - ../database/attendances-fields.md
+  - ./biometric-checkin-flow.md
+  - ./door-access-control.md
+---
+
+# Biometric ADMS Push Protocol
+
+## Overview
+
+The **ADMS (Automatic Data Master Server)** push protocol provides seamless integration for smart hardware terminals (primarily **eSSL**, **ZKTeco**, and compatible OEM models) as well as **Hikvision ISAPI** access control terminals.
+
+Unlike purely webhook-driven cloud setups, ADMS-capable hardware terminals verify biometrics directly on-chip and autonomously push attendance verification events to the server. Simultaneously, the server uses a command queue to push user provisioning and deprovisioning operations (`DATA UPDATE user`, `DATA DELETE user`) down to the physical memory of the hardware terminals when members register or expire.
+
+---
+
+## Dual-Channel Architecture (Webhook + ADMS Coexistence)
+
+Terminals can operate in **Dual-Channel Mode**, leveraging the best capabilities of both protocols simultaneously on a single device:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                   Physical Terminal (eSSL / ZKTeco)                    │
+└───────────────────┬────────────────────────────────┬───────────────────┘
+                    │                                │
+    Channel 1: ADMS Push Protocol         Channel 2: Vendor Webhook
+   (Attendance Sync & Member Mgmt)         (Real-time Door Control)
+                    │                                │
+                    ▼                                ▼
+       POST /api/iclock/cdata           POST /api/v1/biometric/webhook/{token}
+    (Device pushes ATTLOG records)        (Device requests door unlock relay)
+                    │                                │
+                    ▼                                ▼
+            AdmsEventService                 CheckInService / DoorControl
+  (Auto-checkout, anti-passback,               (Relay / Wiegand trigger,
+   Attendance DB, Reverb broadcast)           instant door access response)
+                    │
+                    ▼
+       GET /api/iclock/getrequest
+   (Server-to-Device Command Polling:
+    DATA DELETE user Pin=..., etc.)
+```
+
+1. **Vendor Webhook (`/api/v1/biometric/webhook/{token}`)**:
+   - High-speed door unlock decisions.
+   - Responds with immediate relay control directives (`door.action: unlock`).
+2. **ADMS Protocol (`/api/iclock/*`)**:
+   - Device pushes attendance event records (`ATTLOG`).
+   - Device regularly polls for pending server commands (`getrequest`).
+   - Terminal acknowledges executed commands (`devicecmd`).
+   - Responds with standard ADMS protocol strings (`OK`, `C:{id}:...`).
+
+---
+
+## Endpoints Reference
+
+All ADMS endpoints are publicly accessible to terminals without session cookies, authenticating via device serial numbers (`SN`) and optional communication keys (`pushcommkey`):
+- **Device Resolution & Auto-Recovery**: `BiometricDevice::findBySerial($sn)` resolves enabled devices. If an `Inactive` device (e.g. marked inactive by the deadman health check) transmits authenticated communication, it is auto-recovered to `Active` status and its consecutive miss counter is cleared.
+- **Communication Key Verification**: If a device has a key configured (`adms_comm_key_hash` or `provider_config['pushcommkey']`) or if global enforcement is enabled via `config('biometrics.adms.require_comm_key')` (default `true`), the request must provide a matching `pushcommkey` (query, body, or header). Missing or invalid keys return HTTP 401.
+
+### 1. `POST|GET /api/iclock/cdata`
+- **Purpose**: Handshake, heartbeat, and attendance log (`ATTLOG`) push.
+- **Query Parameters**:
+  - `SN`: Device hardware serial number (e.g. `TEST-SN-001`).
+  - `table`: Table name being uploaded (e.g. `ATTLOG`, `OPERLOG`).
+- **Body Format** (Tab-delimited text):
+  ```
+  {userId}\t{timestamp}\t{status}\t{verifyMode}\t{workCode}
+  ```
+  - `status`: `0` = Check-in, `1` = Check-out.
+  - `verifyMode`: `1` = Fingerprint, `2` = Card, `9` = Palm, `15` = Face.
+- **Response**: Plain text `OK` (or `ERR: Unknown device` with HTTP 401).
+
+### 2. `GET /api/iclock/getrequest`
+- **Purpose**: Polled periodically by terminals to fetch pending management commands.
+- **Query Parameters**:
+  - `SN`: Device hardware serial number.
+- **Response**:
+  - If commands pending: formatted ADMS command string (e.g. `C:15:DATA DELETE user Pin=42`).
+  - If no commands: `OK`.
+- **Side Effect**: Marks the dequeued `AdmsDeviceCommand` as `sent` (`AdmsCommandStatusEnum::SENT`).
+
+### 3. `POST /api/iclock/devicecmd`
+- **Purpose**: Terminal acknowledges command execution result.
+- **Query Parameters**:
+  - `SN`: Device hardware serial number.
+- **Body Format** (`application/x-www-form-urlencoded`):
+  ```
+  ID=15&Return=0
+  ```
+- **Response**: Plain text `OK`.
+- **Side Effect**: Updates `AdmsDeviceCommand` status to `acknowledged` (`AdmsCommandStatusEnum::ACKNOWLEDGED` if `Return=0`, or `FAILED` if non-zero) and saves the raw return code.
+
+### 4. `POST /api/v1/biometric/hikvision/event`
+- **Purpose**: Ingestion endpoint for Hikvision access control terminals pushing ISAPI XML event payloads.
+- **Authentication**: `AuthenticateBiometricDevice` middleware via Bearer device token in `Authorization` header.
+- **Body Format**: XML document containing `<EventNotificationAlert>` with `<AccessControllerEvent>`.
+- **Response**: JSON `{"status": "ok", "action": "..."}`.
+
+---
+
+## Event Processing Pipeline (`AdmsEventService`)
+
+The [AdmsEventService](file:///c:/xampp/htdocs/projects/gym-app/app/Biometrics/Services/AdmsEventService.php) processes incoming verified events through the following sequence:
+
+```
+Terminal Event (SN, userId, timestamp, status, verifyMode)
+  │
+  ├─► Step 1: Device Lookup
+  │   Cached O(1) Redis resolution via BiometricDevice::findBySerial($sn)
+  │
+  ├─► Step 2: Member Resolution
+  │   Find GymMember matching BiometricTemplate.template_ref OR GymMember.id
+  │
+  ├─► Step 3: Guard Verification (MembershipGuard)
+  │   - Active membership validity
+  │   - Payment status (COMPLETED)
+  │   - Freeze status (not frozen)
+  │   - Biometric consent granted
+  │   └─► If denied: broadcast AdmsAccessDenied, return denied
+  │
+  ├─► Step 4: Check-in vs Check-out Determination
+  │   - If status = 1 (Explicit Checkout): Proceed to checkout
+  │   - If status = 0 (Check-in): Check if member has an open attendance today
+  │     └─► If open attendance exists: Auto-detect as Checkout
+  │     └─► Otherwise: Proceed to check-in
+  │
+  ├─► Step 5A: Process Check-Out
+  │   - Update active attendance: check_out_time = $timestamp, status = Completed
+  │   - Broadcast MemberCheckedOut event
+  │   - Return AdmsEventResult::checkedOut
+  │
+  └─► Step 5B: Process Check-In
+      - Acquire Anti-Passback Lock via Redis (120s window)
+      - Create Attendances record (provider_type = 'adms', status = Present)
+      - Broadcast MemberCheckedIn event
+      - Return AdmsEventResult::checkedIn
+```
+
+### Auto-Checkout Detection Logic
+Many gym devices only have a single biometric sensor where members swipe upon entering and leaving. When a member scans and `status=0` is sent:
+- If the member already has an attendance record on that date with `check_in_result = 'granted'` and `check_out_time IS NULL`, the system detects this as an **automatic check-out** and closes the session.
+- Because check-out is determined before anti-passback evaluation, valid check-outs are never blocked by check-in anti-passback locks.
+
+---
+
+## Expired Member Cleanup Lifecycle
+
+To prevent long-expired members from continuing to access the facility when devices are offline or when terminals store local credentials, the system enforces automated hardware deprovisioning.
+
+### Three-Layer Grace Period Formula
+
+A member is only purged from physical terminal memory after exceeding the combined grace threshold:
+
+$$\text{Cutoff Date} = \text{now}() - (\text{gym\_grace\_days} + \text{adms\_grace\_days})$$
+
+Where:
+- **`membership_end`**: Base expiration date of the member's subscription.
+- **`gym.settings.grace_period_days`**: Gym-specific grace period (stored in `gym_settings`, fallback to `subscription.grace_period_days` = 7 days).
+- **`config('biometrics.adms.expired_member_grace_days')`**: ADMS hardware deletion buffer (default: **10 days**).
+
+### Automated Daily Command (`CleanupExpiredDeviceMembers`)
+
+The scheduled command runs daily at **03:00**:
+```bash
+php artisan app:cleanup-expired-device-members
+```
+
+**Actions executed per expired member:**
+1. Queries members whose `membership_end` is older than the combined grace cutoff.
+2. Identifies all active `BiometricTemplate` records for those members.
+3. For each template enrolled on an `adms_enabled` device:
+   - Verifies no duplicate `user_delete` command is currently pending or sent.
+   - Creates an `AdmsDeviceCommand` of type `user_delete` with `Pin = {member_id}` and status `AdmsCommandStatusEnum::PENDING`.
+4. Deactivates the biometric template (`is_active = false`).
+5. Purges member access summary from Redis cache (`RedisBiometricCacheService::invalidateMember`).
+6. Logs the operation to audit logs.
+
+---
+
+## Device Command Queue & Status Enum
+
+Server-to-device commands are managed via the [AdmsDeviceCommand](file:///c:/xampp/htdocs/projects/gym-app/app/Models/AdmsDeviceCommand.php) model with the backing enum [AdmsCommandStatusEnum](file:///c:/xampp/htdocs/projects/gym-app/app/Enums/AdmsCommandStatusEnum.php):
+
+| Status Enum Case | String Value | Filament Badge Color | Meaning |
+|---|---|---|---|
+| `AdmsCommandStatusEnum::PENDING` | `'pending'` | `warning` (Yellow) | Queued in DB, awaiting terminal polling |
+| `AdmsCommandStatusEnum::SENT` | `'sent'` | `info` (Blue) | Terminal fetched the command via `getrequest` |
+| `AdmsCommandStatusEnum::ACKNOWLEDGED` | `'acknowledged'` | `success` (Green) | Terminal executed command and returned code `0` |
+| `AdmsCommandStatusEnum::FAILED` | `'failed'` | `danger` (Red) | Terminal returned non-zero error code |
+
+### Command Pruning Lifecycle
+Old executed commands (`ACKNOWLEDGED` and `FAILED`) are pruned automatically using Laravel's `Prunable` trait based on `config('biometrics.adms.command_retention_days')` (default 90 days), evaluated on `acknowledged_at` (falling back to `updated_at`).
+
+---
+
+## Filament Admin UI Management
+
+### 1. Biometric Devices (`BiometricDeviceResource`)
+- **Device Information**: Input for `device_serial` (Hardware Serial Number / SN).
+- **Status & Protocol**:
+  - `adms_enabled` toggle switch.
+  - Setup instructions placeholder displaying the exact ADMS server address:
+    `{app_url}/api/iclock/cdata`
+  - Guidance on terminal setup: `Menu > Comm > ADMS / Cloud Server`.
+- **Table Columns & Actions**:
+  - `device_serial` column (toggleable).
+  - `adms_enabled` icon column.
+  - **"View Commands"** action: Quick-jumps directly to the filtered command queue for that device.
+
+### 2. Device Commands (`AdmsDeviceCommandResource`)
+- Tenant-scoped read-only audit log of all device commands.
+- Visual status badges powered directly by `AdmsCommandStatusEnum`.
+- Interactive JSON payload modal inspector and device return code display.
+- **Resend Action**: Single and bulk action to re-queue stuck or failed commands back to `PENDING`.
+
+---
+
+## Configuration (`config/biometrics.php`)
+
+```php
+'heartbeat_timeout_minutes' => (int) env('BIOMETRIC_HEARTBEAT_TIMEOUT_MINUTES', 15),
+'heartbeat_consecutive_misses' => (int) env('BIOMETRIC_HEARTBEAT_CONSECUTIVE_MISSES', 1),
+
+'adms' => [
+    'enabled' => env('ADMS_ENABLED', true),
+    'require_comm_key' => env('ADMS_REQUIRE_COMM_KEY', true),
+    'command_lease_seconds' => (int) env('ADMS_COMMAND_LEASE_SECONDS', 600),
+    'command_ttl_hours' => (int) env('ADMS_COMMAND_TTL_HOURS', 72),
+    'command_retention_days' => (int) env('ADMS_COMMAND_RETENTION_DAYS', 90),
+    'receipt_retention_days' => (int) env('ADMS_RECEIPT_RETENTION_DAYS', 30),
+    'expired_member_grace_days' => (int) env('ADMS_EXPIRED_GRACE_DAYS', 10),
+    'supported_tables' => ['ATTLOG'],
+    'throttle' => env('ADMS_THROTTLE_LIMIT', '120,1'),
+],
+```
+
+---
+
+## Testing & Verification
+
+Feature tests covering the full ADMS protocol and cleanup lifecycles:
+
+- **[`tests/Feature/AdmsProtocolTest.php`](file:///c:/xampp/htdocs/projects/gym-app/tests/Feature/AdmsProtocolTest.php)**:
+  - Check-in event processing via raw ATTLOG push.
+  - Automatic check-out detection for open attendance records.
+  - Denial of expired members with `AdmsAccessDenied` broadcast.
+  - Rejection of unknown device serial numbers (HTTP 401).
+  - Anti-passback duplicate rejection for rapid check-ins.
+  - eSSL device format compatibility.
+  - Server command queue retrieval and state transition to `SENT`.
+  - Command acknowledgment and state transition to `ACKNOWLEDGED`.
+  - Terminal handshake and heartbeat updates.
+  - Dual-mode coexistence with existing vendor webhook endpoint.
+
+- **[`tests/Feature/CleanupExpiredDeviceMembersTest.php`](file:///c:/xampp/htdocs/projects/gym-app/tests/Feature/CleanupExpiredDeviceMembersTest.php)**:
+  - Automated command queuing for expired members beyond the 3-layer grace period.
+  - Respect for custom gym grace period settings.
+  - Exclusion of members currently within their grace window.
+  - Biometric template deactivation.
+  - Prevention of duplicate pending commands.

@@ -5,6 +5,7 @@ includes:
     - vendor/phpstan/phpstan-strict-rules/rules.neon
 
 parameters:
+    reportUnmatchedIgnoredErrors: false
 
     paths:
         - app/
@@ -23,6 +24,18 @@ parameters:
 
         # Spatie Permission role method not recognized by PHPStan
         - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder(::|::role\(\))#'
+
+        # Mockery expectation chaining and facade spies in tests
+        - '#Call to an undefined method Mockery\\ExpectationInterface\|Mockery\\HigherOrderMessage::[a-zA-Z0-9_]+\(\)#'
+        - '#Cannot call method andReturn\(\) on mixed#'
+        - '#Call to an undefined static method Illuminate\\Support\\Facades\\[a-zA-Z0-9_]+::shouldHaveReceived\(\)#'
+        - '#Cannot call method withArgs\(\) on mixed#'
+
+        # Artisan test helper return union
+        - '#Cannot call method (expectsOutputToContain|assertSuccessful)\(\) on Illuminate\\Testing\\PendingCommand\|int#'
+
+        # Migration down method defined dynamically on anonymous migration classes
+        - '#Call to an undefined method Illuminate\\Database\\Migrations\\Migration::down\(\)#'
 
     strictRules:
         disallowedShortTernary: false

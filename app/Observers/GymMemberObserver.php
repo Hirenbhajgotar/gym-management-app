@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
+use App\Biometrics\Services\RedisBiometricCacheService;
 use App\Events\Reports\MemberStatsUpdated;
 use App\Events\Reports\TrainerStatsUpdated;
 use App\Helpers\ParserHelper;
@@ -97,6 +98,12 @@ class GymMemberObserver implements ShouldHandleEventsAfterCommit
 
         // Invalidate dashboard widget caches
         $this->dashboardCacheService->invalidateMemberWidgets($gymMember->gym_id);
+
+        // Invalidate biometric access summary cache
+        resolve(RedisBiometricCacheService::class)->invalidateMember(
+            $gymMember->gym_id,
+            $gymMember->id
+        );
 
         // Broadcast real-time event
         broadcast(new MemberStatsUpdated($gymMember->gym_id));

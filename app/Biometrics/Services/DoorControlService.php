@@ -4,22 +4,30 @@ declare(strict_types=1);
 
 namespace App\Biometrics\Services;
 
+use App\Biometrics\Contracts\HostResolverInterface;
 use App\Biometrics\DTOs\DoorControlResult;
-use App\Enums\BiometricDoorControlType;
-use App\Events\DoorControllerUnreachable;
 use App\Models\Attendances;
 use App\Models\BiometricDevice;
 use App\Models\DoorEvent;
 use App\Models\GymMember;
-use Exception;
-use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class DoorControlService
 {
+    public function __construct(
+        protected HostResolverInterface $hostResolver
+    ) {}
+
     /**
-     * Called when access is GRANTED
+     * Called when access is GRANTED.
+     * Supports dual-mode (Decision D-6):
+     * 1. If device has an external HTTP controller URL configured in provider_config,
+     *    executes HTTP POST to the controller with SSRF protection and timeout.
+     * 2. Otherwise (native terminal relay / wiegand mode), returns skipped() so the
+     *    webhook response instructs the terminal to pulse its onboard relay.
      */
     public function unlock(BiometricDevice $device): DoorControlResult
     {
@@ -27,204 +35,269 @@ class DoorControlService
             return DoorControlResult::notApplicable();
         }
 
-        $doorControlType = $device->door_control_type;
+        /** @var array<string, mixed> $config */
+        $config = is_array($device->provider_config) ? $device->provider_config : [];
+        $controllerUrl = $config['door_controller_url'] ?? null;
 
-        // Relay and Wiegand: FluxFitness does NOT call any API.
-        // The device handles relay/wiegand trigger by reading
-        // the webhook response field: door.action = "unlock"
-        // FluxFitness simply returns skipped() — success assumed.
-        if ($doorControlType === BiometricDoorControlType::Relay
-            || $doorControlType === BiometricDoorControlType::Wiegand) {
+        if (blank($controllerUrl) || ! is_string($controllerUrl)) {
+            // Native relay mode: handled by device onboard relay or webhook pulse
             return DoorControlResult::skipped();
         }
 
-        // API: FluxFitness calls the door controller REST API
-        if ($doorControlType === BiometricDoorControlType::Api) {
-            return $this->callDoorApi($device);
-        }
-
-        return DoorControlResult::notApplicable();
+        return $this->callDoorApi($device, $controllerUrl, $config);
     }
 
     /**
-     * Call the door controller API for API-based door control
+     * Call external HTTP door controller.
+     *
+     * @param  array<string, mixed>  $config
      */
-    private function callDoorApi(BiometricDevice $device): DoorControlResult
+    protected function callDoorApi(BiometricDevice $device, string $url, array $config): DoorControlResult
     {
-        if (! $device->hasDoorApiControl()) {
-            return DoorControlResult::failed('door_controller_url not configured');
-        }
+        $timeout = config()->integer('biometrics.door_controller_timeout', 3);
+        $token = $config['door_controller_token'] ?? null;
+        $zone = $config['door_zone'] ?? 'main_entrance';
+        $unlockDuration = config()->integer('biometrics.default_unlock_duration', 5);
 
-        // Validate URL against trusted domains/subnets
-        $validationResult = $this->validateDoorControllerUrl($device->door_controller_url);
-        if ($validationResult !== true) {
-            Log::warning('Door controller URL validation failed', [
+        $resolvedIp = null;
+        if (! $this->validateDoorControllerUrl($url, $resolvedIp)) {
+            Log::warning('DoorControlService: URL rejected by trusted domains policy', [
                 'device_id' => $device->id,
-                'url' => $device->door_controller_url,
-                'reason' => $validationResult,
+                'url' => $url,
             ]);
 
-            return DoorControlResult::failed('door_controller_url not allowed');
+            return DoorControlResult::failed('untrusted_door_controller_url', [
+                'error' => 'URL rejected by trusted domains policy',
+            ]);
         }
 
         try {
-            $request = Http::timeout(config('biometrics.door_controller_timeout', 3));
+            $parsedHost = (string) parse_url($url, PHP_URL_HOST);
+            $port = parse_url($url, PHP_URL_PORT);
+            $scheme = parse_url($url, PHP_URL_SCHEME) ?: 'http';
 
-            if ($device->door_controller_token) {
-                $request = $request->withToken($device->door_controller_token);
+            // Pin DNS resolution to prevent rebinding TOCTOU without breaking TLS SNI
+            $resolvePort = $port ?? ($scheme === 'https' ? 443 : 80);
+            $resolveEntry = "{$parsedHost}:{$resolvePort}:{$resolvedIp}";
+
+            $client = Http::timeout($timeout)->withOptions([
+                'curl' => [
+                    CURLOPT_RESOLVE => [$resolveEntry],
+                ],
+            ]);
+            if (filled($token) && is_string($token)) {
+                $client = $client->withToken($token);
             }
-            $response = $request->post($device->door_controller_url, [
+
+            $response = $client->post($url, [
                 'action' => 'unlock',
-                'duration' => $device->unlock_duration_seconds,
-                'zone' => $device->door_zone,
+                'duration' => $unlockDuration,
+                'zone' => $zone,
             ]);
 
             if ($response->successful()) {
-                return DoorControlResult::unlocked();
+                $data = $response->json();
+                $rawUnlockedAt = is_array($data) ? ($data['unlocked_at'] ?? null) : null;
+                $unlockedAt = is_string($rawUnlockedAt) ? Date::parse($rawUnlockedAt) : now();
+
+                /** @var array<string, mixed> $rawPayload */
+                $rawPayload = is_array($data) ? $data : [];
+
+                return new DoorControlResult(
+                    success: true,
+                    status: 'unlocked',
+                    failureReason: null,
+                    unlockedAt: $unlockedAt,
+                    raw: $rawPayload
+                );
             }
 
-            return DoorControlResult::failed(
-                'Door API responded with error: ' . $response->status(),
-                $response->json() ?? []
-            );
+            $rawBody = $response->body();
+            $logBody = strlen($rawBody) > 200 ? substr($rawBody, 0, 200) . '...' : $rawBody;
+            Log::error('DoorControlService: External controller returned error', [
+                'device_id' => $device->id,
+                'status' => $response->status(),
+                'body' => BiometricLogRedactor::mask($logBody),
+            ]);
 
-        } catch (ConnectionException $e) {
-            event(new DoorControllerUnreachable($device, $e->getMessage()));
+            $rawResponse = $response->json() ?? $response->body();
+            $maskedResponse = is_array($rawResponse)
+                ? BiometricLogRedactor::redact($rawResponse)
+                : BiometricLogRedactor::mask(is_string($rawResponse) ? $rawResponse : (is_scalar($rawResponse) ? (string) $rawResponse : null));
 
-            return DoorControlResult::failed('Door controller unreachable');
-        } catch (Exception $e) {
-            event(new DoorControllerUnreachable($device, $e->getMessage()));
+            return DoorControlResult::failed('door_controller_error', [
+                'http_status' => $response->status(),
+                'response' => $maskedResponse,
+            ]);
+        } catch (Throwable $e) {
+            Log::error('DoorControlService: Failed to reach external door controller', [
+                'device_id' => $device->id,
+                'url' => $url,
+                'error' => $e->getMessage(),
+            ]);
 
-            return DoorControlResult::failed('Door controller error: ' . $e->getMessage());
+            return DoorControlResult::failed('door_controller_unreachable', [
+                'exception' => $e->getMessage(),
+            ]);
         }
     }
 
     /**
-     * Validate door controller URL against trusted domains/subnets
-     *
-     * @return true|string True if valid, or error message if invalid
+     * Validate controller URL against configured trusted domains/subnets (SSRF protection).
+     * Enforces deny-by-default.
      */
-    private function validateDoorControllerUrl(string $url): true|string
+    protected function validateDoorControllerUrl(string $url, ?string &$resolvedIp = null): bool
     {
-        // Parse and validate URL
-        $parsed = parse_url($url);
+        $rawDomains = config('biometrics.trusted_domains', []);
+        $trustedDomains = is_array($rawDomains) ? $rawDomains : [];
+        $rawSubnets = config('biometrics.trusted_subnets', []);
+        /** @var array<string> $trustedSubnets */
+        $trustedSubnets = is_array($rawSubnets) ? $rawSubnets : [];
 
-        if (! isset($parsed['host'])) {
-            return 'Invalid URL: no host component';
-        }
-
-        $host = $parsed['host'];
-
-        // // Allow localhost and IP addresses
-        // if ($host === 'localhost' || $host === '127.0.0.1' || $host === '::1') {
-        //     return true;
-        // }
-
-        // Get trusted config
-        $trustedDomains = array_filter(config('biometrics.trusted_domains', []));
-        $trustedSubnets = array_filter(config('biometrics.trusted_subnets', []));
-
-        // If no restrictions configured, deny by default for security
         if (blank($trustedDomains) && blank($trustedSubnets)) {
-            return 'No trusted domains or subnets configured';
+            Log::warning('DoorControlService: URL rejected - no trusted domains or subnets configured');
+
+            return false;
         }
 
-        // Check exact hostname match
-        foreach ($trustedDomains as $domain) {
-            $domain = trim($domain);
-            if (strcasecmp($host, $domain) === 0 || str_ends_with($host, '.' . $domain)) {
-                return true;
-            }
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        if (! in_array(strtolower((string) $scheme), ['http', 'https'], true)) {
+            return false;
         }
 
-        // Resolve hostname to IP and check subnet match
-        $resolvedIp = $this->resolveHostToIp($host);
-        if ($resolvedIp === null) {
-            return "Cannot resolve host: {$host}";
+        $host = parse_url($url, PHP_URL_HOST);
+        if (! is_string($host) || blank($host)) {
+            return false;
         }
 
-        // Check resolved IP against subnets
-        foreach ($trustedSubnets as $subnet) {
-            $subnet = trim($subnet);
-            if ($this->ipInSubnet($resolvedIp, $subnet)) {
-                return true;
-            }
-        }
-
-        // Also check if the host itself is an IP in the subnets
+        // If host is an IP literal
         if (filter_var($host, FILTER_VALIDATE_IP)) {
-            foreach ($trustedSubnets as $subnet) {
-                $subnet = trim($subnet);
-                if ($this->ipInSubnet($host, $subnet)) {
-                    return true;
+            $resolvedIp = $host;
+
+            return $this->validateIpAddress($host, $trustedSubnets);
+        }
+
+        // If host is a hostname, check trusted domains
+        $domainMatches = false;
+        foreach ($trustedDomains as $allowed) {
+            if (is_string($allowed) && filled($allowed)) {
+                $allowedLower = strtolower(trim($allowed));
+                $hostLower = strtolower($host);
+                if ($hostLower === $allowedLower || str_ends_with($hostLower, '.' . $allowedLower)) {
+                    $domainMatches = true;
+                    break;
                 }
             }
         }
 
-        return "Host {$host} (resolved to {$resolvedIp}) not in trusted list";
-    }
-
-    /**
-     * Resolve hostname to IP address
-     */
-    private function resolveHostToIp(string $host): ?string
-    {
-        // Check if already an IP
-        if (filter_var($host, FILTER_VALIDATE_IP)) {
-            return $host;
-        }
-
-        $records = @dns_get_record($host, DNS_A);
-
-        if ($records !== false && filled($records)) {
-            return $records[0]['ip'] ?? null;
-        }
-
-        // Try AAAA record for IPv6
-        $records = @dns_get_record($host, DNS_AAAA);
-        if ($records !== false && filled($records)) {
-            return $records[0]['ipv6'] ?? null;
-        }
-
-        return null;
-    }
-
-    /**
-     * Check if IP is in CIDR subnet
-     */
-    private function ipInSubnet(string $ip, string $subnet): bool
-    {
-        if (! filter_var($ip, FILTER_VALIDATE_IP)) {
+        if (! $domainMatches) {
             return false;
         }
 
-        // Handle single IP (no CIDR notation)
-        if (strpos($subnet, '/') === false) {
-            return $ip === $subnet;
-        }
-
-        [$subnetIp, $mask] = explode('/', $subnet);
-
-        if (! filter_var($subnetIp, FILTER_VALIDATE_IP)) {
+        // Resolve host IP using injected resolver policy to protect against DNS rebinding
+        $resolvedIp = $this->hostResolver->resolve($host);
+        if ($resolvedIp === null || ! filter_var($resolvedIp, FILTER_VALIDATE_IP)) {
+            // Unresolvable host: fail closed
             return false;
         }
 
-        $mask = (int) $mask;
+        if ($this->isPrivateOrReservedIp($resolvedIp)) {
+            return $this->validateIpAddress($resolvedIp, $trustedSubnets);
+        }
 
-        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && filter_var($subnetIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        return true;
+    }
+
+    /**
+     * @param  array<string>  $trustedSubnets
+     */
+    protected function validateIpAddress(string $ip, array $trustedSubnets): bool
+    {
+        if ($this->isPrivateOrReservedIp($ip)) {
+            foreach ($trustedSubnets as $subnet) {
+                if (filled($subnet) && $this->ipInSubnet($ip, trim($subnet))) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        foreach ($trustedSubnets as $subnet) {
+            if (filled($subnet) && $this->ipInSubnet($ip, trim($subnet))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function isPrivateOrReservedIp(string $ip): bool
+    {
+        if (in_array($ip, ['127.0.0.1', '::1'], true) || str_starts_with($ip, '169.254.')) {
+            return true;
+        }
+
+        return ! filter_var(
+            $ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        );
+    }
+
+    protected function ipInSubnet(string $ip, string $range): bool
+    {
+        if (str_contains($range, '/')) {
+            [$subnet, $bits] = explode('/', $range, 2);
+            $bits = (int) $bits;
+        } else {
+            $subnet = $range;
+            $bits = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? 128 : 32;
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            if (! filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                return false;
+            }
             $ipLong = ip2long($ip);
-            $subnetLong = ip2long($subnetIp);
-            $maskLong = -1 << (32 - $mask);
+            $subnetLong = ip2long($subnet);
+            if ($ipLong === false || $subnetLong === false || $bits < 0 || $bits > 32) {
+                return false;
+            }
+            $mask = $bits === 0 ? 0 : (-1 << (32 - $bits));
+            $subnetLong &= $mask;
 
-            return ($ipLong & $maskLong) === ($subnetLong & $maskLong);
+            return ($ipLong & $mask) === $subnetLong;
         }
 
-        // IPv6 not fully supported for subnet check, fall back to exact match
-        return $ip === $subnetIp;
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            if (! filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                return false;
+            }
+            $ipBin = inet_pton($ip);
+            $subnetBin = inet_pton($subnet);
+            if ($ipBin === false || $subnetBin === false || $bits < 0 || $bits > 128) {
+                return false;
+            }
+            $bytes = intdiv($bits, 8);
+            $remainderBits = $bits % 8;
+            if ($bytes > 0 && substr($ipBin, 0, $bytes) !== substr($subnetBin, 0, $bytes)) {
+                return false;
+            }
+            if ($remainderBits > 0) {
+                $mask = 0xFF << (8 - $remainderBits);
+
+                return (ord($ipBin[$bytes]) & $mask) === (ord($subnetBin[$bytes]) & $mask);
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
-     * Save door event to audit log
+     * Save door event to audit log.
      */
     public function logEvent(
         BiometricDevice $device,
@@ -233,6 +306,8 @@ class DoorControlService
         string $eventType,
         DoorControlResult $result
     ): DoorEvent {
+        $unlockDuration = config()->integer('biometrics.default_unlock_duration', 5);
+
         return DoorEvent::query()->create([
             'gym_id' => $device->gym_id,
             'device_id' => $device->id,
@@ -242,8 +317,8 @@ class DoorControlService
             'trigger_source' => 'biometric',
             'denial_reason' => $result->failureReason,
             'door_status' => $result->status,
-            'unlock_duration_seconds' => $device->unlock_duration_seconds,
-            'unlocked_at' => $result->unlockedAt,
+            'unlock_duration_seconds' => $unlockDuration,
+            'unlocked_at' => $result->status === 'unlocked' ? ($result->unlockedAt ?? now()) : null,
             'ip_address' => request()?->ip(),
             'raw_response' => $result->raw,
         ]);

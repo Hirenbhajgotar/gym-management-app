@@ -1,0 +1,723 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature;
+
+use App\Biometrics\Services\BiometricTimestampParser;
+use App\Biometrics\Services\RedisBiometricCacheService;
+use App\Enums\AdmsCommandStatusEnum;
+use App\Enums\BiometricDevicePurpose;
+use App\Enums\BiometricDeviceStatusEnum;
+use App\Enums\BiometricTypeEnum;
+use App\Enums\DefaultRole;
+use App\Enums\PaymentStatus;
+use App\Events\AdmsAccessDenied;
+use App\Events\MemberCheckedIn;
+use App\Events\MemberCheckedOut;
+use App\Models\AdmsDeviceCommand;
+use App\Models\Attendances;
+use App\Models\BiometricConsent;
+use App\Models\BiometricDevice;
+use App\Models\BiometricEventReceipt;
+use App\Models\BiometricTemplate;
+use App\Models\Gym;
+use App\Models\GymMember;
+use App\Models\GymSetting;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
+use Tests\TestCase;
+
+class AdmsProtocolTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected User $user;
+
+    protected Gym $gym;
+
+    protected BiometricDevice $device;
+
+    protected GymMember $member;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['biometrics.adms.require_comm_key' => false]);
+
+        $this->user = User::factory()->create();
+        $this->gym = Gym::factory()
+            ->hasAttached($this->user, ['role' => DefaultRole::GYM_OWNER->value], 'users')
+            ->create();
+
+        $this->device = BiometricDevice::factory()
+            ->admsEnabled('TEST-SN-001')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'status' => BiometricDeviceStatusEnum::Active,
+                'purpose' => BiometricDevicePurpose::AttendanceOnly,
+            ]);
+
+        $this->member = GymMember::factory()->create([
+            'gym_id' => $this->gym->id,
+            'membership_start' => now()->subMonth(),
+            'membership_end' => now()->addMonth(),
+            'payment_status' => PaymentStatus::COMPLETED,
+            'is_frozen' => false,
+        ]);
+
+        BiometricConsent::query()->create([
+            'gym_member_id' => $this->member->id,
+            'gym_id' => $this->gym->id,
+            'version' => '1.0',
+            'ip_address' => '127.0.0.1',
+            'consented_at' => now(),
+        ]);
+    }
+
+    public function test_adms_cdata_processes_attlog_check_in(): void
+    {
+        Event::fake([MemberCheckedIn::class]);
+
+        $timestamp = now()->subHours(2)->format('Y-m-d H:i:s');
+        $body = "{$this->member->id}\t{$timestamp}\t0\t15\t0";
+
+        // Send raw body
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            $body
+        );
+
+        $response->assertOk();
+        $this->assertEquals('OK', $response->getContent());
+
+        $this->assertDatabaseHas('attendances', [
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'check_in_result' => 'granted',
+            'provider_type' => 'adms',
+        ]);
+
+        Event::assertDispatched(MemberCheckedIn::class);
+    }
+
+    public function test_adms_cdata_auto_detects_checkout(): void
+    {
+        Event::fake([MemberCheckedIn::class, MemberCheckedOut::class]);
+        Cache::flush();
+
+        $checkInTime = now()->subHours(4)->format('Y-m-d H:i:s');
+        $checkOutTime = now()->subHours(1)->format('Y-m-d H:i:s');
+
+        // First event: check-in
+        $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            "{$this->member->id}\t{$checkInTime}\t0\t15\t0"
+        );
+
+        // Second event: same member, status=0 but should auto-detect as checkout
+        $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            "{$this->member->id}\t{$checkOutTime}\t0\t15\t0"
+        );
+
+        Event::assertDispatched(MemberCheckedOut::class);
+    }
+
+    public function test_adms_cdata_denies_expired_member(): void
+    {
+        Event::fake([AdmsAccessDenied::class]);
+
+        $expiredMember = GymMember::factory()->create([
+            'gym_id' => $this->gym->id,
+            'membership_start' => now()->subMonths(2),
+            'membership_end' => now()->subDays(5),
+            'payment_status' => PaymentStatus::COMPLETED,
+            'is_frozen' => false,
+        ]);
+
+        BiometricConsent::query()->create([
+            'gym_member_id' => $expiredMember->id,
+            'gym_id' => $this->gym->id,
+            'version' => '1.0',
+            'ip_address' => '127.0.0.1',
+            'consented_at' => now(),
+        ]);
+
+        $timestamp = now()->subHours(2)->format('Y-m-d H:i:s');
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            "{$expiredMember->id}\t{$timestamp}\t0\t15\t0"
+        );
+
+        $response->assertOk();
+        $this->assertEquals('OK', $response->getContent());
+
+        Event::assertDispatched(AdmsAccessDenied::class);
+    }
+
+    public function test_adms_cdata_unknown_device_serial_returns_error(): void
+    {
+        $timestamp = now()->subHours(2)->format('Y-m-d H:i:s');
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=UNKNOWN-SERIAL&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            "42\t{$timestamp}\t0\t15\t0"
+        );
+
+        $response->assertUnauthorized();
+        $this->assertStringContainsString('ERR', (string) $response->getContent());
+    }
+
+    public function test_adms_cdata_anti_passback_prevents_duplicate(): void
+    {
+        Event::fake([MemberCheckedIn::class]);
+
+        // Pre-acquire the anti-passback lock using the cache service
+        resolve(RedisBiometricCacheService::class)
+            ->acquireAntiPassbackLock($this->gym->id, $this->member->id, 120);
+
+        $timestamp = now()->subHours(2)->format('Y-m-d H:i:s');
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            "{$this->member->id}\t{$timestamp}\t0\t15\t0"
+        );
+
+        $response->assertOk();
+
+        // No attendance created due to anti-passback
+        Event::assertNotDispatched(MemberCheckedIn::class);
+    }
+
+    public function test_adms_cdata_handles_essl_device(): void
+    {
+        Event::fake([MemberCheckedIn::class]);
+
+        // Create a device with eSSL-style serial
+        $esslDevice = BiometricDevice::factory()
+            ->admsEnabled('ESSL-XFACE-500')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'status' => BiometricDeviceStatusEnum::Active,
+                'purpose' => BiometricDevicePurpose::AttendanceOnly,
+            ]);
+
+        $timestamp = now()->subHours(2)->format('Y-m-d H:i:s');
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=ESSL-XFACE-500&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            "{$this->member->id}\t{$timestamp}\t0\t1\t0"
+        );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('attendances', [
+            'device_id' => $esslDevice->id,
+            'provider_type' => 'adms',
+        ]);
+
+        Event::assertDispatched(MemberCheckedIn::class);
+    }
+
+    public function test_adms_getrequest_returns_pending_command(): void
+    {
+        $command = AdmsDeviceCommand::factory()->userDelete((string) $this->member->id)->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+        ]);
+
+        $response = $this->get('/api/iclock/getrequest?SN=TEST-SN-001');
+
+        $response->assertOk();
+        $content = (string) $response->getContent();
+        $this->assertStringContainsString('DATA DELETE user', $content);
+        $this->assertStringContainsString("Pin={$this->member->id}", $content);
+
+        // Command should be marked as sent
+        $this->assertDatabaseHas('adms_device_commands', [
+            'id' => $command->id,
+            'status' => 'sent',
+        ]);
+        $this->assertSame(AdmsCommandStatusEnum::SENT, $command->fresh()?->status);
+    }
+
+    public function test_adms_getrequest_returns_ok_when_no_commands(): void
+    {
+        $response = $this->get('/api/iclock/getrequest?SN=TEST-SN-001');
+
+        $response->assertOk();
+        $this->assertEquals('OK', $response->getContent());
+    }
+
+    public function test_adms_devicecmd_acknowledges_command(): void
+    {
+        $command = AdmsDeviceCommand::factory()->sent()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+        ]);
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/devicecmd?SN=TEST-SN-001',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'],
+            "ID={$command->id}&Return=0"
+        );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('adms_device_commands', [
+            'id' => $command->id,
+            'status' => 'acknowledged',
+            'device_return_code' => '0',
+        ]);
+        $this->assertSame(AdmsCommandStatusEnum::ACKNOWLEDGED, $command->fresh()?->status);
+    }
+
+    public function test_adms_cdata_get_handshake_updates_heartbeat(): void
+    {
+        $response = $this->get('/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG');
+
+        $response->assertOk();
+        $this->assertEquals('OK', $response->getContent());
+
+        // Heartbeat should be updated
+        $this->device->refresh();
+        $this->assertNotNull($this->device->last_heartbeat_at);
+    }
+
+    public function test_adms_coexists_with_webhook(): void
+    {
+        Event::fake([MemberCheckedIn::class]);
+
+        // Create a device with BOTH webhook token AND ADMS enabled
+        $token = 'dual-mode-token-123';
+        BiometricDevice::factory()
+            ->deviceNative()
+            ->withToken($token)
+            ->admsEnabled('DUAL-SN-001')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'status' => BiometricDeviceStatusEnum::Active,
+                'purpose' => BiometricDevicePurpose::DoorAccess,
+            ]);
+
+        $timestamp = now()->subHours(2)->format('Y-m-d H:i:s');
+
+        // ADMS attendance push works
+        $admsResponse = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=DUAL-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            "{$this->member->id}\t{$timestamp}\t0\t15\t0"
+        );
+        $admsResponse->assertOk();
+
+        // ADMS command polling works
+        $commandResponse = $this->get('/api/iclock/getrequest?SN=DUAL-SN-001');
+        $commandResponse->assertOk();
+
+        // Webhook door control also works (separate channel with second member)
+        $secondMember = GymMember::factory()->create([
+            'gym_id' => $this->gym->id,
+            'membership_start' => now()->subMonth(),
+            'membership_end' => now()->addMonth(),
+            'payment_status' => PaymentStatus::COMPLETED,
+            'is_frozen' => false,
+        ]);
+        BiometricConsent::query()->create([
+            'gym_member_id' => $secondMember->id,
+            'gym_id' => $this->gym->id,
+            'version' => '1.0',
+            'ip_address' => '127.0.0.1',
+            'consented_at' => now(),
+        ]);
+
+        $webhookResponse = $this->postJson("/api/v1/biometric/webhook/{$token}", [
+            'member_id' => $secondMember->id,
+            'SN' => 'DUAL-SN-001',
+        ]);
+        $webhookResponse->assertOk();
+    }
+
+    public function test_adms_cdata_ignores_break_status_without_creating_open_attendance(): void
+    {
+        // Status 2 = break-out
+        $timestamp = now()->subHours(2)->format('Y-m-d H:i:s');
+        $body = "{$this->member->id}\t{$timestamp}\t2\t15\t0";
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            $body
+        );
+
+        $response->assertOk();
+        $this->assertEquals('OK', $response->getContent());
+
+        // Should NOT create any attendance record
+        $this->assertDatabaseMissing('attendances', [
+            'gym_id' => $this->gym->id,
+            'attendanceable_id' => $this->member->id,
+        ]);
+    }
+
+    public function test_hikvision_event_push_authenticates_and_processes_attendance(): void
+    {
+        Event::fake([MemberCheckedIn::class]);
+
+        $token = 'hikvision-secret-token-789';
+        $hikDevice = BiometricDevice::factory()
+            ->deviceNative()
+            ->withToken($token)
+            ->admsEnabled('HIK-SN-001')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'status' => BiometricDeviceStatusEnum::Active,
+                'purpose' => BiometricDevicePurpose::AttendanceOnly,
+            ]);
+
+        $hikTime = now()->subHours(2)->setTimezone('+08:00')->toIso8601String();
+        $xmlPayload = <<<XML
+<?xml version="1.0" encoding="utf-8"?>
+<EventNotificationAlert version="2.0" xmlns="http://www.hikvision.com/ver20/XMLSchema">
+    <eventType>AccessControllerEvent</eventType>
+    <dateTime>{$hikTime}</dateTime>
+    <AccessControllerEvent>
+        <employeeNoString>{$this->member->id}</employeeNoString>
+        <currentVerifyMode>face</currentVerifyMode>
+    </AccessControllerEvent>
+</EventNotificationAlert>
+XML;
+
+        $response = $this->call(
+            'POST',
+            '/api/v1/biometric/hikvision/event',
+            [],
+            [],
+            [],
+            [
+                'HTTP_AUTHORIZATION' => "Bearer {$token}",
+                'CONTENT_TYPE' => 'application/xml',
+            ],
+            $xmlPayload
+        );
+
+        $response->assertOk();
+        $response->assertJson([
+            'status' => 'granted',
+            'action' => 'check_in',
+        ]);
+
+        $this->assertDatabaseHas('attendances', [
+            'gym_id' => $this->gym->id,
+            'device_id' => $hikDevice->id,
+            'attendanceable_id' => $this->member->id,
+            'check_in_result' => 'granted',
+            'biometric_type' => 'face',
+        ]);
+
+        Event::assertDispatched(MemberCheckedIn::class);
+    }
+
+    public function test_adms_cdata_resolves_member_via_encrypted_biometric_template(): void
+    {
+        Event::fake([MemberCheckedIn::class]);
+
+        // Create an enrolled template with an external enrollment ID differing from gym_members.id
+        BiometricTemplate::query()->create([
+            'gym_member_id' => $this->member->id,
+            'gym_id' => $this->gym->id,
+            'enrolled_by_device_id' => $this->device->id,
+            'biometric_type' => BiometricTypeEnum::Fingerprint,
+            'provider_type' => 'adms',
+            'template_ref' => 'HARDWARE-PIN-777',
+            'is_active' => true,
+            'enrolled_at' => now(),
+        ]);
+
+        $timestamp = now()->subHours(2)->format('Y-m-d H:i:s');
+        $body = "HARDWARE-PIN-777\t{$timestamp}\t0\t1\t0";
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            $body
+        );
+
+        $response->assertOk();
+        $this->assertEquals('OK', $response->getContent());
+
+        $this->assertDatabaseHas('attendances', [
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'attendanceable_id' => $this->member->id,
+            'check_in_result' => 'granted',
+            'biometric_type' => 'fingerprint',
+        ]);
+
+        Event::assertDispatched(MemberCheckedIn::class);
+    }
+
+    public function test_adms_cdata_normalizes_device_local_timezone(): void
+    {
+        Event::fake([MemberCheckedIn::class]);
+
+        GymSetting::query()->create([
+            'gym_id' => $this->gym->id,
+            'key' => 'timezone',
+            'value' => json_encode('Asia/Kolkata'),
+        ]);
+
+        $localTime = now()->subHours(2)->format('Y-m-d H:i:s');
+        $body = "{$this->member->id}\t{$localTime}\t0\t15\t0";
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            $body
+        );
+
+        $response->assertOk();
+
+        $attendance = Attendances::query()
+            ->where('gym_id', $this->gym->id)
+            ->where('device_id', $this->device->id)
+            ->first();
+
+        $this->assertNotNull($attendance);
+        $this->assertNotNull($attendance->check_in_time);
+        $configTz = config('app.timezone', 'UTC');
+        $tz = is_string($configTz) ? $configTz : 'UTC';
+        $expectedUtc = Date::parse($localTime, 'Asia/Kolkata')->setTimezone($tz);
+        $this->assertEquals($expectedUtc->toDateTimeString(), $attendance->check_in_time->toDateTimeString());
+    }
+
+    public function test_biometric_models_are_prunable(): void
+    {
+        // Old receipt > 60 days
+        $oldReceipt = BiometricEventReceipt::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'event_fingerprint' => 'test-fingerprint-old',
+            'status' => 'processed',
+        ]);
+        $oldReceipt->created_at = now()->subDays(65);
+        $oldReceipt->saveQuietly();
+
+        // Recent receipt
+        $recentReceipt = BiometricEventReceipt::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'event_fingerprint' => 'test-fingerprint-recent',
+            'status' => 'processed',
+        ]);
+        $recentReceipt->created_at = now()->subDays(10);
+        $recentReceipt->saveQuietly();
+
+        // Old acknowledged command > 90 days
+        $oldCommand = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_delete',
+            'command_payload' => ['Pin' => '1'],
+            'status' => AdmsCommandStatusEnum::ACKNOWLEDGED,
+        ]);
+        $oldCommand->acknowledged_at = now()->subDays(95);
+        $oldCommand->updated_at = now()->subDays(95);
+        $oldCommand->saveQuietly();
+
+        // Pending command (should not prune)
+        $pendingCommand = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_delete',
+            'command_payload' => ['Pin' => '2'],
+            'status' => AdmsCommandStatusEnum::PENDING,
+        ]);
+        $pendingCommand->created_at = now()->subDays(100);
+        $pendingCommand->saveQuietly();
+
+        $prunableReceipts = (new BiometricEventReceipt())->prunable()->pluck('id');
+        $this->assertTrue($prunableReceipts->contains($oldReceipt->id));
+        $this->assertFalse($prunableReceipts->contains($recentReceipt->id));
+
+        $prunableCommands = (new AdmsDeviceCommand())->prunable()->pluck('id');
+        $this->assertTrue($prunableCommands->contains($oldCommand->id));
+        $this->assertFalse($prunableCommands->contains($pendingCommand->id));
+    }
+
+    public function test_timestamp_within_30_day_window_accepted(): void
+    {
+        $validTimestamp = now()->subDays(29)->format('Y-m-d H:i:s');
+        $body = "{$this->member->id}\t{$validTimestamp}\t0\t15\t0";
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            $body
+        );
+
+        $response->assertOk();
+        $this->assertDatabaseHas('attendances', [
+            'device_id' => $this->device->id,
+            'attendanceable_id' => $this->member->id,
+        ]);
+    }
+
+    public function test_timestamp_beyond_30_days_rejected(): void
+    {
+        $staleTimestamp = now()->subDays(31)->format('Y-m-d H:i:s');
+        $body = "{$this->member->id}\t{$staleTimestamp}\t0\t15\t0";
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            $body
+        );
+
+        $response->assertOk();
+        $this->assertDatabaseMissing('attendances', [
+            'device_id' => $this->device->id,
+            'attendanceable_id' => $this->member->id,
+        ]);
+    }
+
+    public function test_future_timestamp_within_10_minutes_accepted(): void
+    {
+        $futureValid = now()->addMinutes(5)->format('Y-m-d H:i:s');
+        $body = "{$this->member->id}\t{$futureValid}\t0\t15\t0";
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            $body
+        );
+
+        $response->assertOk();
+        $this->assertDatabaseHas('attendances', [
+            'device_id' => $this->device->id,
+            'attendanceable_id' => $this->member->id,
+        ]);
+    }
+
+    public function test_future_timestamp_beyond_10_minutes_rejected(): void
+    {
+        $futureInvalid = now()->addMinutes(15)->format('Y-m-d H:i:s');
+        $body = "{$this->member->id}\t{$futureInvalid}\t0\t15\t0";
+
+        $response = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            $body
+        );
+
+        $response->assertOk();
+        $this->assertDatabaseMissing('attendances', [
+            'device_id' => $this->device->id,
+            'attendanceable_id' => $this->member->id,
+        ]);
+    }
+
+    public function test_biometric_timestamp_parser_skew_boundaries(): void
+    {
+        // Boundary within 30 days
+        $pastTimestamp = now()->subDays(29)->startOfSecond();
+        $validPast = BiometricTimestampParser::parse(
+            $pastTimestamp->format('Y-m-d H:i:s'),
+            $this->device
+        );
+        $this->assertSame($pastTimestamp->toDateTimeString(), $validPast->toDateTimeString());
+
+        // Boundary within 10 minutes future
+        $futureTimestamp = now()->addMinutes(9)->startOfSecond();
+        $validFuture = BiometricTimestampParser::parse(
+            $futureTimestamp->format('Y-m-d H:i:s'),
+            $this->device
+        );
+        $this->assertSame($futureTimestamp->toDateTimeString(), $validFuture->toDateTimeString());
+
+        // Beyond 30 days throws
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Timestamp outside acceptable skew window');
+        BiometricTimestampParser::parse(
+            now()->subDays(31)->format('Y-m-d H:i:s'),
+            $this->device
+        );
+    }
+}

@@ -34,7 +34,7 @@ class BiometricEnrollRequest extends FormRequest
             'gym_member_id.required' => 'Gym member ID is required',
             'gym_member_id.exists' => 'Gym member not found',
             'biometric_type.required' => 'Biometric type is required',
-            'biometric_type.in' => 'Invalid biometric type. Must be ' . implode(', ', BiometricTypeEnum::cases()),
+            'biometric_type.in' => 'Invalid biometric type. Must be ' . implode(', ', array_column(BiometricTypeEnum::cases(), 'value')),
             'data.required' => 'Biometric data is required',
         ];
     }

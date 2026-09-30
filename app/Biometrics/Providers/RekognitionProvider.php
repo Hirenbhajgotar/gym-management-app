@@ -22,14 +22,21 @@ class RekognitionProvider implements BiometricProvider
      * @param  array<string, mixed>  $config
      */
     public function __construct(
-        protected array $config
+        protected array $config = []
     ) {
+        /** @var array<string, mixed> $systemConfig */
+        $systemConfig = config()->array('biometrics.providers_config.rekognition', []);
+        /** @var array<string, mixed> $filteredConfig */
+        $filteredConfig = array_filter($config, static fn ($v): bool => $v !== null && $v !== '');
+        $allowedOverrides = array_intersect_key($filteredConfig, array_flip(['region', 'similarity_threshold']));
+        $this->config = array_merge($systemConfig, $allowedOverrides);
+
         $this->client = new RekognitionClient([
-            'region' => $config['region'] ?? 'us-east-1',
+            'region' => $this->config['region'] ?? 'us-east-1',
             'version' => 'latest',
             'credentials' => [
-                'key' => $config['access_key'] ?? '',
-                'secret' => $config['secret_key'] ?? '',
+                'key' => $this->config['access_key'] ?? '',
+                'secret' => $this->config['secret_key'] ?? '',
             ],
         ]);
     }

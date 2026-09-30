@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Enums\BiometricDeviceStatusEnum;
 use App\Models\BiometricDevice;
 use Closure;
 use Illuminate\Http\Request;
@@ -31,16 +32,8 @@ class AuthenticateBiometricDevice
             ], 401);
         }
 
-        // Find active device with matching token
-        $devices = BiometricDevice::query()->active()->get();
-
-        $device = null;
-        foreach ($devices as $d) {
-            if ($d->verifyToken($plainToken)) {
-                $device = $d;
-                break;
-            }
-        }
+        // O(1) device lookup via indexed token_hash and Redis cache
+        $device = BiometricDevice::findByPlainToken($plainToken);
 
         if (! $device) {
             return response()->json([
@@ -51,6 +44,21 @@ class AuthenticateBiometricDevice
 
         // Bind device to request for use in controllers
         $request->attributes->set('device', $device);
+
+        if (isset($device->is_enabled) && ! $device->is_enabled) {
+            return response()->json([
+                'error' => 'Forbidden',
+                'message' => 'Biometric device has been administratively disabled',
+            ], 403);
+        }
+
+        // Allow heartbeat endpoint to reactivate inactive devices; reject punch/sync if device is inactive
+        if ($device->status !== BiometricDeviceStatusEnum::Active && ! $request->is('*heartbeat*')) {
+            return response()->json([
+                'error' => 'Forbidden',
+                'message' => 'Biometric device is inactive',
+            ], 403);
+        }
 
         return $next($request);
     }

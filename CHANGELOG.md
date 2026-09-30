@@ -8,6 +8,55 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Breaking Changes
+- **Enforce ADMS Device Communication Key by Default (`ADMS_REQUIRE_COMM_KEY=true`)**:
+  - `config('biometrics.adms.require_comm_key')` now defaults to `true` (previously `false`). All unkeyed deployments will reject unauthenticated ADMS requests until provisioned.
+  - PBKDF2 iterations are now configurable via `config('biometrics.adms.pbkdf2_iterations')` (default 100,000).
+  - Backfill command (`biometrics:backfill-adms-comm-keys`) now detects and re-provisions legacy unsalted SHA-256 hashes when run with `--provision`.
+  - Removed orphaned `BIOMETRIC_FALLBACK_PIN` from `.env.example`.
+
+### Fixed
+- **Door Controller TLS SNI (`DoorControlService`)**:
+  - Replaced IP-in-URL rewriting with `CURLOPT_RESOLVE` to prevent DNS rebinding TOCTOU without breaking TLS SNI certificate validation on HTTPS door controllers.
+- **Member Biometric Enrollment (`EnrollMember`)**:
+  - Replaced invalid `user_info` command type with `user_add`.
+  - Added template ID to `idempotency_key` (`user_add:{device}:{member}:{template}`) and added `UniqueConstraintViolationException` handling and failure notification to operator.
+  - Made form field `sendToDeviceEnabled` authoritative and removed redundant public `$sendToDeviceToggle` property.
+  - Restored filter in `getMembers()` to exclude members already actively enrolled on the selected device.
+  - Fixed cross-tenant device query in `getDefaultBiometricType()`.
+  - Bounded `rawBiometricData` input length to 16,000 characters.
+- **Command Cancellation & Idempotency (`AdmsDeviceCommand`)**:
+  - Added `markCancelled()` method that sets status to `CANCELLED` (for both `PENDING` and `SENT` commands) and clears `idempotency_key` to prevent collisions upon retry.
+  - Added `cancelDeleteCommands()` static helper for batch cancellation across writers.
+  - Released `idempotency_key` on terminal command execution in `markAcknowledged()`.
+  - Reset `attempt_count` to 0 on Filament command resend (both single and bulk actions).
+- **Superseded Template Cleanup (`CleanupSupersededTemplatesCommand`)**:
+  - Validates `--days > 0` to prevent accidental immediate purge.
+  - Chunks records with `chunkById(100)` for memory safety.
+  - Purges superseded database rows without enqueuing hardware `user_delete` commands, ensuring live re-enrolled credentials on devices are not deleted.
+- **Webhook & Event Response Handling (`BiometricWebhookController`)**:
+  - Added missing denial reasons (`no_active_check_in`, `already_checked_in`, `anti_passback`, `device_offline`, `untrusted_door_controller_url`).
+  - Propagates `$doorResult->failureReason` in response and adjusts display message/LED to warning when check-in succeeds but door fails to unlock.
+- **Test Suite & CI Hardening**:
+  - Corrected `DB_PASSWORD` from `root` to `password` and forced `DB_HOST=127.0.0.1` in `phpunit.xml`.
+  - Removed `environment: Testing` from CI workflows and reduced `lint.yml` permissions to `contents: read`.
+  - Added pre-boot safety guard in `TestCase` and `WhatsAppSetupTestCase` before `parent::setUp()` triggers `migrate:fresh`.
+  - Removed duplicate safety guard from `StaffPanelTestCase`.
+  - Deleted unused `FreezesClock` trait and removed vestigial `phpstan:dtos` composer script.
+  - Replaced blanket `2026_09_28_130000` migration with an intentional no-op log.
+
+### Added
+- **Biometric ADMS Push Protocol (eSSL, ZKTeco, Hikvision)**:
+  - Added native ADMS (`iclock`) push endpoints: `/api/iclock/cdata` (handshake & `ATTLOG` attendance push), `/api/iclock/getrequest` (command queue polling), and `/api/iclock/devicecmd` (execution acknowledgments).
+  - Added Hikvision ISAPI XML event push endpoint `/api/v1/biometric/hikvision/event` with device token authentication.
+  - Dual-channel coexistence: terminals can simultaneously use the vendor webhook (`/api/v1/biometric/webhook/{token}`) for real-time door relay unlock directives, and ADMS for attendance logging & member provisioning.
+  - Implemented `AdmsEventService` with automated check-out detection (treating check-ins as check-outs if an open session already exists today) and anti-passback locking.
+  - Added `AdmsDeviceCommand` model, migration, factory, and `AdmsCommandStatusEnum` (`PENDING`, `SENT`, `ACKNOWLEDGED`, `FAILED`) implementing Filament's `HasLabel` and `HasColor`.
+  - Added three-layer expired member deprovisioning via `CleanupExpiredDeviceMembers` scheduled daily at 03:00, calculating cutoff via: `membership_end` + `gym_grace_days` (default 7) + `adms_grace_days` (default 10). Automatically queues `DATA DELETE user` commands and deactivates biometric templates.
+  - Filament Admin UI updates: added `device_serial` input, `adms_enabled` toggle with dynamic setup instructions, and table column/action in `BiometricDeviceResource`; added tenant-scoped `AdmsDeviceCommandResource` with retry/resend capabilities.
+  - Comprehensive feature test suites in `tests/Feature/AdmsProtocolTest.php` (11 tests) and `tests/Feature/CleanupExpiredDeviceMembersTest.php` (5 tests).
+  - Technical documentation in `docs/biometric/feature/biometric-adms-push-protocol.md`, `docs/biometric/database/adms-device-commands-fields.md`, and `docs/biometric/architecture/ADR-004-adms-push-protocol-and-lifecycle.md`.
+
 ## [v1.7.2] - 2026-09-19 (Current GitHub Release)
 
 ### Added

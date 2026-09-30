@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\AttendanceStatus;
 use App\Enums\BiometricTypeEnum;
 use App\Observers\AttendanceObserver;
+use DateTimeInterface;
 use Eloquent;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -89,7 +90,6 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static>|Attendances whereUpdatedAt($value)
  *
  * @mixin \Eloquent
- * @mixin IdeHelperAttendances
  */
 #[ObservedBy([AttendanceObserver::class])]
 class Attendances extends Model
@@ -105,6 +105,7 @@ class Attendances extends Model
         'status',
         'note',
         'device_id',
+        'offline_id',
         'check_in_method',
         'biometric_type',
         'provider_type',
@@ -121,6 +122,21 @@ class Attendances extends Model
         'door_unlocked_at',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array{
+     *     check_in_time: 'datetime',
+     *     check_out_time: 'datetime',
+     *     status: 'App\Enums\AttendanceStatus',
+     *     confidence_score: 'float',
+     *     liveness_score: 'float',
+     *     fusion_score: 'float',
+     *     synced_at: 'datetime',
+     *     biometric_type: 'App\Enums\BiometricTypeEnum',
+     *     door_unlocked_at: 'datetime',
+     * }
+     */
     protected function casts(): array
     {
         return [
@@ -220,45 +236,63 @@ class Attendances extends Model
         return $this->door_status === 'unlocked';
     }
 
+    /**
+     * @param  Builder<self>  $query
+     */
     #[Scope]
-    protected function biometric($query): void
+    protected function biometric(Builder $query): void
     {
         $query->where('check_in_method', 'biometric');
     }
 
+    /**
+     * @param  Builder<self>  $query
+     */
     // Scope for filtering by date
     #[Scope]
-    protected function byDate($query, $date): void
+    protected function byDate(Builder $query, DateTimeInterface|string $date): void
     {
         $query->whereDate('check_in_time', $date);
     }
 
+    /**
+     * @param  Builder<self>  $query
+     */
     // Scope for filtering by gym
     #[Scope]
-    protected function byGym($query, $gymId): void
+    protected function byGym(Builder $query, mixed $gymId): void
     {
         $query->where('gym_id', $gymId);
     }
 
+    /**
+     * @param  Builder<self>  $query
+     */
     // Scope for active attendance (checked in but not checked out)
     #[Scope]
-    protected function active($query): void
+    protected function active(Builder $query): void
     {
         $query->whereNotNull('check_in_time')
             ->whereNull('check_out_time');
     }
 
+    /**
+     * @param  Builder<self>  $query
+     */
     // Scope for completed attendance
     #[Scope]
-    protected function completed($query): void
+    protected function completed(Builder $query): void
     {
         $query->whereNotNull('check_in_time')
             ->whereNotNull('check_out_time');
     }
 
+    /**
+     * @param  Builder<self>  $query
+     */
     // Scope for absent attendance
     #[Scope]
-    protected function absent($query): void
+    protected function absent(Builder $query): void
     {
         $query->whereNull('check_in_time')
             ->whereNull('check_out_time');

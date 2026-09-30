@@ -343,6 +343,14 @@ class GymMember extends Model
         return $this->hasMany(BiometricConsent::class, 'gym_member_id');
     }
 
+    /**
+     * @return HasOne<BiometricConsent, $this>
+     */
+    public function biometricConsent(): HasOne
+    {
+        return $this->hasOne(BiometricConsent::class, 'gym_member_id')->whereNull('revoked_at')->latestOfMany();
+    }
+
     public function activeBiometricConsent(): ?BiometricConsent
     {
         if ($this->relationLoaded('biometricConsents')) {

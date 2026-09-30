@@ -6,22 +6,26 @@ namespace App\Http\Controllers\Api;
 
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\BiometricSample;
-use App\Biometrics\DTOs\TemplateRef;
+use App\Biometrics\Services\BiometricDataDeletionService;
+use App\Enums\BiometricTemplateSyncStatusEnum;
 use App\Enums\BiometricTypeEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BiometricEnrollRequest;
+use App\Models\AdmsDeviceCommand;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class BiometricEnrollController extends Controller
 {
     public function __construct(
-        protected BiometricProviderRegistry $registry
+        protected BiometricProviderRegistry $registry,
+        protected BiometricDataDeletionService $deletionService
     ) {}
 
     public function enroll(BiometricEnrollRequest $request): JsonResponse
@@ -30,6 +34,7 @@ class BiometricEnrollController extends Controller
         $device = $request->attributes->get('device');
 
         // Scope member lookup to device's gym (prevents cross-gym enrollment)
+        /** @var GymMember $gymMember */
         $gymMember = GymMember::query()->where('gym_id', $device->gym_id)
             ->findOrFail($request->validated('gym_member_id'));
 
@@ -42,30 +47,73 @@ class BiometricEnrollController extends Controller
             ], 422);
         }
 
+        if ($device->isDeviceNative() || ! $device->hasCloudProvider() || ! $device->provider_type) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Device-native enrollment required',
+                'message' => 'This device operates in device-native mode. Use /enroll-sync to register on-device templates.',
+            ], 422);
+        }
+
         // Get provider and enroll
-        $provider = $this->registry->resolve($device->provider_type, $device->provider_config ?? []);
+        $provider = $this->registry->resolve($device->provider_type, is_array($device->provider_config) ? $device->provider_config : []);
+
+        $rawType = $request->validated('biometric_type');
+        $biometricType = is_string($rawType) ? $rawType : 'face';
+        $rawData = $request->validated('data');
+        $rawMeta = $request->validated('metadata');
+        /** @var array<string, mixed> $metadata */
+        $metadata = is_array($rawMeta) ? $rawMeta : [];
 
         $sample = new BiometricSample(
-            type: $request->validated('biometric_type'),
-            data: $request->validated('data'),
-            metadata: $request->validated('metadata', [])
+            type: $biometricType,
+            data: is_string($rawData) ? $rawData : '',
+            metadata: $metadata
         );
 
         try {
             $templateRef = $provider->enroll($gymMember, $sample);
 
-            // Create BiometricTemplate record
-            $template = BiometricTemplate::query()->create([
-                'gym_member_id' => $gymMember->id,
-                'gym_id' => $device->gym_id,
-                'enrolled_by_device_id' => $device->id,
-                'biometric_type' => $request->validated('biometric_type'),
-                'provider_type' => $device->provider_type,
-                'template_ref' => $templateRef->toJson(),
-                'quality_score' => $templateRef->meta['quality_score'] ?? null,
-                'is_active' => true,
-                'enrolled_at' => now(),
-            ]);
+            // Resolve command PINs (both member ID and any existing template refs)
+            $existingTemplates = BiometricTemplate::query()
+                ->where('gym_id', $device->gym_id)
+                ->where('gym_member_id', $gymMember->id)
+                ->where('enrolled_by_device_id', $device->id)
+                ->get();
+
+            $pins = [(string) $gymMember->id];
+            foreach ($existingTemplates as $existingTemplate) {
+                $pins[] = $existingTemplate->resolvedCommandPin();
+            }
+            $pins = array_values(array_unique($pins));
+
+            $template = DB::transaction(function () use ($device, $gymMember, $pins, $templateRef, $request): BiometricTemplate {
+                // Cancel any pending or in-flight delete commands on this device for this member
+                AdmsDeviceCommand::cancelDeleteCommands($device->id, $pins);
+
+                BiometricTemplate::query()
+                    ->where('gym_id', $device->gym_id)
+                    ->where('gym_member_id', $gymMember->id)
+                    ->where('enrolled_by_device_id', $device->id)
+                    ->where('sync_status', BiometricTemplateSyncStatusEnum::PendingDeletion)
+                    ->update([
+                        'sync_status' => BiometricTemplateSyncStatusEnum::Superseded,
+                        'is_active' => false,
+                    ]);
+
+                // Create BiometricTemplate record
+                return BiometricTemplate::query()->create([
+                    'gym_member_id' => $gymMember->id,
+                    'gym_id' => $device->gym_id,
+                    'enrolled_by_device_id' => $device->id,
+                    'biometric_type' => $request->validated('biometric_type'),
+                    'provider_type' => $device->provider_type,
+                    'template_ref' => $templateRef->toJson(),
+                    'quality_score' => $templateRef->meta['quality_score'] ?? null,
+                    'is_active' => true,
+                    'enrolled_at' => now(),
+                ]);
+            });
 
             return response()->json([
                 'success' => true,
@@ -82,11 +130,12 @@ class BiometricEnrollController extends Controller
         }
     }
 
-    public function syncFromDevice(Request $request)
+    public function syncFromDevice(Request $request): JsonResponse
     {
+        /** @var BiometricDevice $device */
         $device = $request->attributes->get('device');
 
-        // Validate karo
+        /** @var array{gym_member_id: int|string, biometric_type: string|BiometricTypeEnum, template_ref: string, quality_score?: float|int|null} $validated */
         $validated = $request->validate([
             'gym_member_id' => [
                 'required',
@@ -96,29 +145,40 @@ class BiometricEnrollController extends Controller
                     ->where('gym_id', $device->gym_id),
             ],
             'biometric_type' => ['required', Rule::enum(BiometricTypeEnum::class)],
-            'template_ref' => ['required', 'string', 'max:255'], // device ka internal ID
+            'template_ref' => ['required', 'string', 'max:255'], // device internal ID / PIN
             'quality_score' => ['nullable', 'numeric', 'between:0,1'],
         ]);
 
-        $gymMember = GymMember::query()->find($validated['gym_member_id']);
+        $gymMemberId = (int) $validated['gym_member_id'];
+        $templateRef = $validated['template_ref'];
 
-        // Consent check — agar nahi hai toh deny karo
-        if (! $gymMember->hasActiveBiometricConsent()) {
+        if (is_numeric($templateRef) && (int) $templateRef !== $gymMemberId) {
             return response()->json([
                 'success' => false,
-                'error' => 'Member ne biometric consent nahi diya',
+                'error' => 'Template reference mismatch',
+                'message' => 'Device template PIN must match member ID',
             ], 422);
         }
 
-        // Sirf record banao — koi provider call nahi
+        /** @var GymMember|null $gymMember */
+        $gymMember = GymMember::query()->find($gymMemberId);
+
+        // Consent check — deny if absent
+        if (! $gymMember || ! $gymMember->hasActiveBiometricConsent()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Member has not provided biometric consent',
+            ], 422);
+        }
+
         BiometricTemplate::query()->updateOrCreate([
-            'gym_member_id' => $validated['gym_member_id'],
+            'gym_member_id' => $gymMemberId,
             'gym_id' => $device->gym_id,
             'biometric_type' => $validated['biometric_type'],
-        ], [
-            'provider_type' => $device->provider_type,
-            'template_ref' => $validated['template_ref'],
             'enrolled_by_device_id' => $device->id,
+        ], [
+            'provider_type' => $device->provider_type ? $device->provider_type->value : 'device_native',
+            'template_ref' => $templateRef,
             'quality_score' => $validated['quality_score'] ?? null,
             'is_active' => true,
             'enrolled_at' => now(),
@@ -141,20 +201,15 @@ class BiometricEnrollController extends Controller
         }
 
         try {
-            $provider = $this->registry->resolve($template->provider_type);
+            $success = $this->deletionService->deleteSingleTemplate($template);
 
-            $templateRef = TemplateRef::fromJson($template->template_ref);
-
-            if (! $provider->deleteTemplate($templateRef)) {
+            if (! $success) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Deletion failed',
                     'message' => 'Provider-side template deletion was not confirmed.',
                 ], 422);
             }
-            // Deactivate template (soft delete)
-            $template->is_active = false;
-            $template->save();
 
             return response()->json([
                 'success' => true,

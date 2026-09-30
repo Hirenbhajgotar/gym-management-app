@@ -21,11 +21,20 @@ class BiometricTemplateFactory extends Factory
     {
         return [
             'gym_member_id' => GymMember::factory(),
-            'gym_id' => Gym::factory(),
+            'gym_id' => function (array $attributes): int|Factory {
+                $member = isset($attributes['gym_member_id']) && is_numeric($attributes['gym_member_id'])
+                    ? GymMember::query()->find($attributes['gym_member_id'])
+                    : null;
+
+                return $member instanceof GymMember ? $member->gym_id : Gym::factory();
+            },
             'enrolled_by_device_id' => null,
             'biometric_type' => BiometricTypeEnum::Face,
             'provider_type' => fake()->randomElement(['rekognition', 'azure', 'bioid', 'local', 'custom']),
-            'template_ref' => ['provider_id' => fake()->uuid()],
+            'template_ref' => json_encode([
+                'provider' => 'custom',
+                'external_id' => fake()->uuid(),
+            ]),
             'quality_score' => fake()->randomFloat(2, 0.7, 1.0),
             'is_active' => true,
             'enrolled_at' => now(),

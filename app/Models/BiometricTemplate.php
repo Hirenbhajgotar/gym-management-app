@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\BiometricTemplateSyncStatusEnum;
 use App\Enums\BiometricTypeEnum;
 use Database\Factories\BiometricTemplateFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * @property int $id
@@ -23,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $template_ref
  * @property float|null $quality_score
  * @property bool $is_active
+ * @property BiometricTemplateSyncStatusEnum $sync_status
  * @property Carbon $enrolled_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -48,6 +51,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder<static>|BiometricTemplate whereIsActive($value)
  * @method static Builder<static>|BiometricTemplate whereProviderType($value)
  * @method static Builder<static>|BiometricTemplate whereQualityScore($value)
+ * @method static Builder<static>|BiometricTemplate whereSyncStatus($value)
  * @method static Builder<static>|BiometricTemplate whereTemplateRef($value)
  * @method static Builder<static>|BiometricTemplate whereUpdatedAt($value)
  *
@@ -55,6 +59,7 @@ use Illuminate\Support\Carbon;
  */
 class BiometricTemplate extends Model
 {
+    /** @use HasFactory<BiometricTemplateFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -66,15 +71,29 @@ class BiometricTemplate extends Model
         'template_ref',
         'quality_score',
         'is_active',
+        'sync_status',
         'enrolled_at',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array{
+     *     template_ref: 'encrypted',
+     *     quality_score: 'float',
+     *     is_active: 'boolean',
+     *     sync_status: 'App\Enums\BiometricTemplateSyncStatusEnum',
+     *     enrolled_at: 'datetime',
+     *     biometric_type: 'App\Enums\BiometricTypeEnum',
+     * }
+     */
     protected function casts(): array
     {
         return [
             'template_ref' => 'encrypted',
             'quality_score' => 'float',
             'is_active' => 'boolean',
+            'sync_status' => BiometricTemplateSyncStatusEnum::class,
             'enrolled_at' => 'datetime',
             'biometric_type' => BiometricTypeEnum::class,
         ];
@@ -104,27 +123,174 @@ class BiometricTemplate extends Model
         return $this->belongsTo(BiometricDevice::class, 'enrolled_by_device_id');
     }
 
+    /**
+     * @param  Builder<self>  $query
+     */
     #[Scope]
-    protected function active($query): void
+    protected function active(Builder $query): void
     {
         $query->where('is_active', true);
     }
 
+    /**
+     * @param  Builder<self>  $query
+     */
     #[Scope]
-    protected function forGymMember($query, int $id): void
+    protected function forGymMember(Builder $query, int $id): void
     {
         $query->where('gym_member_id', $id);
     }
 
+    /**
+     * @param  Builder<self>  $query
+     */
     #[Scope]
-    protected function ofType($query, string $type): void
+    protected function ofType(Builder $query, string $type): void
     {
         $query->where('biometric_type', $type);
     }
 
+    /**
+     * @param  Builder<self>  $query
+     */
     #[Scope]
-    protected function forGym($query, int $gymId): void
+    protected function forGym(Builder $query, int $gymId): void
     {
         $query->where('gym_id', $gymId);
+    }
+
+    /**
+     * Extract all searchable references (raw string and external_id if JSON).
+     *
+     * @return array<int, string>
+     */
+    public function getCacheableReferences(?string $templateRef = null): array
+    {
+        $ref = $templateRef ?? (string) $this->template_ref;
+        if (blank($ref)) {
+            return [];
+        }
+
+        $refs = [$ref];
+
+        if (str_starts_with($ref, '{') && str_ends_with($ref, '}')) {
+            $decoded = json_decode($ref, true);
+            if (is_array($decoded) && isset($decoded['external_id']) && (is_string($decoded['external_id']) || is_numeric($decoded['external_id']))) {
+                $refs[] = (string) $decoded['external_id'];
+            }
+        }
+
+        return array_values(array_unique($refs));
+    }
+
+    /**
+     * Determine if this template is managed by a third-party cloud provider.
+     */
+    public function hasCloudProvider(): bool
+    {
+        return ! in_array($this->provider_type, ['device_native', 'adms', 'hikvision', null], true);
+    }
+
+    /**
+     * Resolve the hardware command PIN associated with this template.
+     */
+    public function resolvedCommandPin(): string
+    {
+        return self::resolveCommandPin($this->template_ref, $this->gym_member_id);
+    }
+
+    /**
+     * Helper to resolve the hardware command PIN from a template ref and member ID.
+     */
+    public static function resolveCommandPin(mixed $templateRef, int|string $gymMemberId): string
+    {
+        $rawRef = is_scalar($templateRef) ? (string) $templateRef : '';
+
+        return (filled($rawRef) && ! str_starts_with($rawRef, '{'))
+            ? $rawRef
+            : (string) $gymMemberId;
+    }
+
+    /**
+     * Clear all cached template references for current and original attributes.
+     */
+    public function clearTemplateRefCache(): void
+    {
+        $gymIds = array_filter([
+            $this->getOriginal('gym_id'),
+            $this->gym_id,
+        ], fn (mixed $id): bool => is_numeric($id) && (int) $id > 0);
+
+        $origRef = $this->getOriginal('template_ref');
+
+        $allRefs = array_merge(
+            $this->getCacheableReferences(is_scalar($origRef) ? (string) $origRef : null),
+            $this->getCacheableReferences($this->template_ref),
+        );
+
+        foreach ($gymIds as $gymId) {
+            foreach ($allRefs as $ref) {
+                if (filled($ref)) {
+                    Cache::forget("biometric:template_ref:{$gymId}:" . hash('sha256', $ref));
+                }
+            }
+        }
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(function (self $template) {
+            $template->clearTemplateRefCache();
+        });
+
+        static::deleted(function (self $template) {
+            $template->clearTemplateRefCache();
+        });
+    }
+
+    /**
+     * Resolve active template by hardware/external reference for a gym.
+     * Decrypts in memory since template_ref is non-deterministically encrypted.
+     */
+    public static function findByTemplateRef(int $gymId, string $ref): ?self
+    {
+        if (blank($ref)) {
+            return null;
+        }
+
+        $cacheKey = "biometric:template_ref:{$gymId}:" . hash('sha256', $ref);
+        $cachedId = Cache::get($cacheKey);
+
+        if ($cachedId === 0) {
+            return null;
+        }
+
+        if ($cachedId !== null) {
+            /** @var self|null $cached */
+            $cached = self::query()->with('gymMember')->find($cachedId);
+            if ($cached && $cached->is_active && $cached->gym_id === $gymId && in_array($ref, $cached->getCacheableReferences(), true)) {
+                return $cached;
+            }
+
+            Cache::forget($cacheKey);
+        }
+
+        $templates = self::query()
+            ->where('gym_id', $gymId)
+            ->where('is_active', true)
+            ->with('gymMember')
+            ->get();
+
+        foreach ($templates as $template) {
+            if (in_array($ref, $template->getCacheableReferences(), true)) {
+                Cache::put($cacheKey, $template->id, 3600);
+
+                return $template;
+            }
+        }
+
+        Cache::put($cacheKey, 0, 60);
+
+        return null;
     }
 }

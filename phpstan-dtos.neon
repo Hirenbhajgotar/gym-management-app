@@ -1,0 +1,21 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - vendor/nesbot/carbon/extension.neon
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+
+parameters:
+    reportUnmatchedIgnoredErrors: false
+
+    paths:
+        - app/Biometrics/DTOs
+
+    level: max
+
+    scanFiles:
+        - _ide_helper_models.php
+
+    strictRules:
+        disallowedShortTernary: false
+        dynamicCallOnStaticMethod: false
+        booleansInConditions: false
+        noVariableVariables: false

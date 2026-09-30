@@ -1,0 +1,91 @@
+---
+table: adms_device_commands
+last_updated: 2026-09-23
+author: docs-agent
+related_features:
+  - ../feature/biometric-adms-push-protocol.md
+  - ../feature/biometric-checkin-flow.md
+  - ../feature/door-access-control.md
+---
+
+# `adms_device_commands` — Field Reference
+
+## Purpose
+
+Stores server-to-device commands queued for biometric hardware terminals operating over the ADMS (Automatic Data Master Server) protocol (such as eSSL and ZKTeco devices). When terminals poll the server via `GET /api/iclock/getrequest?SN={serial}`, pending commands are dispatched and tracked through their execution lifecycle.
+
+## Field Reference
+
+| Column | Type | Nullable | Default | Written by | Purpose |
+|---|---|---|---|---|---|
+| `id` | bigint unsigned | NO | auto | — | Primary key (used as command ID in ADMS protocol strings `C:{id}:...`) |
+| `gym_id` | bigint unsigned | NO | — | Command creation | Foreign key to `gyms` |
+| `device_id` | bigint unsigned | NO | — | Command creation | Foreign key to `biometric_devices` |
+| `command_type` | varchar(255) | NO | — | Command creation | Type of command: `user_add`, `user_delete`, `user_update`, `reboot`, `clear_log` |
+| `command_payload` | json | YES | null | Command creation | Key-value arguments needed to format the command (e.g., `{"Pin": "42", "Name": "John"}`) |
+| `status` | varchar(255) | NO | pending | Command lifecycle | `AdmsCommandStatusEnum`: `pending`, `sent`, `acknowledged`, `failed` |
+| `sent_at` | timestamp | YES | null | Device polling | Timestamp when the terminal fetched the command via `getrequest` |
+| `acknowledged_at` | timestamp | YES | null | Device execution | Timestamp when the terminal reported execution result via `devicecmd` |
+| `device_return_code` | varchar(255) | YES | null | Device execution | Raw return code string from device (`0` = success, non-zero = error) |
+| `created_at` | timestamp | NO | CURRENT_TIMESTAMP | — | Creation timestamp |
+| `updated_at` | timestamp | NO | CURRENT_TIMESTAMP | — | Update timestamp |
+
+## Indexes
+
+| Index | Columns | Type | Purpose |
+|---|---|---|---|
+| `PRIMARY` | `id` | PRIMARY | Primary key lookup |
+| `adms_device_commands_device_id_status_index` | `device_id`, `status` | INDEX | Rapid O(1) polling lookup for oldest pending command per device |
+| `adms_device_commands_gym_id_foreign` | `gym_id` | INDEX | Foreign key constraint on `gyms` |
+| `adms_device_commands_device_id_foreign` | `device_id` | INDEX | Foreign key constraint on `biometric_devices` |
+
+## Relationships
+
+| Relationship | Type | Foreign Key | Related Model |
+|---|---|---|---|
+| `gym()` | belongsTo | `gym_id` | `Gym` |
+| `device()` | belongsTo | `device_id` | `BiometricDevice` |
+
+## Key Methods & Scopes
+
+| Method / Scope | Purpose |
+|---|---|
+| `toAdmsCommandString()` | Builds formatted protocol string for terminal (e.g. `C:12:DATA DELETE user Pin=42`) |
+| `markSent()` | Transitions status to `AdmsCommandStatusEnum::SENT` and records `sent_at` timestamp |
+| `markAcknowledged(string $returnCode)` | Transitions status to `ACKNOWLEDGED` (if code `0`) or `FAILED`, setting `acknowledged_at` |
+| `prunable()` | Returns Builder for acknowledged/failed commands past `command_retention_days` (default 90d) |
+| `scopePending($query)` | Scopes query to commands with `status = AdmsCommandStatusEnum::PENDING` |
+| `scopeForDevice($query, int $deviceId)` | Scopes query to specific device ID |
+
+## Enums
+
+| Enum | Values | Applied To |
+|---|---|---|
+| `AdmsCommandStatusEnum` | `PENDING = 'pending'`, `SENT = 'sent'`, `ACKNOWLEDGED = 'acknowledged'`, `FAILED = 'failed'` | `status` column |
+
+## Command String Formats
+
+The ADMS push protocol uses colon-delimited string commands returned in response to `getrequest`:
+
+- **Delete user from hardware memory**:
+  `C:{id}:DATA DELETE user Pin={memberId}`
+- **Update / Add user**:
+  `C:{id}:DATA UPDATE user Pin={memberId}\tName={name}\tPri=0`
+- **Reboot hardware terminal**:
+  `C:{id}:REBOOT`
+- **Clear terminal event logs**:
+  `C:{id}:CLEAR LOG`
+
+## Usage by Feature
+
+| Feature | Reads | Writes | Notes |
+|---|---|---|---|
+| [Biometric ADMS Push Protocol](../feature/biometric-adms-push-protocol.md) | `device_id`, `status`, `command_type`, `command_payload` | `status`, `sent_at`, `acknowledged_at`, `device_return_code` | Serves commands to polling terminals & handles execution ACKs |
+| Expired Member Cleanup Command | `device_id`, `command_type`, `command_payload`, `status` | Inserts new command | Queues user deletion when membership expires beyond grace window |
+| Filament Admin Resource (`AdmsDeviceCommandResource`) | All fields | `status`, `sent_at`, `acknowledged_at`, `device_return_code` | Allows gym admins to audit and resend failed commands |
+
+## Migration History
+
+| Migration | Change |
+|---|---|
+| `2026_09_23_133303_create_adms_device_commands_table` | Initial table creation with compound index on `(device_id, status)` |

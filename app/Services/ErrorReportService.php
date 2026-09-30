@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Biometrics\Services\BiometricLogRedactor;
 use App\Enums\ErrorCategory;
 use App\Enums\ErrorPriority;
 use App\Models\ErrorReport;
@@ -140,6 +141,9 @@ class ErrorReportService
      */
     private function buildContext(array $origin): array
     {
+        $headers = request()->headers->all();
+        $redactedHeaders = BiometricLogRedactor::redactHeaders($headers);
+
         return [
             'requested_url' => $origin['requested_url'],
             'origin_url' => $origin['origin_url'],
@@ -149,6 +153,7 @@ class ErrorReportService
             'ip' => request()->ip(),
             'referer' => request()->header('Referer'),
             'route' => request()->route()?->getName(),
+            'headers' => $redactedHeaders,
             'request_data' => $this->sanitizeRequestData(request()->all()),
         ];
     }
@@ -193,15 +198,7 @@ class ErrorReportService
 
     private function sanitizeRequestData(array $data): array
     {
-        $sensitiveFields = ['password', 'password_confirmation', 'token', 'api_key', 'secret'];
-
-        array_walk_recursive($data, function (&$value, $key) use ($sensitiveFields) {
-            if (is_string($key) && in_array(strtolower($key), $sensitiveFields, true)) {
-                $value = '***REDACTED***';
-            }
-        });
-
-        return $data;
+        return BiometricLogRedactor::redact($data);
     }
 
     public function determinePriority(Throwable $exception): string
@@ -384,7 +381,15 @@ class ErrorReportService
 
         if ($exception instanceof ValidationException) {
             $status = 422;
-            $message = 'Validation failed';
+            $message = $exception->getMessage() ?: 'Validation failed';
+
+            return response()->json([
+                'error' => true,
+                'message' => $message,
+                'errors' => $exception->errors(),
+                'status' => $status,
+                'timestamp' => now()->toISOString(),
+            ], $status);
         }
 
         return response()->json([
@@ -401,20 +406,16 @@ class ErrorReportService
             return null;
         }
 
-        if ($exception instanceof HttpException) {
-            $status = $exception->getStatusCode();
+        $status = $exception instanceof HttpException ? $exception->getStatusCode() : 500;
+        $viewName = "errors.filament.{$status}";
 
-            if (view()->exists("errors.filament.{$status}")) {
-                return response()->view("errors.filament.{$status}", [
-                    'exception' => $exception,
-                    'reportable' => true,
-                ], $status);
-            }
+        if (view()->exists($viewName)) {
+            return response()->view($viewName, [
+                'exception' => $exception,
+                'reportable' => true,
+            ], $status);
         }
 
-        return response()->view('errors.filament.500', [
-            'exception' => $exception,
-            'reportable' => true,
-        ], 500);
+        return null;
     }
 }

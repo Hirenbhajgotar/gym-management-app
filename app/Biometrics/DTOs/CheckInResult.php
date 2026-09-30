@@ -21,6 +21,11 @@ readonly class CheckInResult
         return new self(true, 'granted', null, $attendance, $doorResult);
     }
 
+    public static function grantedWithoutAttendance(?DoorControlResult $doorResult = null): self
+    {
+        return new self(true, 'granted', null, null, $doorResult ?? DoorControlResult::notApplicable());
+    }
+
     public static function grantedNoDoor(Attendances $attendance): self
     {
         // attendance_only device
