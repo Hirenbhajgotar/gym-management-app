@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Biometrics\ValueObjects\AdmsCommandKey;
 use App\Enums\AdmsCommandStatusEnum;
 use App\Models\AdmsDeviceCommand;
 use Illuminate\Console\Command;
@@ -27,6 +28,7 @@ class ReclaimStaleDeviceCommands extends Command
 
         $reclaimedCount = 0;
         $failedCount = 0;
+        $maxAttempts = AdmsCommandKey::maxAttempts();
 
         AdmsDeviceCommand::query()
             ->where('status', AdmsCommandStatusEnum::SENT)
@@ -38,9 +40,9 @@ class ReclaimStaleDeviceCommands extends Command
                             ->where('expires_at', '<', now());
                     });
             })
-            ->chunkById(100, function ($staleCommands) use (&$reclaimedCount, &$failedCount) {
+            ->chunkById(100, function ($staleCommands) use (&$reclaimedCount, &$failedCount, $maxAttempts) {
                 foreach ($staleCommands as $command) {
-                    if ($command->attempt_count >= 3) {
+                    if ($command->attempt_count >= $maxAttempts) {
                         $affected = AdmsDeviceCommand::query()
                             ->where('id', $command->id)
                             ->where('status', AdmsCommandStatusEnum::SENT)
@@ -54,7 +56,7 @@ class ReclaimStaleDeviceCommands extends Command
                         if ($affected > 0) {
                             $failedCount++;
 
-                            Log::warning('ADMS: Device command failed after maximum retry attempts (3)', [
+                            Log::warning("ADMS: Device command failed after maximum retry attempts ({$maxAttempts})", [
                                 'command_id' => $command->id,
                                 'device_id' => $command->device_id,
                                 'gym_id' => $command->gym_id,

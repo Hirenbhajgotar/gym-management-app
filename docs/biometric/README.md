@@ -13,11 +13,13 @@ Comprehensive technical documentation for the biometric hardware integration, ac
 - **[Biometric Provider Abstraction](feature/biometric-provider-abstraction.md)**: Pluggable AI providers (AWS Rekognition, Azure Face API, BioID, local models, custom HTTP).
 - **[Biometric Consent System](feature/biometric-consent-system.md)**: DPDP Act / GDPR compliance, cryptographic token signing, and mandatory pre-enrollment consent.
 
-### 2. Architecture Decision Records (`docs/biometric/architecture/`)
+### 2. Architecture Decision Records (`docs/biometric/architecture/` & `docs/adr/`)
 - **[ADR-001: Biometric Provider Abstraction](architecture/ADR-001-biometric-provider-abstraction.md)**
 - **[ADR-002: Door Access & Attendance Integrity](architecture/ADR-002-door-access-attendance-integrity.md)**
 - **[ADR-003: Consent Before Enrollment](architecture/ADR-003-consent-before-enrollment.md)**
 - **[ADR-004: ADMS Push Protocol and Hardware Lifecycle Management](architecture/ADR-004-adms-push-protocol-and-lifecycle.md)**
+- **[ADR-0001: Biometric System Architecture](../adr/adr-0001-biometric-implementation.md)**
+- **[ADR-0002: Biometric Enrollment & Device Reconciliation](../adr/adr-0002-biometric-enrollment-and-device-reconciliation.md)**
 
 ### 3. Database Schema & Field References (`docs/biometric/database/`)
 - **[`biometric_devices`](database/biometric-devices-fields.md)**: Hardware devices, provider configurations, serial numbers, door zones, and ADMS toggle.

@@ -366,9 +366,9 @@ class GymMember extends Model
             ->first();
     }
 
-    public function hasActiveBiometricConsent(): bool
+    public function hasActiveBiometricConsent(bool $fresh = false): bool
     {
-        if (array_key_exists('biometric_consents_exists', $this->attributes)) {
+        if (! $fresh && array_key_exists('biometric_consents_exists', $this->attributes)) {
             return (bool) $this->attributes['biometric_consents_exists'];
         }
 

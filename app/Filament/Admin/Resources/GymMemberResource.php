@@ -7,6 +7,7 @@ namespace App\Filament\Admin\Resources;
 use App\Enums\DefaultRole;
 use App\Enums\PaymentStatus;
 use App\Events\BiometricConsentRevoked;
+use App\Filament\Admin\Actions\EnrollBiometricAction;
 use App\Filament\Admin\Resources\GymMemberResource\Pages\CreateGymMember;
 use App\Filament\Admin\Resources\GymMemberResource\Pages\EditGymMember;
 use App\Filament\Admin\Resources\GymMemberResource\Pages\ListGymMembers;
@@ -19,6 +20,7 @@ use App\Jobs\SendBiometricConsentEmail;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\Trainer;
+use App\Models\User;
 use App\Rules\ValidEmailDomain;
 use Closure;
 use Filament\Facades\Filament;
@@ -131,6 +133,12 @@ class GymMemberResource extends BaseResource
     {
         return $table
             ->modifyQueryUsing(function (EloquentBuilder $query) {
+                // Eager-load gyms on auth user to avoid per-row N+1 in policy
+                $user = auth()->user();
+                if ($user instanceof User && ! $user->relationLoaded('gyms')) {
+                    $user->load('gyms');
+                }
+
                 // Eager-load biometric consent existence to avoid N+1 queries
                 $query->withExists(['biometricConsents' => function (EloquentBuilder $query) {
                     $query->whereColumn('biometric_consents.gym_id', 'gym_members.gym_id')
@@ -280,7 +288,7 @@ class GymMemberResource extends BaseResource
                     ->label('Frozen Until')
                     ->date('M j, Y')
                     ->placeholder('-')
-                    ->visible(fn ($record) => $record?->isFrozen() ?? true)
+                    ->visible(fn (?GymMember $record): bool => $record !== null ? $record->isFrozen() : true)
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 IconColumn::make('allow_whatsapp_marketing')
@@ -416,6 +424,8 @@ class GymMemberResource extends BaseResource
                     ]),
 
                 ActionGroup::make([
+                    EnrollBiometricAction::make(),
+
                     Action::make('quick_measure')
                         ->label('Measure')
                         ->icon('heroicon-o-scale')
@@ -469,8 +479,10 @@ class GymMemberResource extends BaseResource
                                 ->default(true)
                                 ->hidden(fn (GymMember $record) => $record->isFrozen())
                                 ->helperText(function (GymMember $record) {
-                                    $min = (int) ($record->gym?->getSetting('min_freeze_days', GymMember::DEFAULT_MIN_FREEZE_DAYS) ?? GymMember::DEFAULT_MIN_FREEZE_DAYS);
-                                    $max = (int) ($record->gym?->getSetting('max_freeze_days', GymMember::DEFAULT_MAX_FREEZE_DAYS) ?? GymMember::DEFAULT_MAX_FREEZE_DAYS);
+                                    $minSetting = $record->gym?->getSetting('min_freeze_days', GymMember::DEFAULT_MIN_FREEZE_DAYS);
+                                    $min = is_numeric($minSetting) ? (int) $minSetting : GymMember::DEFAULT_MIN_FREEZE_DAYS;
+                                    $maxSetting = $record->gym?->getSetting('max_freeze_days', GymMember::DEFAULT_MAX_FREEZE_DAYS);
+                                    $max = is_numeric($maxSetting) ? (int) $maxSetting : GymMember::DEFAULT_MAX_FREEZE_DAYS;
 
                                     return "If checked, membership end date will be extended for freeze durations between {$min} and {$max} days.";
                                 }),
@@ -503,7 +515,7 @@ class GymMemberResource extends BaseResource
                                     ->success()
                                     ->send();
                             } else {
-                                $days = isset($data['days']) && $data['days'] > 0 ? (int) $data['days'] : null;
+                                $days = isset($data['days']) && is_numeric($data['days']) && (int) $data['days'] > 0 ? (int) $data['days'] : null;
                                 $extend = (bool) ($data['extend_membership'] ?? false);
                                 $oldEnd = $record->membership_end?->toDateString();
 

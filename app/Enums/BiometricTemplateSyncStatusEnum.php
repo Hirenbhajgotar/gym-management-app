@@ -9,6 +9,8 @@ use Filament\Support\Contracts\HasLabel;
 
 enum BiometricTemplateSyncStatusEnum: string implements HasColor, HasLabel
 {
+    case Pending = 'pending';
+    case Propagated = 'propagated';
     case Synced = 'synced';
     case PendingDeletion = 'pending_deletion';
     case Deleted = 'deleted';
@@ -17,6 +19,8 @@ enum BiometricTemplateSyncStatusEnum: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
+            self::Pending => 'Pending',
+            self::Propagated => 'Propagated',
             self::Synced => 'Synced',
             self::PendingDeletion => 'Pending Hardware Deletion',
             self::Deleted => 'Deleted',
@@ -27,8 +31,10 @@ enum BiometricTemplateSyncStatusEnum: string implements HasColor, HasLabel
     public function getColor(): string
     {
         return match ($this) {
+            self::Pending => 'info',
+            self::Propagated => 'warning',
             self::Synced => 'success',
-            self::PendingDeletion => 'warning',
+            self::PendingDeletion => 'danger',
             self::Deleted => 'danger',
             self::Superseded => 'gray',
         };

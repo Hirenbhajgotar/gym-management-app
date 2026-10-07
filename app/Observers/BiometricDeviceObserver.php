@@ -58,6 +58,14 @@ class BiometricDeviceObserver implements ShouldHandleEventsAfterCommit
     {
         ParserHelper::clearCache(BiometricDevice::NAVIGATION_BADGE_CACHE_KEY . $biometricDevice->gym_id);
 
+        $gymIds = array_filter([
+            $biometricDevice->getOriginal('gym_id'),
+            $biometricDevice->gym_id,
+        ], fn (mixed $id): bool => is_numeric($id));
+        foreach ($gymIds as $gymId) {
+            Cache::forget("biometric:gym:{$gymId}:has_adms_devices");
+        }
+
         $serials = array_filter([
             $biometricDevice->getOriginal('device_serial'),
             $biometricDevice->device_serial,

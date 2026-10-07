@@ -18,22 +18,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 - **Door Controller TLS SNI (`DoorControlService`)**:
   - Replaced IP-in-URL rewriting with `CURLOPT_RESOLVE` to prevent DNS rebinding TOCTOU without breaking TLS SNI certificate validation on HTTPS door controllers.
-- **Member Biometric Enrollment (`EnrollMember`)**:
+- **Member Biometric Enrollment (`EnrollBiometricAction`)**:
+  - Unified enrollment into modal action `EnrollBiometricAction` on Gym Member resource, deprecating and retiring the standalone `EnrollMember` page.
   - Replaced invalid `user_info` command type with `user_add`.
-  - Added template ID to `idempotency_key` (`user_add:{device}:{member}:{template}`) and added `UniqueConstraintViolationException` handling and failure notification to operator.
-  - Made form field `sendToDeviceEnabled` authoritative and removed redundant public `$sendToDeviceToggle` property.
-  - Restored filter in `getMembers()` to exclude members already actively enrolled on the selected device.
-  - Fixed cross-tenant device query in `getDefaultBiometricType()`.
-  - Bounded `rawBiometricData` input length to 16,000 characters.
+  - Canonical `idempotency_key` format (`user_add:{gym_id}:{device_id}:{member_id}[:stage]:{template_id}`) with `UniqueConstraintViolationException` handling and failure notification to operator.
+  - Sibling terminals in the same gym are automatically provisioned via `BiometricTemplatePropagator` with `Propagated` lifecycle status.
 - **Command Cancellation & Idempotency (`AdmsDeviceCommand`)**:
+  - Added `cancelInFlightFor()` static helper ensuring correct SQL NULL-key semantics across cancel blocks.
   - Added `markCancelled()` method that sets status to `CANCELLED` (for both `PENDING` and `SENT` commands) and clears `idempotency_key` to prevent collisions upon retry.
   - Added `cancelDeleteCommands()` static helper for batch cancellation across writers.
-  - Released `idempotency_key` on terminal command execution in `markAcknowledged()`.
+  - Preserved `idempotency_key` across command execution and failures in `markAcknowledged()`, enabling reconcilers to re-drive existing failed commands within retry caps.
   - Reset `attempt_count` to 0 on Filament command resend (both single and bulk actions).
-- **Superseded Template Cleanup (`CleanupSupersededTemplatesCommand`)**:
-  - Validates `--days > 0` to prevent accidental immediate purge.
+- **Nightly Enrollment Reconciler (`ReconcileBiometricEnrollmentsCommand`)**:
+  - Nightly scheduled reconciliation for active `Synced` and `Propagated` templates, queueing replacement `user_add` commands when hardware delivery commands are missing or failed, with safeguards for archived/expired members and live de-provisioning commands.
+- **Durable Hardware Delivery Tracking (`BiometricTemplate`)**:
+  - Added `hardware_confirmed_at` timestamp column and data migration to record when hardware acknowledges credential installation across active templates, preserving delivery evidence independently of command log pruning.
+  - A hardware acknowledgement is terminal confirmation: `AdmsDeviceCommand::reconcileUserAdd()` now promotes a `Pending` placeholder to `Synced` and activates it, so the 7-day abandoned-placeholder sweep can no longer revoke a credential the terminal is holding.
+- **Superseded & Pending Placeholder Cleanup (`CleanupSupersededTemplatesCommand`)**:
+  - Validates `--days > 0` and `--pending-days > 0` to prevent accidental immediate retirement.
   - Chunks records with `chunkById(100)` for memory safety.
-  - Purges superseded database rows without enqueuing hardware `user_delete` commands, ensuring live re-enrolled credentials on devices are not deleted.
+  - Retires `Superseded` rows with a **soft delete** rather than destroying them, satisfying OpenSpec §3's "kept for audit/retention"; a `superseded_reason` discriminator distinguishes a plain re-enrolment from an operator overriding a GDPR Art. 17 erasure request, and the override is written to the activity log.
+  - Pending placeholders delivered to hardware are handed to `BiometricDeProvisioner`, which emits a `user_delete` and parks the row at `PendingDeletion`; the command summary now reports those separately instead of counting them as purged.
+  - Placeholders that were never delivered are retired outright, because there is no hardware credential to erase.
+- **Consent Gate on Command Resend (`AdmsDeviceCommandResource`)**:
+  - `resend` and `resendSelected` now refuse to re-queue a `user_add`/`user_update` when the target member has no active `BiometricConsent` (ADR-003 / OpenSpec §4). `user_delete` is exempt so erasure remains possible after consent is revoked.
+- **Permission Sync Dynamic Set (`SyncPermissionsCommand`)**:
+  - Strict separation between Filament-discovered permissions and hardcoded dynamic defaults: `permissions:sync` applies discovered permissions by default (falling back to dynamic defaults only if discovery resolves empty). Added explicit `--include-dynamic` flag to opt into merging dynamic default permissions, with per-role change logging.
 - **Webhook & Event Response Handling (`BiometricWebhookController`)**:
   - Added missing denial reasons (`no_active_check_in`, `already_checked_in`, `anti_passback`, `device_offline`, `untrusted_door_controller_url`).
   - Propagates `$doorResult->failureReason` in response and adjusts display message/LED to warning when check-in succeeds but door fails to unlock.

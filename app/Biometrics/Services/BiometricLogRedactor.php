@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Biometrics\Services;
 
+use App\Enums\DefaultRole;
+use App\Models\User;
+use Throwable;
+
 class BiometricLogRedactor
 {
     /**
@@ -17,6 +21,13 @@ class BiometricLogRedactor
         'token',
         'secret',
         'password',
+        'failure_reason',
+        'failurereason',
+        'error',
+        'errors',
+        'exception',
+        'idempotency_key',
+        'idempotencykey',
         'photo',
         'image',
         'data',
@@ -150,6 +161,41 @@ class BiometricLogRedactor
     }
 
     /**
+     * Redacts command payloads for presentation in Filament views and tables.
+     * Hides raw technical failure_reason from unprivileged roles (only super_admin, admin, gym_owner, manager can view raw details).
+     *
+     * @param  array<array-key, mixed>  $data
+     * @return array<array-key, mixed>
+     */
+    public static function redactForPresentation(array $data, ?User $user = null): array
+    {
+        $redacted = self::redact($data);
+
+        $isPrivileged = $user !== null && $user->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+            DefaultRole::MANAGER->value,
+        ]);
+
+        if (! $isPrivileged) {
+            if (isset($redacted['failure_reason'])) {
+                $redacted['failure_reason'] = '[REDACTED]';
+            }
+
+            if (isset($redacted['Name']) && is_string($redacted['Name'])) {
+                $redacted['Name'] = self::mask($redacted['Name']);
+            }
+
+            if (isset($redacted['name']) && is_string($redacted['name'])) {
+                $redacted['name'] = self::mask($redacted['name']);
+            }
+        }
+
+        return $redacted;
+    }
+
+    /**
      * Recursively redacts sensitive biometric and credential keys from an array.
      *
      * @param  array<array-key, mixed>  $data
@@ -163,7 +209,9 @@ class BiometricLogRedactor
             $keyStr = (string) $key;
             $normalizedKey = strtolower(str_replace(['_', '-'], '', $keyStr));
 
-            if (self::isSensitiveKey($keyStr, $normalizedKey)) {
+            if ($value instanceof Throwable) {
+                $redacted[$key] = '[EXCEPTION: ' . get_class($value) . ']';
+            } elseif (self::isSensitiveKey($keyStr, $normalizedKey)) {
                 $redacted[$key] = is_string($value) && strlen($value) > 4
                     ? substr($value, 0, 2) . '***' . substr($value, -2)
                     : '***';

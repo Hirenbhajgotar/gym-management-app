@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Permissions;
 
+use App\Filament\Admin\Resources\GymMemberResource;
+use App\Models\GymMember;
 use App\Services\RolesAndPermissionsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionClass;
 use Tests\TestCase;
 
 class FilamentPermissionDiscoveryTest extends TestCase
@@ -22,46 +25,10 @@ class FilamentPermissionDiscoveryTest extends TestCase
     }
 
     #[Test]
-    public function it_derives_slug_from_resource_class_name(): void
+    public function it_derives_slug_from_model_or_resource(): void
     {
-        $this->assertSame('gym_member', $this->service->deriveSlugFromClassName('GymMemberResource', 'Resource'));
-        $this->assertSame('membership_plan', $this->service->deriveSlugFromClassName('MembershipPlanResource', 'Resource'));
-        $this->assertSame('biometric_device', $this->service->deriveSlugFromClassName('BiometricDeviceResource', 'Resource'));
-    }
-
-    #[Test]
-    public function it_derives_slug_from_page_class_name(): void
-    {
-        $this->assertSame('dashboard', $this->service->deriveSlugFromClassName('DashboardPage', 'Page'));
-        $this->assertSame('qr_code_manager', $this->service->deriveSlugFromClassName('QrCodeManagerPage', 'Page'));
-        $this->assertSame('system_health', $this->service->deriveSlugFromClassName('SystemHealthPage', 'Page'));
-    }
-
-    #[Test]
-    public function it_derives_slug_from_widget_class_name(): void
-    {
-        $this->assertSame('gym_revenue_chart', $this->service->deriveSlugFromClassName('GymRevenueChartWidget', 'Widget'));
-        $this->assertSame('membership_expiry_alerts', $this->service->deriveSlugFromClassName('MembershipExpiryAlertsWidget', 'Widget'));
-    }
-
-    #[Test]
-    public function it_handles_single_word_class_names(): void
-    {
-        $this->assertSame('payment', $this->service->deriveSlugFromClassName('Payment', 'Resource'));
-        $this->assertSame('dashboard', $this->service->deriveSlugFromClassName('Dashboard', 'Page'));
-        $this->assertSame('chart', $this->service->deriveSlugFromClassName('Chart', 'Widget'));
-    }
-
-    #[Test]
-    public function it_handles_class_name_without_suffix(): void
-    {
-        $this->assertSame('gym_member', $this->service->deriveSlugFromClassName('GymMember', 'Resource'));
-    }
-
-    #[Test]
-    public function it_handles_consecutive_capitals(): void
-    {
-        $this->assertSame('lead_kanban_board', $this->service->deriveSlugFromClassName('LeadKanbanBoardPage', 'Page'));
+        $reflection = new ReflectionClass(GymMemberResource::class);
+        $this->assertSame('gym_member', $this->service->deriveSlugFromModelOrResource(GymMember::class, $reflection));
     }
 
     #[Test]
@@ -69,7 +36,6 @@ class FilamentPermissionDiscoveryTest extends TestCase
     {
         $permissions = $this->service->generateResourcePermissions('gym_member');
 
-        $this->assertIsArray($permissions);
         $this->assertNotEmpty($permissions);
 
         foreach ($permissions as $permission) {
@@ -96,6 +62,7 @@ class FilamentPermissionDiscoveryTest extends TestCase
     {
         $permissions = $this->service->generateResourcePermissions('trainer');
 
+        /** @var array<int, string> $expectedActions */
         $expectedActions = config('filament-permissions.resource_actions', []);
         $this->assertCount(count($expectedActions), $permissions);
 
@@ -137,7 +104,6 @@ class FilamentPermissionDiscoveryTest extends TestCase
     {
         $permissions = $this->service->discoverFilamentPermissions();
 
-        $this->assertIsArray($permissions);
         $this->assertNotEmpty($permissions);
         $this->assertContains('view_any_gym_member', $permissions);
         $this->assertContains('view_gym_member', $permissions);
@@ -146,18 +112,20 @@ class FilamentPermissionDiscoveryTest extends TestCase
     #[Test]
     public function it_discovers_page_permissions(): void
     {
+        /** @var array<int, string> $permissions */
         $permissions = $this->service->discoverFilamentPermissions();
 
-        $pagePermissions = array_filter($permissions, fn ($p) => str_starts_with($p, 'page_'));
+        $pagePermissions = array_filter($permissions, fn (string $p): bool => str_starts_with($p, 'page_'));
         $this->assertNotEmpty($pagePermissions);
     }
 
     #[Test]
     public function it_discovers_widget_permissions(): void
     {
+        /** @var array<int, string> $permissions */
         $permissions = $this->service->discoverFilamentPermissions();
 
-        $widgetPermissions = array_filter($permissions, fn ($p) => str_starts_with($p, 'widget_'));
+        $widgetPermissions = array_filter($permissions, fn (string $p): bool => str_starts_with($p, 'widget_'));
         $this->assertNotEmpty($widgetPermissions);
     }
 
@@ -182,8 +150,10 @@ class FilamentPermissionDiscoveryTest extends TestCase
     {
         $permissions = $this->service->discoverFilamentPermissions();
 
-        $slug = $this->service->deriveSlugFromClassName('BaseEmployeeResource', 'Resource');
-        foreach (config('filament-permissions.resource_actions', []) as $action) {
+        $slug = 'base_employee';
+        /** @var array<int, string> $resourceActions */
+        $resourceActions = config('filament-permissions.resource_actions', []);
+        foreach ($resourceActions as $action) {
             $this->assertNotContains("{$action}_{$slug}", $permissions);
         }
     }
@@ -191,6 +161,7 @@ class FilamentPermissionDiscoveryTest extends TestCase
     #[Test]
     public function it_generates_correct_permission_format_for_resources(): void
     {
+        /** @var array<int, string> $permissions */
         $permissions = $this->service->discoverFilamentPermissions();
 
         foreach ($permissions as $permission) {
@@ -232,7 +203,6 @@ class FilamentPermissionDiscoveryTest extends TestCase
         $permissions = $this->service->discoverFilamentPermissions();
 
         $expectedPages = [
-            'page_enroll_member',
             'page_expense_reports',
             'page_reports_dashboard',
         ];
@@ -263,6 +233,7 @@ class FilamentPermissionDiscoveryTest extends TestCase
     #[Test]
     public function it_uses_config_panel_ids_for_filtering(): void
     {
+        /** @var array<int, string> $panels */
         $panels = config('filament-permissions.panels', []);
         $this->assertContains('admin', $panels);
         $this->assertNotContains('super_admin', $panels);
@@ -271,6 +242,7 @@ class FilamentPermissionDiscoveryTest extends TestCase
     #[Test]
     public function it_has_resource_actions_configured(): void
     {
+        /** @var array<int, string> $actions */
         $actions = config('filament-permissions.resource_actions', []);
         $this->assertNotEmpty($actions);
         $this->assertContains('view_any', $actions);

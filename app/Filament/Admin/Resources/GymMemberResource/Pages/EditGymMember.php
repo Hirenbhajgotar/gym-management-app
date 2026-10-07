@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Resources\GymMemberResource\Pages;
 
 use App\Enums\DefaultRole;
+use App\Filament\Admin\Actions\EnrollBiometricAction;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Filament\Admin\Resources\GymMemberResource\Widgets\MemberProgressChart;
 use App\Models\GymMember;
@@ -24,6 +25,8 @@ class EditGymMember extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            EnrollBiometricAction::makeForHeader(),
+
             Action::make('view_invoice')
                 ->label('View Invoice')
                 ->icon('heroicon-o-document-text')

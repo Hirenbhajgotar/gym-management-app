@@ -6498,137 +6498,6 @@ parameters:
 			count: 1
 			path: app/Filament/Admin/Components/DatePresets.php
 
-		-
-			message: '#^Access to an undefined property App\\Filament\\Admin\\Pages\\BiometricDevice\\EnrollMember\:\:\$form\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Call to an undefined method App\\Enums\\BiometricTypeEnum\:\:label\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Cannot access offset ''device'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Cannot access offset ''enrolled_at'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Cannot access offset ''type'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Cannot call method fill\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Method App\\Filament\\Admin\\Pages\\BiometricDevice\\EnrollMember\:\:getDefaultBiometricType\(\) should return string\|null but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Method App\\Filament\\Admin\\Pages\\BiometricDevice\\EnrollMember\:\:getDevices\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Method App\\Filament\\Admin\\Pages\\BiometricDevice\\EnrollMember\:\:getMembers\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\BiometricTemplate\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Parameter \#1 \$rules of method Filament\\Pages\\BasePage\:\:validate\(\) expects array\<string, array\<mixed\>\>\|null, array\<string, string\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Parameter \#1 \$string of function base64_decode expects string, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Parameter \#3 \$templateRef of method App\\Filament\\Admin\\Pages\\BiometricDevice\\EnrollMember\:\:sendToDevice\(\) expects string, string\|false given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Part \$template\[''device''\] \(mixed\) of encapsed string cannot be cast to string\.$#'
-			identifier: encapsedStringPart.nonString
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Part \$template\[''enrolled_at''\] \(mixed\) of encapsed string cannot be cast to string\.$#'
-			identifier: encapsedStringPart.nonString
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Part \$template\[''type''\] \(mixed\) of encapsed string cannot be cast to string\.$#'
-			identifier: encapsedStringPart.nonString
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Property App\\Filament\\Admin\\Pages\\BiometricDevice\\EnrollMember\:\:\$enrolledTemplates type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\BiometricTemplate\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:all\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>device_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Filament/Admin/Pages/BiometricDevice/EnrollMember.php
 
 		-
 			message: '#^Method App\\Filament\\Admin\\Pages\\Dashboard\:\:canAccess\(\) has parameter \$parameters with no value type specified in iterable type array\.$#'
@@ -27642,3 +27511,15 @@ parameters:
 			identifier: missingType.generics
 			count: 1
 			path: app/Tables/Columns/AssignedMembersColumn.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 2
+			path: app/Models/BiometricTemplate.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type App\\Enums\\BiometricTemplateSyncStatusEnum\. Use \-> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Models/BiometricTemplate.php

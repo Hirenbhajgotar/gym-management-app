@@ -27,6 +27,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class AdmsDeviceCommandResource extends BaseResource
 {
@@ -57,13 +58,21 @@ class AdmsDeviceCommandResource extends BaseResource
     public function defaultRolePermissions(): array
     {
         return [
-            DefaultRole::MANAGER->value => [
+            DefaultRole::SUPER_ADMIN->value => [
                 'view',
                 'view_any',
                 'delete',
                 'delete_any',
             ],
-            DefaultRole::RECEPTIONIST->value => ['view', 'view_any'],
+            DefaultRole::GYM_OWNER->value => [
+                'view',
+                'view_any',
+            ],
+            DefaultRole::MANAGER->value => [
+                'view',
+                'view_any',
+            ],
+            DefaultRole::RECEPTIONIST->value => [],
             DefaultRole::TRAINER->value => [],
         ];
     }
@@ -78,6 +87,15 @@ class AdmsDeviceCommandResource extends BaseResource
         if (! $tenant) {
             /** @var Builder<AdmsDeviceCommand> $query */
             $query = parent::getEloquentQuery();
+
+            $user = auth()->user();
+            if ($user && ! $user->hasRole(DefaultRole::SUPER_ADMIN->value)) {
+                $userGymIds = $user->relationLoaded('gyms')
+                    ? $user->gyms->pluck('id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->all()
+                    : $user->gyms()->pluck('gyms.id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->all();
+
+                return $query->whereIn('gym_id', $userGymIds);
+            }
 
             return $query;
         }
@@ -124,7 +142,9 @@ class AdmsDeviceCommandResource extends BaseResource
                             return $state;
                         }
 
-                        return json_encode(BiometricLogRedactor::redact($state), JSON_UNESCAPED_SLASHES);
+                        $redacted = BiometricLogRedactor::redactForPresentation($state, auth()->user());
+
+                        return json_encode($redacted, JSON_UNESCAPED_SLASHES);
                     })
                     ->limit(40)
                     ->tooltip(function (?AdmsDeviceCommand $record) {
@@ -132,7 +152,9 @@ class AdmsDeviceCommandResource extends BaseResource
                             return null;
                         }
 
-                        return json_encode(BiometricLogRedactor::redact($record->command_payload), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                        $redacted = BiometricLogRedactor::redactForPresentation($record->command_payload, auth()->user());
+
+                        return json_encode($redacted, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                     })
                     ->placeholder('—'),
 
@@ -178,12 +200,18 @@ class AdmsDeviceCommandResource extends BaseResource
                     ->label('Resend')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
-                    ->authorize(fn (AdmsDeviceCommand $record): bool => auth()->user()?->can('resend', $record) ?? false)
+                    ->authorize(fn (AdmsDeviceCommand $record): bool => self::canResend($record))
                     ->visible(fn (AdmsDeviceCommand $record): bool => $record->status === AdmsCommandStatusEnum::FAILED || ($record->status === AdmsCommandStatusEnum::SENT && $record->sent_at?->diffInHours(now()) >= 1))
                     ->requiresConfirmation()
                     ->modalHeading('Resend Command to Device')
                     ->modalDescription('This will reset the command status to pending so the device fetches it on the next poll.')
                     ->action(function (AdmsDeviceCommand $record): void {
+                        if (! self::canResend($record)) {
+                            self::refuseResend($record);
+
+                            return;
+                        }
+
                         $record->update([
                             'status' => AdmsCommandStatusEnum::PENDING,
                             'attempt_count' => 0,
@@ -211,20 +239,45 @@ class AdmsDeviceCommandResource extends BaseResource
                         ->requiresConfirmation()
                         ->action(function (Collection $records): void {
                             $count = 0;
+                            $consentBlocked = 0;
                             /** @var AdmsDeviceCommand $record */
                             foreach ($records as $record) {
-                                if ($record->status === AdmsCommandStatusEnum::FAILED || ($record->status === AdmsCommandStatusEnum::SENT && $record->sent_at?->diffInHours(now()) >= 1)) {
-                                    $record->update([
-                                        'status' => AdmsCommandStatusEnum::PENDING,
-                                        'attempt_count' => 0,
-                                        'sent_at' => null,
-                                        'leased_at' => null,
-                                        'expires_at' => null,
-                                        'acknowledged_at' => null,
-                                        'device_return_code' => null,
-                                    ]);
-                                    $count++;
+                                // Per-record authorization stays: the bulk action must never
+                                // re-queue a command from another gym.
+                                if (! self::isAuthorizedToResend($record)) {
+                                    continue;
                                 }
+
+                                if ($record->status !== AdmsCommandStatusEnum::FAILED
+                                    && ! ($record->status === AdmsCommandStatusEnum::SENT && $record->sent_at?->diffInHours(now()) >= 1)) {
+                                    continue;
+                                }
+
+                                if (! $record->isConsentPermitted()) {
+                                    $consentBlocked++;
+                                    self::refuseResend($record);
+
+                                    continue;
+                                }
+
+                                $record->update([
+                                    'status' => AdmsCommandStatusEnum::PENDING,
+                                    'attempt_count' => 0,
+                                    'sent_at' => null,
+                                    'leased_at' => null,
+                                    'expires_at' => null,
+                                    'acknowledged_at' => null,
+                                    'device_return_code' => null,
+                                ]);
+                                $count++;
+                            }
+
+                            if ($consentBlocked > 0) {
+                                Notification::make()
+                                    ->title("{$consentBlocked} command(s) blocked")
+                                    ->body('Re-queue refused: the member no longer has active biometric consent, or the target member could not be resolved. Enrolment requires consent on file (ADR-003).')
+                                    ->danger()
+                                    ->send();
                             }
 
                             Notification::make()
@@ -236,6 +289,47 @@ class AdmsDeviceCommandResource extends BaseResource
                         ->authorize(fn (): bool => auth()->user()?->can('deleteAny', AdmsDeviceCommand::class) ?? false),
                 ]),
             ]);
+    }
+
+    /**
+     * Determine whether a single command may be re-queued.
+     *
+     * A `user_add` or `user_update` pushes the member's PIN and name back onto a terminal,
+     * so it must not be re-queued once biometric consent is absent or revoked
+     * (ADR-003 / OpenSpec §4). An unresolvable target member is refused too, because
+     * consent cannot be proven for a member we cannot identify.
+     */
+    public static function canResend(AdmsDeviceCommand $record): bool
+    {
+        return self::isAuthorizedToResend($record) && $record->isConsentPermitted();
+    }
+
+    /**
+     * Determine whether the signed-in user may re-queue this specific command.
+     *
+     * Kept separate from the consent gate so the bulk action can skip a command that belongs
+     * to another tenant silently, while still telling the operator about a command that was
+     * authorized but refused by the consent gate.
+     */
+    public static function isAuthorizedToResend(AdmsDeviceCommand $record): bool
+    {
+        return auth()->user()?->can('resend', $record) ?? false;
+    }
+
+    protected static function refuseResend(AdmsDeviceCommand $record): void
+    {
+        Log::warning('AdmsDeviceCommandResource: resend refused by biometric consent gate', [
+            'command_id' => $record->id,
+            'gym_id' => $record->gym_id,
+            'device_id' => $record->device_id,
+            'command_type' => $record->command_type,
+        ]);
+
+        Notification::make()
+            ->title('Resend Refused')
+            ->body('This command provisions biometric data on a device, but the member no longer has active biometric consent on file, or the target member could not be resolved. Renew consent before re-queueing.')
+            ->danger()
+            ->send();
     }
 
     public static function infolist(Infolist $infolist): Infolist
@@ -258,7 +352,7 @@ class AdmsDeviceCommandResource extends BaseResource
                     ->schema([
                         KeyValueEntry::make('command_payload')
                             ->label('Payload Data (Masked)')
-                            ->getStateUsing(fn (?AdmsDeviceCommand $record): array => is_array($record?->command_payload) ? BiometricLogRedactor::redact($record->command_payload) : [])
+                            ->getStateUsing(fn (?AdmsDeviceCommand $record): array => is_array($record?->command_payload) ? BiometricLogRedactor::redactForPresentation($record->command_payload, auth()->user()) : [])
                             ->visible(fn (?AdmsDeviceCommand $record): bool => is_array($record?->command_payload)),
                     ]),
             ]);

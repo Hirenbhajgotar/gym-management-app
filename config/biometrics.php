@@ -60,6 +60,45 @@ return [
         'command_retention_days' => (int) env('ADMS_COMMAND_RETENTION_DAYS', 90),
         'receipt_retention_days' => (int) env('ADMS_RECEIPT_RETENTION_DAYS', 30),
         'expired_member_grace_days' => (int) env('ADMS_EXPIRED_GRACE_DAYS', 10),
-        'throttle' => env('ADMS_THROTTLE_LIMIT', '120,1'),
+
+        /**
+         * Maximum hardware deliveries per command before it is considered exhausted.
+         *
+         * One "attempt" is one delivery to the terminal. Only `AdmsDeviceCommand::markSent()`
+         * and the stale-lease re-lease in `leaseNext()` increment the counter, so the
+         * device-answer path and the lease-timeout path both get exactly this many
+         * deliveries. Changing this value changes the retry budget for every writer.
+         */
+        'max_attempts' => (int) env('ADMS_MAX_ATTEMPTS', 3),
+
+        /**
+         * Hours an exhausted `user_delete` is left alone before the nightly reconciler
+         * will re-drive it. Prevents a deterministic firmware fault from producing
+         * hardware writes every night, while keeping the obligation self-healing.
+         */
+        'retry_cooldown_hours' => (int) env('ADMS_RETRY_COOLDOWN_HOURS', 24),
+
+        /**
+         * Vendor `user_delete` return codes treated as "user already absent from terminal".
+         *
+         * These converge to ACKNOWLEDGED because the terminal no longer holds the credential,
+         * which satisfies the GDPR Art. 17 erasure obligation. ZKTeco and eSSL firmware use
+         * different conventions, so the list is operator-configurable. Every convergence
+         * decision is logged with the raw code by `markAcknowledged()`.
+         *
+         * @var array<int, string>
+         */
+        'deletion_convergence_codes' => array_values(array_filter(
+            array_map(
+                'strval',
+                explode(',', (string) env(
+                    'ADMS_DELETION_CONVERGENCE_CODES',
+                    '-101,not_exist,user_not_found,not_found'
+                ))
+            ),
+            fn (string $code): bool => $code !== ''
+        )),
     ],
+
+    'device_throttle' => filter_var(env('BIOMETRIC_DEVICE_THROTTLE', 120), FILTER_VALIDATE_INT, ['options' => ['default' => 120, 'min_range' => 0]]),
 ];

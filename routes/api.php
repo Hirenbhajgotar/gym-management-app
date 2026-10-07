@@ -225,7 +225,7 @@ Route::prefix('reports')->middleware(['auth:sanctum', 'tenant'])->group(function
 });
 
 // Biometric Device API Routes
-Route::prefix('v1/biometric')->middleware([AuthenticateBiometricDevice::class])->group(function () {
+Route::prefix('v1/biometric')->middleware(['throttle:biometric-api', AuthenticateBiometricDevice::class])->group(function () {
     Route::post('/check-in', [BiometricCheckInController::class, 'checkIn'])
         ->name('api.biometric.check-in');
     Route::post('/check-out', [BiometricCheckInController::class, 'checkOut'])
@@ -256,7 +256,7 @@ Route::post('/v1/biometric/webhook/{token}', [BiometricWebhookController::class,
 
 // ADMS Protocol Routes (eSSL/ZKTeco push protocol)
 Route::prefix('iclock')->middleware([
-    'throttle:' . config()->string('biometrics.adms.throttle', '120,1'),
+    'throttle:biometric-api',
     AuthenticateAdmsDevice::class,
 ])->group(function () {
     Route::match(['get', 'post'], '/cdata', [AdmsController::class, 'cdata'])
@@ -269,5 +269,5 @@ Route::prefix('iclock')->middleware([
 
 // Hikvision ISAPI event push (uses biometric device token auth)
 Route::post('/v1/biometric/hikvision/event', [HikvisionAdmsController::class, 'handleEvent'])
-    ->middleware([AuthenticateBiometricDevice::class])
+    ->middleware(['throttle:biometric-api', AuthenticateBiometricDevice::class])
     ->name('api.biometric.hikvision.event');

@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Biometrics\Services\BiometricDataDeletionService;
 use App\Biometrics\Services\OfflineSyncService;
+use App\Biometrics\ValueObjects\AdmsCommandKey;
 use App\Enums\AdmsCommandStatusEnum;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
@@ -245,5 +246,77 @@ class BiometricDeprovisioningAndLeaseTest extends TestCase
         $leased->refresh();
         $this->assertSame(AdmsCommandStatusEnum::FAILED, $leased->status);
         $this->assertSame('timeout_max_attempts', $leased->device_return_code);
+    }
+
+    public function test_delete_single_template_pending_not_delivered_marks_deleted_without_hardware_command(): void
+    {
+        $member = GymMember::factory()->create(['gym_id' => $this->gym->id]);
+
+        $template = BiometricTemplate::factory()->pending()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $member->id,
+            'enrolled_by_device_id' => $this->admsDevice->id,
+            'provider_type' => 'adms',
+            'template_ref' => null,
+            'is_active' => false,
+            'sync_status' => BiometricTemplateSyncStatusEnum::Pending,
+        ]);
+
+        /** @var BiometricDataDeletionService $deletionService */
+        $deletionService = resolve(BiometricDataDeletionService::class);
+        $result = $deletionService->deleteSingleTemplate($template);
+
+        $this->assertTrue($result);
+        $template->refresh();
+        $this->assertSame(BiometricTemplateSyncStatusEnum::Deleted, $template->sync_status);
+        $this->assertFalse($template->is_active);
+
+        // Hardware command was NOT emitted because credential was never acknowledged by hardware
+        $this->assertDatabaseMissing('adms_device_commands', [
+            'device_id' => $this->admsDevice->id,
+            'command_type' => 'user_delete',
+        ]);
+    }
+
+    public function test_delete_single_template_pending_delivered_emits_hardware_user_delete(): void
+    {
+        $member = GymMember::factory()->create(['gym_id' => $this->gym->id]);
+
+        $template = BiometricTemplate::factory()->pending()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $member->id,
+            'enrolled_by_device_id' => $this->admsDevice->id,
+            'provider_type' => 'adms',
+            'template_ref' => null,
+            'is_active' => false,
+            'sync_status' => BiometricTemplateSyncStatusEnum::Pending,
+        ]);
+
+        // Prior user_add for this template's own enrolment was ACKNOWLEDGED on terminal
+        AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->admsDevice->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => (string) $member->id, 'Name' => $member->name],
+            'status' => AdmsCommandStatusEnum::ACKNOWLEDGED,
+            'idempotency_key' => AdmsCommandKey::buildUserAdd($this->gym->id, $this->admsDevice->id, $member->id, $template->id),
+        ]);
+
+        /** @var BiometricDataDeletionService $deletionService */
+        $deletionService = resolve(BiometricDataDeletionService::class);
+        $result = $deletionService->deleteSingleTemplate($template);
+
+        $this->assertTrue($result);
+        $template->refresh();
+        $this->assertSame(BiometricTemplateSyncStatusEnum::PendingDeletion, $template->sync_status);
+        $this->assertFalse($template->is_active);
+
+        // Hardware user_delete command was queued (GDPR Art. 17)
+        $this->assertDatabaseHas('adms_device_commands', [
+            'device_id' => $this->admsDevice->id,
+            'command_type' => 'user_delete',
+            'command_payload->Pin' => (string) $member->id,
+            'status' => AdmsCommandStatusEnum::PENDING->value,
+        ]);
     }
 }

@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Biometrics\Services\BiometricDeProvisioner;
 use App\Biometrics\Services\RedisBiometricCacheService;
-use App\Enums\AdmsCommandStatusEnum;
+use App\Enums\BiometricDeProvisionOutcome;
 use App\Enums\BiometricTemplateSyncStatusEnum;
-use App\Models\AdmsDeviceCommand;
 use App\Models\Gym;
 use App\Models\GymMember;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -29,7 +28,7 @@ class CleanupExpiredDeviceMembers extends Command
         parent::__construct();
     }
 
-    public function handle(): int
+    public function handle(BiometricDeProvisioner $deProvisioner): int
     {
         $admsGraceDays = config()->integer('biometrics.adms.expired_member_grace_days', 10);
         $totalQueued = 0;
@@ -56,59 +55,38 @@ class CleanupExpiredDeviceMembers extends Command
                             ->with('enrolledByDevice');
                     },
                 ])
-                ->chunkById(100, function ($expiredMembers) use ($gym, &$totalMembers, &$totalQueued, $cutoffDate, $totalGraceDays) {
+                ->chunkById(100, function ($expiredMembers) use ($gym, $deProvisioner, &$totalMembers, &$totalQueued, $cutoffDate, $totalGraceDays) {
                     foreach ($expiredMembers as $member) {
                         $memberQueued = 0;
                         $templatesDeactivated = 0;
 
-                        DB::transaction(function () use ($member, $gym, &$memberQueued, &$templatesDeactivated) {
+                        DB::transaction(function () use ($member, $deProvisioner, &$memberQueued, &$templatesDeactivated) {
                             foreach ($member->biometricTemplates as $template) {
-                                $device = $template->enrolledByDevice;
-
-                                $pin = $template->resolvedCommandPin();
-
-                                if ($device && $device->adms_enabled) {
-                                    // Check for existing pending delete command to avoid duplicates
-                                    $existingCommand = AdmsDeviceCommand::query()
-                                        ->where('device_id', $device->id)
-                                        ->where('command_type', 'user_delete')
-                                        ->where('command_payload->Pin', $pin)
-                                        ->whereIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
-                                        ->exists();
-
-                                    if (! $existingCommand) {
-                                        try {
-                                            AdmsDeviceCommand::query()->create([
-                                                'gym_id' => $gym->id,
-                                                'device_id' => $device->id,
-                                                'command_type' => 'user_delete',
-                                                'command_payload' => ['Pin' => $pin],
-                                                'idempotency_key' => "user_delete:{$device->id}:{$pin}:{$template->id}",
-                                                'status' => AdmsCommandStatusEnum::PENDING,
-                                            ]);
-                                            $memberQueued++;
-                                        } catch (UniqueConstraintViolationException) {
-                                            // In-flight command already exists for this template
-                                        }
+                                if ($template->enrolled_by_device_id === null) {
+                                    if ($template->hasCloudProvider()) {
+                                        // Device exists (non-ADMS or inactive) or cloud provider template:
+                                        // do not claim confirmed deletion; track obligation as PendingDeletion
+                                        $template->update([
+                                            'is_active' => false,
+                                            'sync_status' => BiometricTemplateSyncStatusEnum::PendingDeletion,
+                                        ]);
+                                    } else {
+                                        // Truly no device and no cloud provider (local software mock)
+                                        $template->update([
+                                            'is_active' => false,
+                                            'sync_status' => BiometricTemplateSyncStatusEnum::Deleted,
+                                        ]);
                                     }
 
-                                    $template->update([
-                                        'is_active' => false,
-                                        'sync_status' => BiometricTemplateSyncStatusEnum::PendingDeletion,
-                                    ]);
-                                } elseif ($device || $template->hasCloudProvider()) {
-                                    // Device exists (non-ADMS or inactive) or cloud provider template:
-                                    // do not claim confirmed deletion; track obligation as PendingDeletion
-                                    $template->update([
-                                        'is_active' => false,
-                                        'sync_status' => BiometricTemplateSyncStatusEnum::PendingDeletion,
-                                    ]);
-                                } else {
-                                    // Truly no device and no cloud provider (local software mock)
-                                    $template->update([
-                                        'is_active' => false,
-                                        'sync_status' => BiometricTemplateSyncStatusEnum::Deleted,
-                                    ]);
+                                    $templatesDeactivated++;
+
+                                    continue;
+                                }
+
+                                $outcome = $deProvisioner->deprovision($template);
+
+                                if ($outcome === BiometricDeProvisionOutcome::Queued) {
+                                    $memberQueued++;
                                 }
 
                                 $templatesDeactivated++;

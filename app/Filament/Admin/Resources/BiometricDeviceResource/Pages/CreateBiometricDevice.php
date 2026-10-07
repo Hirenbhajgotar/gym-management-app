@@ -68,9 +68,9 @@ class CreateBiometricDevice extends CreateRecord
 
     protected function getCreatedNotification(): ?Notification
     {
-        /** @var BiometricDevice|null $record */
+        /** @var BiometricDevice $record */
         $record = $this->record;
-        $isAdms = (bool) ($record?->adms_enabled ?? false);
+        $isAdms = $record->adms_enabled;
 
         $notification = Notification::make()
             ->success()
@@ -90,18 +90,19 @@ class CreateBiometricDevice extends CreateRecord
         }
 
         if ($isAdms) {
-            $appUrl = config('app.url') ?: 'http://localhost';
+            $rawAppUrl = config('app.url');
+            $appUrl = is_string($rawAppUrl) && $rawAppUrl !== '' ? $rawAppUrl : 'http://localhost';
             $parsedUrl = parse_url($appUrl);
-            $serverHost = $parsedUrl['host'] ?? request()->getHost();
-            $scheme = $parsedUrl['scheme'] ?? (request()->isSecure() ? 'https' : 'http');
-            $serverPort = $parsedUrl['port'] ?? ($scheme === 'https' ? '443' : '80');
+            $serverHost = is_array($parsedUrl) ? ($parsedUrl['host'] ?? request()->getHost()) : request()->getHost();
+            $scheme = is_array($parsedUrl) ? ($parsedUrl['scheme'] ?? (request()->isSecure() ? 'https' : 'http')) : (request()->isSecure() ? 'https' : 'http');
+            $serverPort = is_array($parsedUrl) ? ($parsedUrl['port'] ?? ($scheme === 'https' ? '443' : '80')) : ($scheme === 'https' ? '443' : '80');
 
             $notification
                 ->title('Device registered (ADMS Active)')
                 ->body("Device added! Set ADMS Server: {$serverHost}:{$serverPort} on your terminal under Menu > Comm > Cloud Server Setting. Use 'ADMS Setup' in table actions to view full instructions.");
         }
 
-        if (! empty($actions)) {
+        if (filled($actions)) {
             $notification->actions($actions)->persistent();
         }
 

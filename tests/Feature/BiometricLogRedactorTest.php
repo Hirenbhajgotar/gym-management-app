@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Biometrics\Services\BiometricLogRedactor;
 use App\Services\ErrorReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RuntimeException;
 use Tests\TestCase;
 
 class BiometricLogRedactorTest extends TestCase
@@ -177,5 +178,58 @@ class BiometricLogRedactorTest extends TestCase
 
         // Safe allow-listed header preserved
         $this->assertSame(['application/json'], $headers['accept'] ?? null);
+    }
+
+    public function test_failure_reason_is_redacted(): void
+    {
+        $payload = [
+            'failure_reason' => 'Secret credential failed during sync',
+            'failurereason' => 'Sensitive device error detail',
+            'command_status' => 'FAILED',
+        ];
+
+        $redacted = BiometricLogRedactor::redact($payload);
+
+        $this->assertIsString($redacted['failure_reason']);
+        $this->assertStringContainsString('***', $redacted['failure_reason']);
+        $this->assertStringNotContainsString('Secret credential', $redacted['failure_reason']);
+
+        $this->assertIsString($redacted['failurereason']);
+        $this->assertStringContainsString('***', $redacted['failurereason']);
+        $this->assertStringNotContainsString('Sensitive device error', $redacted['failurereason']);
+
+        $this->assertSame('FAILED', $redacted['command_status']);
+    }
+
+    public function test_redact_handles_throwable_safely(): void
+    {
+        $exception = new RuntimeException('Database connection lost');
+
+        $payload = [
+            'status' => 'error',
+            'exception' => $exception,
+        ];
+
+        $redacted = BiometricLogRedactor::redact($payload);
+
+        $this->assertSame('error', $redacted['status']);
+        $this->assertSame('[EXCEPTION: RuntimeException]', $redacted['exception']);
+    }
+
+    public function test_redact_for_presentation_masks_sensitive_values(): void
+    {
+        $payload = [
+            'Pin' => '1042',
+            'Name' => 'John Doe',
+            'password' => 'secret123',
+            'device_id' => 5,
+        ];
+
+        $presentation = BiometricLogRedactor::redactForPresentation($payload);
+
+        $this->assertArrayHasKey('Pin', $presentation);
+        $this->assertSame('***', $presentation['Pin']);
+        $this->assertSame('Jo****oe', $presentation['Name']);
+        $this->assertSame(5, $presentation['device_id']);
     }
 }

@@ -156,6 +156,24 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perSecond(30)->by($gymId);
         });
+
+        RateLimiter::for('biometric-api', function (Request $request) {
+            // IP-keyed rate limiter prevents pre-auth rate limit bypass via SN manipulation
+            $limit = config('biometrics.device_throttle');
+            if (! is_int($limit) || $limit < 0) {
+                $limit = 120;
+            }
+
+            if ($limit === 0) {
+                return Limit::none();
+            }
+
+            // Partition rate limit by IP + route category (iclock vs biometric)
+            // so an enrollment burst does not block real-time attendance check-ins on shared NAT IPs
+            $category = $request->is('*iclock*') ? 'iclock' : 'biometric';
+
+            return Limit::perMinute($limit)->by($request->ip() . ':' . $category);
+        });
     }
 
     private function registerNotificationChannels(): void

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Biometrics\Services\BiometricDataDeletionService;
 use App\Enums\AdmsCommandStatusEnum;
+use App\Enums\BiometricTemplateSyncStatusEnum;
 use App\Models\AdmsDeviceCommand;
 use App\Models\BiometricDevice;
+use App\Models\BiometricTemplate;
 use App\Models\Gym;
+use App\Models\GymMember;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -179,7 +183,7 @@ class AdmsDeviceCommandCancellationTest extends TestCase
         $this->assertNull($sent->idempotency_key);
     }
 
-    public function test_mark_acknowledged_nullifies_idempotency_key_on_terminal_transitions(): void
+    public function test_mark_acknowledged_preserves_idempotency_key_on_success_and_failure(): void
     {
         $command = AdmsDeviceCommand::query()->create([
             'gym_id' => $this->gym->id,
@@ -196,6 +200,72 @@ class AdmsDeviceCommandCancellationTest extends TestCase
         $this->assertTrue($success);
         $command->refresh();
         $this->assertSame(AdmsCommandStatusEnum::ACKNOWLEDGED, $command->status);
-        $this->assertNull($command->idempotency_key);
+        $this->assertSame("user_add:{$this->device->id}:3001", $command->idempotency_key);
+
+        // Failure branch preserves idempotency_key for reconciler re-drive tracking
+        $failedCommand = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => '3002', 'Name' => 'Failed User'],
+            'status' => AdmsCommandStatusEnum::SENT,
+            'sent_at' => now()->subMinutes(5),
+            'attempt_count' => 1,
+            'idempotency_key' => "user_add:{$this->device->id}:3002",
+        ]);
+
+        $failSuccess = $failedCommand->markAcknowledged('-1');
+        $this->assertTrue($failSuccess);
+        $failedCommand->refresh();
+        $this->assertSame(AdmsCommandStatusEnum::FAILED, $failedCommand->status);
+        $this->assertSame("user_add:{$this->device->id}:3002", $failedCommand->idempotency_key);
+
+        // The rejection is not an additional delivery, so the counter is unchanged.
+        $this->assertSame(1, $failedCommand->attempt_count);
+    }
+
+    public function test_deleting_pending_template_does_not_cancel_unrelated_member_commands_on_same_device(): void
+    {
+        $memberA = GymMember::factory()->create(['gym_id' => $this->gym->id]);
+        $memberB = GymMember::factory()->create(['gym_id' => $this->gym->id]);
+
+        $templateA = BiometricTemplate::factory()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $memberA->id,
+            'enrolled_by_device_id' => $this->device->id,
+            'provider_type' => 'device_native',
+            'sync_status' => BiometricTemplateSyncStatusEnum::Pending,
+            'is_active' => false,
+            'template_ref' => null,
+        ]);
+
+        $commandA = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => (string) $memberA->id, 'Name' => $memberA->name],
+            'status' => AdmsCommandStatusEnum::PENDING,
+            'idempotency_key' => "user_add:{$this->gym->id}:{$this->device->id}:{$memberA->id}:{$templateA->id}",
+        ]);
+
+        // Command for member B on same device
+        $commandB = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => (string) $memberB->id, 'Name' => $memberB->name],
+            'status' => AdmsCommandStatusEnum::PENDING,
+            'idempotency_key' => "user_add:{$this->gym->id}:{$this->device->id}:{$memberB->id}:99999",
+        ]);
+
+        $deletionService = resolve(BiometricDataDeletionService::class);
+        $deletionService->deleteSingleTemplate($templateA);
+
+        $commandA->refresh();
+        $this->assertSame(AdmsCommandStatusEnum::CANCELLED, $commandA->status);
+
+        $commandB->refresh();
+        $this->assertSame(AdmsCommandStatusEnum::PENDING, $commandB->status);
+        $this->assertSame("user_add:{$this->gym->id}:{$this->device->id}:{$memberB->id}:99999", $commandB->idempotency_key);
     }
 }

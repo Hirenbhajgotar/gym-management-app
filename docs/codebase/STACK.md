@@ -66,12 +66,30 @@ vendor/bin/pint --dirty
 
 # Run static analysis
 vendor/bin/phpstan analyse
+
+# Reconcile biometric enrollments (check dry-run or specific gym)
+php artisan biometrics:reconcile-enrollments --dry-run
+php artisan biometrics:reconcile-enrollments --gym=1
+
+# Clean up superseded and abandoned biometric templates
+php artisan biometrics:cleanup-superseded-templates --days=30 --pending-days=7
+
+# Reclaim stale leased ADMS device commands
+php artisan biometrics:reclaim-stale-commands
+
+# Backfill and provision salted PBKDF2 ADMS communication keys
+php artisan biometrics:backfill-adms-comm-keys --provision
 ```
 
 ### 5) Environment and Config
 
 - Config sources: [`.env.example`](file:///c:/xampp/htdocs/projects/gym-app/.env.example), [`.env.testing`](file:///c:/xampp/htdocs/projects/gym-app/.env.testing), [`config/`](file:///c:/xampp/htdocs/projects/gym-app/config)
 - Required env vars: `APP_KEY`, `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `MYSQL_TEST_DATABASE`, `REDIS_HOST`, `REVERB_APP_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `META_APP_ID`, `META_APP_SECRET`
+- Biometrics hardware config ([`config/biometrics.php`](file:///c:/xampp/htdocs/projects/gym-app/config/biometrics.php)):
+  - `ADMS_REQUIRE_COMM_KEY`: Enforces authentication keys for edge hardware requests (default `true`).
+  - `ADMS_PBKDF2_ITERATIONS`: Iterations for key derivation (default 100,000).
+  - `ADMS_COMMAND_LEASE_SECONDS`: Atomic command lease TTL (default 600s).
+  - `ADMS_MAX_ATTEMPTS`: Maximum delivery retries before dead-letter circuit breaker (default 3).
 - Deployment/runtime constraints: MySQL 8.0, Redis (for queue, cache, sessions, and Reverb locks), PHP 8.2+ with `gd`, `pdo_mysql`, `intl`, `zip`, `pcntl`, `redis`, and `imagick` extensions.
 
 ### 6) Evidence
@@ -82,4 +100,6 @@ vendor/bin/phpstan analyse
 - [`docker-compose.yml`](file:///c:/xampp/htdocs/projects/gym-app/docker-compose.yml)
 - [`phpunit.xml`](file:///c:/xampp/htdocs/projects/gym-app/phpunit.xml)
 - [`phpstan.neon`](file:///c:/xampp/htdocs/projects/gym-app/phpstan.neon)
+- [`config/biometrics.php`](file:///c:/xampp/htdocs/projects/gym-app/config/biometrics.php)
+- [`app/Console/Commands/ReconcileBiometricEnrollmentsCommand.php`](file:///c:/xampp/htdocs/projects/gym-app/app/Console/Commands/ReconcileBiometricEnrollmentsCommand.php)
 - [`.env.example`](file:///c:/xampp/htdocs/projects/gym-app/.env.example)

@@ -8,6 +8,7 @@ use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\Contracts\HostResolverInterface;
 use App\Biometrics\Services\AntiSpoofGuard;
 use App\Biometrics\Services\BiometricDataDeletionService;
+use App\Biometrics\Services\BiometricTemplatePropagator;
 use App\Biometrics\Services\CheckInService;
 use App\Biometrics\Services\DnsHostResolver;
 use App\Biometrics\Services\DoorControlService;
@@ -34,6 +35,7 @@ class BiometricServiceProvider extends ServiceProvider
         $this->app->singleton(OfflineSyncService::class);
         $this->app->singleton(OfflineQueueManager::class);
         $this->app->singleton(BiometricDataDeletionService::class);
+        $this->app->singleton(BiometricTemplatePropagator::class);
     }
 
     public function boot(): void

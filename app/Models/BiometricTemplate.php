@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Biometrics\ValueObjects\AdmsCommandKey;
+use App\Enums\AdmsCommandStatusEnum;
 use App\Enums\BiometricTemplateSyncStatusEnum;
 use App\Enums\BiometricTypeEnum;
 use Database\Factories\BiometricTemplateFactory;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
@@ -25,10 +28,13 @@ use Illuminate\Support\Facades\Cache;
  * @property string|null $template_ref
  * @property float|null $quality_score
  * @property bool $is_active
- * @property BiometricTemplateSyncStatusEnum $sync_status
- * @property Carbon $enrolled_at
+ * @property BiometricTemplateSyncStatusEnum|null $sync_status
+ * @property string|null $superseded_reason
+ * @property Carbon|null $enrolled_at
+ * @property Carbon|null $hardware_confirmed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property-read BiometricDevice|null $enrolledByDevice
  * @property-read Gym|null $gym
  * @property-read GymMember|null $gymMember
@@ -40,6 +46,7 @@ use Illuminate\Support\Facades\Cache;
  * @method static Builder<static>|BiometricTemplate newModelQuery()
  * @method static Builder<static>|BiometricTemplate newQuery()
  * @method static Builder<static>|BiometricTemplate ofType(string $type)
+ * @method static Builder<static>|BiometricTemplate supersedableForNewEnrolment(int $gymId, int $memberId, int $deviceId, string $biometricType, ?int $exceptTemplateId = null)
  * @method static Builder<static>|BiometricTemplate query()
  * @method static Builder<static>|BiometricTemplate whereBiometricType($value)
  * @method static Builder<static>|BiometricTemplate whereCreatedAt($value)
@@ -62,6 +69,22 @@ class BiometricTemplate extends Model
     /** @use HasFactory<BiometricTemplateFactory> */
     use HasFactory;
 
+    use SoftDeletes;
+
+    /**
+     * Written when a new enrolment replaces this template.
+     */
+    public const SUPERSEDED_BY_RE_ENROLMENT = 're_enrolment';
+
+    /**
+     * Written when a GDPR Art. 17 erasure request is overtaken by a re-enrolment.
+     *
+     * Retained as a distinct value because it carries a compliance obligation the other
+     * reason does not: an operator has overridden a member's erasure request, and that
+     * must remain queryable and reportable to a regulator.
+     */
+    public const SUPERSEDED_BY_ERASURE_OVERRIDE = 'erasure_override';
+
     protected $fillable = [
         'gym_member_id',
         'gym_id',
@@ -72,7 +95,9 @@ class BiometricTemplate extends Model
         'quality_score',
         'is_active',
         'sync_status',
+        'superseded_reason',
         'enrolled_at',
+        'hardware_confirmed_at',
     ];
 
     /**
@@ -83,8 +108,11 @@ class BiometricTemplate extends Model
      *     quality_score: 'float',
      *     is_active: 'boolean',
      *     sync_status: 'App\Enums\BiometricTemplateSyncStatusEnum',
+     *     superseded_reason: 'string',
      *     enrolled_at: 'datetime',
+     *     hardware_confirmed_at: 'datetime',
      *     biometric_type: 'App\Enums\BiometricTypeEnum',
+     *     deleted_at: 'datetime',
      * }
      */
     protected function casts(): array
@@ -94,8 +122,11 @@ class BiometricTemplate extends Model
             'quality_score' => 'float',
             'is_active' => 'boolean',
             'sync_status' => BiometricTemplateSyncStatusEnum::class,
+            'superseded_reason' => 'string',
             'enrolled_at' => 'datetime',
+            'hardware_confirmed_at' => 'datetime',
             'biometric_type' => BiometricTypeEnum::class,
+            'deleted_at' => 'datetime',
         ];
     }
 
@@ -160,6 +191,62 @@ class BiometricTemplate extends Model
     }
 
     /**
+     * Find templates supersedable when a new enrolment occurs for a member, device and modality.
+     *
+     * `$biometricType` is mandatory on purpose. Erasure is queued per hardware PIN, and a
+     * member's PIN is shared across modalities on one device, so a whole-member scope would
+     * silently cancel a pending `user_delete` for a modality the operator is not re-enrolling.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function supersedableForNewEnrolment(
+        Builder $query,
+        int $gymId,
+        int $memberId,
+        int $deviceId,
+        string $biometricType,
+        ?int $exceptTemplateId = null
+    ): void {
+        $query
+            ->where('gym_id', $gymId)
+            ->where('gym_member_id', $memberId)
+            ->where('enrolled_by_device_id', $deviceId)
+            ->where('biometric_type', $biometricType)
+            ->when($exceptTemplateId !== null, fn (Builder $q) => $q->where('id', '!=', $exceptTemplateId))
+            ->whereIn('sync_status', [
+                BiometricTemplateSyncStatusEnum::Pending,
+                BiometricTemplateSyncStatusEnum::PendingDeletion,
+                BiometricTemplateSyncStatusEnum::Synced,
+                BiometricTemplateSyncStatusEnum::Propagated,
+            ]);
+    }
+
+    /**
+     * True when another active template for this member shares the device-bound PIN.
+     *
+     * The ADMS protocol can only erase a whole PIN, so while such a sibling exists the
+     * hardware credential must be retained and the erasure request parked instead.
+     */
+    public function hasActiveSiblingOnSameDevice(): bool
+    {
+        if ($this->enrolled_by_device_id === null) {
+            return false;
+        }
+
+        return self::query()
+            ->where('gym_member_id', $this->gym_member_id)
+            ->where('enrolled_by_device_id', $this->enrolled_by_device_id)
+            ->where('is_active', true)
+            ->whereIn('sync_status', [
+                BiometricTemplateSyncStatusEnum::Synced,
+                BiometricTemplateSyncStatusEnum::Propagated,
+            ])
+            ->where('id', '!=', $this->id)
+            ->exists();
+    }
+
+    /**
      * Extract all searchable references (raw string and external_id if JSON).
      *
      * @return array<int, string>
@@ -197,6 +284,67 @@ class BiometricTemplate extends Model
     public function resolvedCommandPin(): string
     {
         return self::resolveCommandPin($this->template_ref, $this->gym_member_id);
+    }
+
+    /**
+     * Check if *this template's* user_add command was acknowledged by hardware.
+     *
+     * The command log is consulted only for rows whose `hardware_confirmed_at` was never
+     * written, and the lookup is scoped to this template's own idempotency key. That scope is
+     * load-bearing: a member's command PIN is their member id and is stable across
+     * re-enrolments, so a PIN-scoped lookup would attribute an older enrolment's acknowledgement
+     * to a brand-new `Pending` placeholder. The abandoned-placeholder sweep would then treat
+     * that placeholder as delivered and queue `DATA DELETE user Pin=N`, erasing the credential
+     * the earlier enrolment actually put on the terminal.
+     */
+    public function wasDeliveredToHardware(): bool
+    {
+        if (! $this->enrolled_by_device_id) {
+            return false;
+        }
+
+        // Durable check: hardware_confirmed_at is set when the device ACKs user_add
+        if ($this->hardware_confirmed_at !== null) {
+            return true;
+        }
+
+        return AdmsDeviceCommand::query()
+            ->where('device_id', $this->enrolled_by_device_id)
+            ->where('command_type', 'user_add')
+            ->whereIn('idempotency_key', $this->ownUserAddIdempotencyKeys())
+            ->where('status', AdmsCommandStatusEnum::ACKNOWLEDGED)
+            ->exists();
+    }
+
+    /**
+     * Every canonical `user_add` key this template's own enrolment can produce.
+     *
+     * Enrolment initiation and the nightly reconciler are the only two producers, and both
+     * embed this template's id in the key.
+     *
+     * @return array<int, string>
+     */
+    protected function ownUserAddIdempotencyKeys(): array
+    {
+        if ($this->enrolled_by_device_id === null) {
+            return [];
+        }
+
+        return [
+            AdmsCommandKey::buildUserAdd(
+                $this->gym_id,
+                $this->enrolled_by_device_id,
+                $this->gym_member_id,
+                $this->id
+            ),
+            AdmsCommandKey::buildUserAdd(
+                $this->gym_id,
+                $this->enrolled_by_device_id,
+                $this->gym_member_id,
+                $this->id,
+                AdmsCommandKey::STAGE_RECONCILE
+            ),
+        ];
     }
 
     /**
@@ -292,5 +440,33 @@ class BiometricTemplate extends Model
         Cache::put($cacheKey, 0, 60);
 
         return null;
+    }
+
+    /**
+     * Get human-readable badge label reflecting hardware delivery state for Propagated templates.
+     */
+    public function getSyncStatusBadgeLabel(): string
+    {
+        if ($this->sync_status === BiometricTemplateSyncStatusEnum::Propagated) {
+            return ($this->hardware_confirmed_at !== null || $this->enrolled_at !== null)
+                ? 'Propagated (Confirmed)'
+                : 'Propagated (Awaiting Device)';
+        }
+
+        return $this->sync_status?->getLabel() ?? 'Unknown';
+    }
+
+    /**
+     * Get badge color reflecting hardware delivery state for Propagated templates.
+     */
+    public function getSyncStatusBadgeColor(): string
+    {
+        if ($this->sync_status === BiometricTemplateSyncStatusEnum::Propagated) {
+            return ($this->hardware_confirmed_at !== null || $this->enrolled_at !== null)
+                ? 'success'
+                : 'warning';
+        }
+
+        return $this->sync_status?->getColor() ?? 'gray';
     }
 }

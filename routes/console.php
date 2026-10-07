@@ -150,3 +150,9 @@ Schedule::command('biometrics:cleanup-superseded-templates')
     ->dailyAt('04:00')
     ->withoutOverlapping()
     ->onOneServer();
+
+// Reconcile Synced and active biometric templates lacking terminal user_add commands daily at 5 AM
+Schedule::command('biometrics:reconcile-enrollments')
+    ->dailyAt('05:00')
+    ->withoutOverlapping()
+    ->onOneServer();
