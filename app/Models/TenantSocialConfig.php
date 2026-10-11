@@ -113,6 +113,17 @@ class TenantSocialConfig extends Model
         'rate_limit',
     ];
 
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'access_token',
+        'app_secret',
+        'webhook_verify_token',
+    ];
+
     protected function casts(): array
     {
         return [

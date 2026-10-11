@@ -290,7 +290,7 @@
 
     <!-- Kinetic Capability Ticker Strip -->
     <section class="border-y border-outline-variant/20 bg-surface-container-lowest/80 backdrop-blur-md py-4 overflow-hidden relative z-10">
-        <div class="container mx-auto px-6 max-w-7xl">
+        <div class="container mx-auto px-6 max-w-8xl">
             <div class="flex flex-wrap items-center justify-between gap-6 sm:gap-8 text-xs sm:text-sm font-semibold uppercase tracking-wider text-on-surface-variant">
                 <div class="flex items-center gap-2 text-on-surface hover:text-emerald-400 transition-colors">
                     <span class="material-symbols-outlined text-emerald-400 text-base">chat</span>

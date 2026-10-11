@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Services\Meta;
 
-use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Interfaces\MessagingInterface;
 use App\Models\Gym;
 use App\Models\WhatsAppPhoneNumber;
 use App\Models\WhatsAppTemplate;
+use App\Services\WhatsApp\TemplateLookup;
 use App\Services\WhatsApp\WhatsAppBroadcastService;
 use App\Services\WhatsApp\WhatsAppCreditService;
-use Illuminate\Contracts\Database\Query\Builder;
+use App\Services\WhatsApp\WhatsAppSendCharge;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Meta Messaging Service.
@@ -81,16 +82,17 @@ class MetaMessagingService implements MessagingInterface
             ];
         }
 
-        $this->credits->checkAndDeduct(1);
-
-        $response = $this->api->post("/{$phoneNumberId}/messages", [
-            'messaging_product' => 'whatsapp',
-            'to' => $to,
-            'type' => 'text',
-            'text' => [
-                'body' => $message,
-            ],
-        ]);
+        $response = WhatsAppSendCharge::attempt(
+            $this->credits,
+            fn (): array => $this->api->post("/{$phoneNumberId}/messages", [
+                'messaging_product' => 'whatsapp',
+                'to' => $to,
+                'type' => 'text',
+                'text' => [
+                    'body' => $message,
+                ],
+            ])
+        );
 
         if ($response['success']) {
             $rawMessageId = isset($response['data']['messages'][0]['id']) ? $response['data']['messages'][0]['id'] : null;
@@ -106,12 +108,48 @@ class MetaMessagingService implements MessagingInterface
             ];
         }
 
+        $error = $response['error'] ?? null;
+
         return [
             'success' => false,
-            'error' => $response['error'] ?? 'Failed to send message',
+            'error' => is_string($error) ? $error : 'Failed to send message',
             'status' => 'failed',
             'message_id' => null,
         ];
+    }
+
+    /**
+     * Resolves gym-specific templates only, and only rows that are approved,
+     * not retired and not deactivated.
+     *
+     * The scope comes from TemplateLookup rather than being restated here: the
+     * tenant global scope silently killed an `orWhereNull('gym_id')` branch
+     * inside an HTTP request while leaving it live in a queue worker, so this
+     * lookup used to return different rows depending on where it ran.
+     *
+     * Meta has no sandbox mode, and it never had a system-default branch: a Meta
+     * gym that has not configured a template gets "not found" and sends nothing,
+     * which is the safe default when the alternative is dispatching the
+     * platform's copy under the gym's own sender identity.
+     *
+     * The predicate matches only the two identifiers Meta can be addressed by.
+     * It used to also match twilio_template_sid, which is the other provider's
+     * column: the only caller that could reach it passed a SID *because* the Meta
+     * id was empty, and the blank-meta_template_id guard below then refused the
+     * row anyway. Keeping it could only ever resolve a row this service cannot
+     * dispatch, so it is gone rather than commented.
+     */
+    private function findTemplate(string $templateIdOrName): ?WhatsAppTemplate
+    {
+        return TemplateLookup::applyScope(
+            WhatsAppTemplate::query(),
+            $this->context->gymId,
+        )
+            ->where(function (Builder $query) use ($templateIdOrName): void {
+                $query->where('meta_template_id', $templateIdOrName)
+                    ->orWhere('name', $templateIdOrName);
+            })
+            ->first();
     }
 
     /**
@@ -137,15 +175,7 @@ class MetaMessagingService implements MessagingInterface
             ];
         }
 
-        // Find the template
-        $template = WhatsAppTemplate::query()->where('gym_id', $this->context->gymId)
-            ->where(function (Builder $query) use ($templateIdOrName) {
-                $query->where('meta_template_id', $templateIdOrName)
-                    ->orWhere('twilio_template_sid', $templateIdOrName)
-                    ->orWhere('name', $templateIdOrName);
-            })
-            ->where('status', WhatsAppTemplateStatusEnum::APPROVED)
-            ->first();
+        $template = $this->findTemplate($templateIdOrName);
 
         if (! $template) {
             return [
@@ -156,36 +186,55 @@ class MetaMessagingService implements MessagingInterface
 
         $languageCode = MetaTemplateService::resolveLanguage($template);
 
-        $this->credits->checkAndDeduct(1);
+        // Meta addresses the template by its provider-side name, which is
+        // meta_template_id — not the internal enum value in the name column. A row
+        // without one would deduct a credit and then post a name Meta has never
+        // seen, so it has to fail before the deduction like Twilio's SID guard.
+        if (blank($template->meta_template_id)) {
+            return [
+                'success' => false,
+                'error' => "Template '{$template->name}' has no Meta template id and cannot be dispatched.",
+            ];
+        }
 
-        // Build template payload
         $templatePayload = [
-            'name' => $template->name,
+            'name' => $template->meta_template_id,
         ];
 
         if (filled($variables)) {
+            // Meta substitutes these positionally against the template's
+            // {{1}}, {{2}}, ... placeholders, so the order the values arrive in is
+            // part of the contract. WhatsAppVariableResolver keys them by the
+            // stored placeholder key, and nothing enforces that those keys are
+            // stored in ascending numeric order on a JSON column. Sorting here
+            // makes the payload depend on the placeholder numbers rather than on
+            // how the row happened to be written.
+            ksort($variables, SORT_NUMERIC);
+
             $templatePayload['components'] = [
                 [
                     'type' => 'body',
-                    'parameters' => array_map(
-                        fn ($value, $key) => [
+                    'parameters' => array_values(array_map(
+                        fn (string $value): array => [
                             'type' => 'text',
                             'text' => $value,
                         ],
-                        $variables,
-                        array_keys($variables)
-                    ),
+                        $variables
+                    )),
                 ],
             ];
         }
         $templatePayload['language'] = ['code' => $languageCode];
 
-        $response = $this->api->post("/{$phoneNumberId}/messages", [
-            'messaging_product' => 'whatsapp',
-            'to' => $to,
-            'type' => 'template',
-            'template' => $templatePayload,
-        ]);
+        $response = WhatsAppSendCharge::attempt(
+            $this->credits,
+            fn (): array => $this->api->post("/{$phoneNumberId}/messages", [
+                'messaging_product' => 'whatsapp',
+                'to' => $to,
+                'type' => 'template',
+                'template' => $templatePayload,
+            ])
+        );
 
         if ($response['success']) {
             $rawMessageId = isset($response['data']['messages'][0]['id']) ? $response['data']['messages'][0]['id'] : null;
@@ -201,9 +250,11 @@ class MetaMessagingService implements MessagingInterface
             ];
         }
 
+        $error = $response['error'] ?? null;
+
         return [
             'success' => false,
-            'error' => $response['error'] ?? 'Failed to send template message',
+            'error' => is_string($error) ? $error : 'Failed to send template message',
         ];
     }
 

@@ -1,5 +1,5 @@
-<!-- 4. Payment & Invoicing History Card -->
-<div id="invoices-history" class="bg-[#0d1520]/90 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-[0_0_40px_rgba(0,0,0,0.6)] backdrop-blur-xl space-y-6">
+<!-- Payment & Invoicing History Card -->
+<div id="invoices-history" class="bg-[#0d1520]/90 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-xl space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
         <div class="flex items-center gap-2.5">
             <span class="material-symbols-outlined text-cyan-400 text-2xl">receipt_long</span>

@@ -14,6 +14,12 @@ class WhatsAppVariableResolver
     /**
      * All available data sources that users can map template variables to.
      *
+     * Deliberately excludes context-only sources such as biometric.consent_url:
+     * those resolve only inside the biometric consent flow, so offering them in the
+     * template editor would let a tenant save a template that ships a literal
+     * example URL to real members. They remain valid in resolve() for the flows
+     * that actually supply the value.
+     *
      * @return array<string, array{label: string, group: string, example: string}>
      */
     public static function getAvailableDataSources(): array
@@ -93,7 +99,8 @@ class WhatsAppVariableResolver
             /** @var array<string, mixed> $placeholderArr */
             $placeholderArr = is_array($placeholder) ? $placeholder : [];
             $source = is_string($placeholderArr['source'] ?? null) ? $placeholderArr['source'] : 'custom';
-            $variables[(string) $key] = $this->resolveSource($source, (string) $key, $placeholderArr, $context);
+            $keyStr = (string) $key;
+            $variables[$keyStr] = $this->resolveSource($source, $keyStr, $placeholderArr, $context);
         }
 
         return $variables;
@@ -159,6 +166,9 @@ class WhatsAppVariableResolver
                 ? ucfirst($payment->payment_method)
                 : null,
             'payment.invoice_number' => $payment?->invoice_number,
+
+            // Biometric fields
+            'biometric.consent_url' => is_string($context['consent_url'] ?? null) ? $context['consent_url'] : null,
 
             default => null,
         };
@@ -257,7 +267,8 @@ class WhatsAppVariableResolver
                     ? (string) $placeholderArr['example']
                     : '';
 
-                $custom[(string) $key] = [
+                $keyStr = (string) $key;
+                $custom[$keyStr] = [
                     'placeholder' => $placeholderText,
                     'example' => $exampleText,
                 ];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Mail;
 
 use App\Models\GymMember;
+use App\Services\Biometric\BiometricConsentUrlFactory;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -36,7 +37,7 @@ class BiometricConsentMail extends Mailable
                 'gymMember' => $this->gymMember,
                 'gym' => $this->gymMember->gym,
                 'consentUrl' => $this->consentUrl,
-                'expiresIn' => '7 days',
+                'expiresIn' => BiometricConsentUrlFactory::validityLabel(),
             ],
         );
     }

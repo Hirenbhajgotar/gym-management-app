@@ -145,21 +145,29 @@ Custom/on-premise devices that cannot directly call the provider API can sync en
 **Request:**
 ```json
 {
-  "member_id": 123,
-  "biometric_type": "face",
-  "template_data": "base64_encoded_template_or_reference",
-  "device_id": "device-uuid"
+  "gym_member_id": 123,
+  "biometric_type": "fingerprint",
+  "template_ref": "123",
+  "quality_score": 0.95
 }
 ```
+
+> **Note on `template_ref`**: The `template_ref` corresponds to the member PIN provisioned on the terminal. The endpoint enforces that `template_ref === (string) $gym_member_id` to guarantee correlation with the member profile. Non-matching references will return HTTP 422.
 
 **Response:**
 ```json
 {
   "success": true,
-  "template_id": "prov_abc123",
-  "enrolled_at": "2026-04-03T10:30:00Z"
+  "queued_count": 2,
+  "skipped_count": 0
 }
 ```
+*(On partial failure or errors across sibling devices, `partial_success: true` and `failed_devices: [{"id": 4, "name": "Exit Gate"}]` are included).*
+
+## ADMS Protocol Constraints & Limitations
+
+- **Coarse-Grained User Deletion**: The eSSL/ZKTeco push protocol (`iclock`) de-provisions credentials using `DATA DELETE user Pin=%s`. This command removes the entire user record and all associated biometric modalities (face, fingerprints) from the physical terminal hardware.
+- **Template-Level Granularity**: Because the protocol cannot delete a single biometric template independently without wiping the user, `BiometricDataDeletionService::deleteSingleTemplate()` retains hardware user records if active sibling templates exist for the same member on the device, and only issues `DATA DELETE user` when all templates for that member on the device are decommissioned.
 
 ## GDPR Compliance
 

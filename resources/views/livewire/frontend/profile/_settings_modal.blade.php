@@ -1,4 +1,4 @@
-<!-- 1. Account & Security Settings Modal -->
+<!-- Account & Security Settings Modal -->
 <div x-show="showSettingsModal" 
     x-cloak
     role="dialog"
@@ -17,7 +17,7 @@
         @click="showSettingsModal = false"></div>
 
     <!-- Modal Dialog Container -->
-    <div class="relative w-full max-w-xl bg-[#0d1520] border border-white/15 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.9)] overflow-hidden z-10 my-8"
+    <div class="relative w-full max-w-xl bg-[#0d1520] border border-white/15 rounded-3xl shadow-2xl overflow-hidden z-10 my-8"
         x-show="showSettingsModal"
         x-transition:enter="transition ease-out duration-300 transform"
         x-transition:enter-start="opacity-0 scale-95 translate-y-4"
@@ -26,10 +26,6 @@
         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
         x-transition:leave-end="opacity-0 scale-95 translate-y-4"
         @click.stop>
-        
-        <!-- Ambient Accent Glow -->
-        <div class="absolute -top-16 -right-16 w-48 h-48 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-16 -left-16 w-48 h-48 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
         <!-- Modal Header with Tabs -->
         <div class="p-6 sm:p-7 border-b border-white/10 space-y-4">
@@ -55,13 +51,13 @@
             <div class="flex rounded-xl bg-[#080d16] p-1 border border-white/10">
                 <button @click="settingsTab = 'profile'" type="button"
                     class="flex-1 inline-flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-xs font-headline font-bold uppercase tracking-wider transition-all cursor-pointer"
-                    :class="settingsTab === 'profile' ? 'bg-[#22c55e] text-black shadow-lg shadow-emerald-500/20' : 'text-gray-400 hover:text-white'">
+                    :class="settingsTab === 'profile' ? 'bg-[#22c55e] text-black shadow-md' : 'text-gray-400 hover:text-white'">
                     <span class="material-symbols-outlined text-base">person</span>
                     <span>Profile Info</span>
                 </button>
                 <button @click="settingsTab = 'security'" type="button"
                     class="flex-1 inline-flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-xs font-headline font-bold uppercase tracking-wider transition-all cursor-pointer"
-                    :class="settingsTab === 'security' ? 'bg-[#22c55e] text-black shadow-lg shadow-emerald-500/20' : 'text-gray-400 hover:text-white'">
+                    :class="settingsTab === 'security' ? 'bg-[#22c55e] text-black shadow-md' : 'text-gray-400 hover:text-white'">
                     <span class="material-symbols-outlined text-base">lock</span>
                     <span>Security & Password</span>
                 </button>
@@ -72,7 +68,7 @@
         <div class="p-6 sm:p-7">
             <!-- Tab 1: Profile Information -->
             <div x-show="settingsTab === 'profile'">
-                <form wire:submit.prevent="updateProfile" class="space-y-4">
+                <form wire:submit="updateProfile" class="space-y-4">
                     <!-- Full Name -->
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold uppercase tracking-widest text-gray-300">
@@ -112,8 +108,7 @@
                             Cancel
                         </button>
                         <button type="submit" wire:loading.attr="disabled"
-                            class="group relative overflow-hidden inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-[#22c55e] hover:bg-[#16a34a] text-black font-headline font-black text-xs rounded-xl shadow-[0_0_15px_rgba(34,197,94,0.3)] hover:shadow-[0_0_20px_rgba(34,197,94,0.5)] active:scale-[0.98] transition-all uppercase tracking-wider cursor-pointer disabled:opacity-50">
-                            <span class="absolute inset-0 w-1/2 h-full bg-white/30 transform -skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-700 ease-out"></span>
+                            class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-[#22c55e] hover:bg-[#16a34a] text-black font-headline font-black text-xs rounded-xl shadow-md active:scale-[0.98] transition-all uppercase tracking-wider cursor-pointer disabled:opacity-50">
                             <span wire:loading.remove wire:target="updateProfile" class="flex items-center gap-1.5">
                                 <span class="material-symbols-outlined text-base">save</span>
                                 <span>Save Profile</span>
@@ -132,7 +127,7 @@
 
             <!-- Tab 2: Security & Password -->
             <div x-show="settingsTab === 'security'">
-                <form wire:submit.prevent="updatePassword" class="space-y-4">
+                <form wire:submit="updatePassword" class="space-y-4">
                     <!-- Current Password -->
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold uppercase tracking-widest text-gray-300">
@@ -187,7 +182,7 @@
                             <span class="material-symbols-outlined text-xs text-emerald-400">shield</span>
                             <span>Password Recommendations:</span>
                         </div>
-                        <p>Use at least 8 characters including letters, numbers, and special symbols for maximum account security.</p>
+                        <p>Use at least 8 characters including letters, numbers, and special symbols for account security.</p>
                     </div>
 
                     <!-- Action Buttons -->
@@ -197,8 +192,7 @@
                             Cancel
                         </button>
                         <button type="submit" wire:loading.attr="disabled"
-                            class="group relative overflow-hidden inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-[#22c55e] hover:bg-[#16a34a] text-black font-headline font-black text-xs rounded-xl shadow-[0_0_15px_rgba(34,197,94,0.3)] hover:shadow-[0_0_20px_rgba(34,197,94,0.5)] active:scale-[0.98] transition-all uppercase tracking-wider cursor-pointer disabled:opacity-50">
-                            <span class="absolute inset-0 w-1/2 h-full bg-white/30 transform -skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-700 ease-out"></span>
+                            class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-[#22c55e] hover:bg-[#16a34a] text-black font-headline font-black text-xs rounded-xl shadow-md active:scale-[0.98] transition-all uppercase tracking-wider cursor-pointer disabled:opacity-50">
                             <span wire:loading.remove wire:target="updatePassword" class="flex items-center gap-1.5">
                                 <span class="material-symbols-outlined text-base">security</span>
                                 <span>Update Password</span>

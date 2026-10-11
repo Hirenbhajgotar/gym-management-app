@@ -21,20 +21,27 @@ class AzureFaceProvider implements BiometricProvider
     protected string $subscriptionKey;
 
     public function __construct(
-        protected array $config
+        protected array $config = []
     ) {
-        $location = $config['location'] ?? 'eastus';
+        /** @var array<string, mixed> $systemConfig */
+        $systemConfig = config()->array('biometrics.providers_config.azure_face', []);
+        /** @var array<string, mixed> $filteredConfig */
+        $filteredConfig = array_filter($config, static fn ($v): bool => $v !== null && $v !== '');
+        $allowedOverrides = array_intersect_key($filteredConfig, array_flip(['location', 'confidence_threshold']));
+        $this->config = array_merge($systemConfig, $allowedOverrides);
+
+        $location = $this->config['location'] ?? 'eastus';
 
         $this->endpoint = rtrim(
             str_replace(
                 '{location}',
                 $location,
-                $config['endpoint'] ?? "https://{$location}.api.cognitive.microsoft.com"
+                $this->config['endpoint'] ?? "https://{$location}.api.cognitive.microsoft.com"
             ),
             '/'
         );
 
-        $this->subscriptionKey = $config['subscription_key'] ?? '';
+        $this->subscriptionKey = $this->config['subscription_key'] ?? '';
     }
 
     protected function getBaseUrl(): string
@@ -65,7 +72,7 @@ class AzureFaceProvider implements BiometricProvider
 
         // Add face
         $response = $this->http()
-            ->withBody(base64_decode($sample->data), 'application/octet-stream')
+            ->withBody((string) base64_decode($sample->data, true), 'application/octet-stream')
             ->post(
                 "{$base}/face/v1.0/persongroups/{$personGroupId}/persons/{$azurePersonId}/persistedFaces?detectionModel=detection_03"
             )
@@ -96,7 +103,7 @@ class AzureFaceProvider implements BiometricProvider
 
         // Detect face
         $detectResponse = $this->http()
-            ->withBody(base64_decode($sample->data), 'application/octet-stream')
+            ->withBody((string) base64_decode($sample->data, true), 'application/octet-stream')
             ->post("{$base}/face/v1.0/detect?returnFaceId=true&returnFaceLandmarks=false&recognitionModel=recognition_03");
 
         $faces = $detectResponse->json();
@@ -142,7 +149,7 @@ class AzureFaceProvider implements BiometricProvider
         $base = $this->getBaseUrl();
 
         $response = $this->http()
-            ->withBody(base64_decode($sample->data), 'application/octet-stream')
+            ->withBody((string) base64_decode($sample->data, true), 'application/octet-stream')
             ->post(
                 "{$base}/face/v1.0/detect?returnFaceId=true&returnFaceAttributes=blur,exposure,noise,headPose&recognitionModel=recognition_04&detectionModel=detection_03"
                 // '/face/v1.0/detect?returnFaceId=true&returnFaceLandmarks=true&recognitionModel=recognition_03&returnRecognitionModel=true'

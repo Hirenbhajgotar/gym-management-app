@@ -10,8 +10,10 @@ use App\Helpers\WhatsAppSanitizer;
 use App\Interfaces\MessagingInterface;
 use App\Models\WhatsAppTemplate;
 use App\Models\WhatsAppUsageLog;
+use App\Services\WhatsApp\TemplateLookup;
 use App\Services\WhatsApp\WhatsAppBroadcastService;
 use App\Services\WhatsApp\WhatsAppCreditService;
+use App\Services\WhatsApp\WhatsAppSendCharge;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -72,34 +74,37 @@ class TwilioMessagingService implements MessagingInterface
             ];
         }
 
-        $deducted = false;
         try {
-            $this->credits->checkAndDeduct(1);
-            $deducted = true;
+            $response = WhatsAppSendCharge::attempt(
+                $this->credits,
+                function () use ($to, $phoneNumber, $message): array {
+                    $twilioMessage = $this->context->getClient()
+                        ->messages
+                        ->create("whatsapp:$to", [
+                            'from' => "whatsapp:$phoneNumber",
+                            'body' => $message,
+                        ]);
 
-            $twilioMessage = $this->context->getClient()
-                ->messages
-                ->create("whatsapp:$to", [
-                    'from' => "whatsapp:$phoneNumber",
-                    'body' => $message,
-                ]);
-
-            return [
-                'success' => true,
-                'message_id' => $twilioMessage->sid,
-                'status' => $twilioMessage->status,
-                'data' => [
-                    'sid' => $twilioMessage->sid,
-                    'status' => $twilioMessage->status,
-                ],
-            ];
+                    return [
+                        'success' => true,
+                        'message_id' => $twilioMessage->sid,
+                        'status' => $twilioMessage->status,
+                        'data' => [
+                            'sid' => $twilioMessage->sid,
+                            'status' => $twilioMessage->status,
+                        ],
+                    ];
+                }
+            );
         } catch (Throwable $e) {
-            if ($deducted) {
-                $this->credits->refund(1);
-            }
-
             return $this->handleSendThrowable($e, 'Text message');
         }
+
+        $messageId = is_string($response['message_id'] ?? null) ? $response['message_id'] : null;
+        $this->credits->logUsage($to, null, $messageId);
+
+        /** @var array{success: bool, message_id?: string|null, status?: string|null, error?: string|null, status_code?: int|null, data?: mixed} $response */
+        return $response;
     }
 
     /**
@@ -143,6 +148,16 @@ class TwilioMessagingService implements MessagingInterface
             ];
         }
 
+        // Twilio dispatches by content SID and nothing else. Resolving a row that
+        // carries no SID would deduct a credit and then post contentSid => null,
+        // so the check has to happen before checkAndDeduct().
+        if (blank($template->twilio_template_sid)) {
+            return [
+                'success' => false,
+                'error' => "Template '{$template->name}' has no Twilio content SID and cannot be dispatched.",
+            ];
+        }
+
         if (! $template->validateVariables($variables)) {
             return [
                 'success' => false,
@@ -159,34 +174,37 @@ class TwilioMessagingService implements MessagingInterface
             ];
         }
 
-        $deducted = false;
         try {
-            $this->credits->checkAndDeduct(1);
-            $deducted = true;
+            $response = WhatsAppSendCharge::attempt(
+                $this->credits,
+                function () use ($to, $phoneNumber, $template, $variables): array {
+                    $twilioMessage = $this->context->getClient()
+                        ->messages
+                        ->create("whatsapp:$to", [
+                            'from' => "whatsapp:$phoneNumber",
+                            'contentSid' => $template->twilio_template_sid,
+                            'contentVariables' => json_encode($variables),
+                        ]);
 
-            $twilioMessage = $this->context->getClient()
-                ->messages
-                ->create("whatsapp:$to", [
-                    'from' => "whatsapp:$phoneNumber",
-                    'contentSid' => $template->twilio_template_sid,
-                    'contentVariables' => json_encode($variables),
-                ]);
-
-            $this->logUsage($to, $template, $twilioMessage->sid);
-            $template->incrementUsage();
-
-            return [
-                'success' => true,
-                'message_id' => $twilioMessage->sid,
-                'status' => $twilioMessage->status,
-            ];
+                    return [
+                        'success' => true,
+                        'message_id' => $twilioMessage->sid,
+                        'status' => $twilioMessage->status,
+                    ];
+                }
+            );
         } catch (Throwable $e) {
-            if ($deducted) {
-                $this->credits->refund(1);
-            }
-
             return $this->handleSendThrowable($e, 'Template message');
         }
+
+        $messageSid = is_string($response['message_id'] ?? null) ? $response['message_id'] : null;
+        if (($response['success'] ?? false) && $messageSid !== null) {
+            $this->logUsage($to, $template, $messageSid);
+            $template->incrementUsage();
+        }
+
+        /** @var array{success: bool, message_id?: string|null, status?: string|null, error?: string|null, status_code?: int|null} $response */
+        return $response;
     }
 
     /**
@@ -265,16 +283,30 @@ class TwilioMessagingService implements MessagingInterface
     // Private Helpers
     // =========================
 
-    private function findTemplate(string $templateName): ?WhatsAppTemplate
+    /**
+     * Resolves gym-specific templates first, then the seeded system default, and
+     * only rows that are approved, not retired and not deactivated.
+     *
+     * The scope comes from TemplateLookup rather than being restated here: the
+     * tenant global scope silently killed the `orWhereNull('gym_id')` branch
+     * inside an HTTP request while leaving it live in a queue worker, so this
+     * lookup used to return different rows depending on where it ran.
+     *
+     * The system default stays sandbox-only, as it was before the lookup was
+     * consolidated. Widening it to every production gym would let a gym that
+     * never configured this template send the platform's body under its own
+     * sender identity.
+     */
+    private function findTemplate(string $templateNameOrId): ?WhatsAppTemplate
     {
-        return WhatsAppTemplate::query()
-            ->where('name', $templateName)
-            ->where('status', 'approved')
-            ->where(function (Builder $q) {
-                $q->where('gym_id', $this->context->gymId);
-                if ($this->context->useSandbox) {
-                    $q->orWhereNull('gym_id');
-                }
+        return TemplateLookup::applyScope(
+            WhatsAppTemplate::query(),
+            $this->context->gymId,
+            allowSystemDefault: $this->context->useSandbox,
+        )
+            ->where(function (Builder $q) use ($templateNameOrId) {
+                $q->where('name', $templateNameOrId)
+                    ->orWhere('twilio_template_sid', $templateNameOrId);
             })
             ->first();
     }

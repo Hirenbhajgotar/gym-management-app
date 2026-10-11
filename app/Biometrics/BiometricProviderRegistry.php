@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Biometrics;
 
 use App\Biometrics\Contracts\BiometricProvider;
+use App\Enums\BiometricProvidersEnum;
 use InvalidArgumentException;
 
 class BiometricProviderRegistry
@@ -12,19 +13,29 @@ class BiometricProviderRegistry
     /**
      * @param  array<string, mixed>  $config
      */
-    public function resolve(string $providerType, array $config = []): BiometricProvider
+    public function resolve(BiometricProvidersEnum|string $providerType, array $config = []): BiometricProvider
     {
+        $typeKey = $providerType instanceof BiometricProvidersEnum ? $providerType->value : $providerType;
+
         /** @var class-string<BiometricProvider>|null $class */
-        $class = config("biometrics.providers.{$providerType}");
+        $class = config("biometrics.providers.{$typeKey}");
 
-        throw_if($class === null, InvalidArgumentException::class, "Unsupported biometric provider: {$providerType}");
+        throw_if($class === null, InvalidArgumentException::class, "Unsupported biometric provider: {$typeKey}");
 
-        return new $class($config);
+        /** @var array<string, mixed> $systemConfig */
+        $systemConfig = config("biometrics.providers_config.{$typeKey}", []);
+
+        // Filter out null or empty string overrides so system credentials are not wiped
+        $filteredConfig = array_filter($config, static fn ($value): bool => $value !== null && $value !== '');
+
+        return new $class(array_merge($systemConfig, $filteredConfig));
     }
 
-    public function isSupported(string $providerType): bool
+    public function isSupported(BiometricProvidersEnum|string $providerType): bool
     {
-        return config("biometrics.providers.{$providerType}") !== null;
+        $typeKey = $providerType instanceof BiometricProvidersEnum ? $providerType->value : $providerType;
+
+        return config("biometrics.providers.{$typeKey}") !== null;
     }
 
     /**

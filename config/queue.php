@@ -82,11 +82,14 @@ return [
     |--------------------------------------------------------------------------
     |
     | Pre-configured queue names for specific job types.
-    | Used by jobs via config('queue.broadcast_queue').
+    | Used by jobs via config('queue.broadcast_queue') and
+    | config('queue.notifications_queue').
     |
     */
 
     'broadcast_queue' => env('BROADCAST_QUEUE', 'broadcast'),
+
+    'notifications_queue' => env('NOTIFICATIONS_QUEUE', 'notifications'),
 
     /*
     |--------------------------------------------------------------------------

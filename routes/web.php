@@ -194,11 +194,11 @@ Route::prefix('shared-reports')->name('shared-reports.')->group(function () {
 // Biometric Consent Routes (public, signed URL protected)
 Route::get('/consent/biometric', [BiometricConsentController::class, 'show'])
     ->name('biometric.consent.show')
-    ->middleware('signed');
+    ->middleware(['signed', 'throttle:60,1']);
 
 Route::post('/consent/biometric', [BiometricConsentController::class, 'store'])
     ->name('biometric.consent.store')
-    ->middleware('signed');
+    ->middleware(['signed', 'throttle:30,1']);
 
 // QR Code Attendance Routes (public)
 Route::get('/attendance/qr-checkin/{gymId}/{token}', QRAttendance::class)

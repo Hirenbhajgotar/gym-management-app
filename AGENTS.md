@@ -483,7 +483,7 @@ Forms\Components\Select::make('user_id')
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
 
-When the user types `/graphify`, invoke the `skill` tool with `skill: "graphify"` before doing anything else.
+When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
 
 Rules:
 - For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
@@ -492,7 +492,6 @@ Rules:
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
 
-<!-- OCR:START -->
 ## Open Code Review Instructions
 
 These instructions are for AI assistants handling code review in this project.

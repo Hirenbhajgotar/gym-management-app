@@ -1,0 +1,72 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature;
+
+use App\Models\Gym;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
+use Tests\TestCase;
+
+class BiometricRateLimiterTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected Gym $gym;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        RateLimiter::clear('biometric-api:127.0.0.1:iclock');
+        RateLimiter::clear('biometric-api:127.0.0.1:biometric');
+    }
+
+    public function test_rate_limiter_keys_on_ip_and_blocks_sn_spoofing_bypass(): void
+    {
+        // Use a small limit in test to avoid 120s execution delay (S-5)
+        config()->set('biometrics.device_throttle', 3);
+        $limit = 3;
+
+        // Exhaust the rate limit bucket for 127.0.0.1 with varying SN parameters
+        for ($i = 0; $i < $limit; $i++) {
+            $response = $this->get("/api/iclock/cdata?SN=device_{$i}");
+            // Pre-auth should not be 429 yet
+            $this->assertNotSame(429, $response->getStatusCode());
+        }
+
+        // The next request from the same IP with a new SN must be throttled with 429 Too Many Requests
+        $throttledResponse = $this->get('/api/iclock/cdata?SN=device_bypass_attempt');
+        $throttledResponse->assertStatus(429);
+    }
+
+    public function test_rate_limiter_allows_disabling_when_limit_is_zero(): void
+    {
+        config()->set('biometrics.device_throttle', 0);
+
+        for ($i = 0; $i < 5; $i++) {
+            $response = $this->get("/api/iclock/cdata?SN=device_{$i}");
+            $this->assertNotSame(429, $response->getStatusCode());
+        }
+    }
+
+    public function test_rate_limiter_partitions_iclock_and_biometric_api_buckets(): void
+    {
+        config()->set('biometrics.device_throttle', 2);
+        $limit = 2;
+
+        // Exhaust the iclock bucket
+        for ($i = 0; $i < $limit; $i++) {
+            $response = $this->get("/api/iclock/cdata?SN=device_{$i}");
+            $this->assertNotSame(429, $response->getStatusCode());
+        }
+
+        // iclock should now return 429
+        $iclockThrottled = $this->get('/api/iclock/cdata?SN=device_exhausted');
+        $iclockThrottled->assertStatus(429);
+
+        // A request to the biometric API endpoint should NOT be throttled by the iclock exhaustion
+        $biometricResponse = $this->postJson('/api/v1/biometric/check-in', []);
+        $this->assertNotSame(429, $biometricResponse->getStatusCode());
+    }
+}

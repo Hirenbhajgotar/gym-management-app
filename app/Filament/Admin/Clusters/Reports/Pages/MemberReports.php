@@ -344,12 +344,12 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
     {
         return [
             'stats' => $this->getSummaryStats(),
-            'growth' => $this->getGrowthData()->toArray(),
-            'planDistribution' => $this->getPlanDistribution()->toArray(),
+            'growth' => $this->getGrowthData()->all(),
+            'planDistribution' => $this->getPlanDistribution()->all(),
             'churnStats' => $this->getChurnStats(),
             'chart_data' => [
-                'member_growth' => $this->getGrowthData()->toArray(),
-                'plan_distribution' => $this->getPlanDistribution()->toArray(),
+                'member_growth' => $this->getGrowthData()->all(),
+                'plan_distribution' => $this->getPlanDistribution()->all(),
             ],
         ];
     }

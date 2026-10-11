@@ -11,6 +11,8 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Env;
+use RuntimeException;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -31,6 +33,11 @@ abstract class WhatsAppSetupTestCase extends BaseTestCase
         putenv('DB_DATABASE=gym_app_test');
         $_ENV['DB_DATABASE'] = 'gym_app_test';
         $_SERVER['DB_DATABASE'] = 'gym_app_test';
+
+        // Pre-boot guard: prevent RefreshDatabase from running migrate:fresh
+        // against gym_app. This fires BEFORE parent::setUp() triggers setUpTraits().
+        $envDb = Env::get('DB_DATABASE', getenv('DB_DATABASE')) ?: null;
+        throw_if($envDb === 'gym_app', RuntimeException::class, 'SAFETY: DB_DATABASE resolves to "gym_app" before boot. Aborting before migrate:fresh.');
 
         parent::setUp();
 

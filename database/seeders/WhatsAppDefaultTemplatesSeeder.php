@@ -190,6 +190,39 @@ class WhatsAppDefaultTemplatesSeeder extends Seeder
                 'status' => 'approved',
                 'is_default' => true,
             ],
+            [
+                // Documentation copy only. This row intentionally carries no
+                // twilio_template_sid and no meta_template_id, so it is NOT
+                // dispatchable: BiometricConsentTemplateResolver refuses it, which
+                // makes canSendBiometricConsentViaWhatsApp() fail on its template
+                // condition and leaves the WhatsApp toggle disabled with that
+                // reason. A gym that wants a templated consent request attaches a
+                // real provider identifier on its own row; the job's free-text
+                // body is the sandbox path, not a production fallback.
+                //
+                // No "valid for N days" sentence here on purpose. This body is a
+                // literal stored at seed time, so any TTL baked into it is frozen
+                // the moment db:seed runs and starts lying the first time the TTL
+                // changes. BiometricConsentUrlFactory::validityLabel() is the only
+                // place that copy is derived.
+                'name' => NotificationType::BIOMETRIC_CONSENT->value,
+                'display_name' => 'Biometric Consent Request',
+                'category' => 'utility',
+                'body' => "Hello {{1}},\n\n{{2}} requires your consent for biometric check-in. Please review and provide your consent here:\n{{3}}",
+                'variables' => [
+                    ['name' => 'variable_1', 'format' => 'text', 'example' => 'John Doe'],
+                    ['name' => 'variable_2', 'format' => 'text', 'example' => 'FitZone Gym'],
+                    ['name' => 'variable_3', 'format' => 'text', 'example' => 'https://example.com/consent/xyz'],
+                ],
+                'variable_count' => 3,
+                'variable_placeholder' => [
+                    '1' => ['placeholder' => 'Member Name', 'name' => 'member_name', 'example' => 'John Doe', 'type' => 'text', 'source' => 'member.name'],
+                    '2' => ['placeholder' => 'Gym Name', 'name' => 'gym_name', 'example' => 'FitZone Gym', 'type' => 'text', 'source' => 'gym.name'],
+                    '3' => ['placeholder' => 'Consent Link', 'name' => 'consent_link', 'example' => 'https://example.com/consent/xyz', 'type' => 'text', 'source' => 'biometric.consent_url'],
+                ],
+                'status' => 'approved',
+                'is_default' => true,
+            ],
         ];
 
         foreach ($defaultTemplates as $template) {

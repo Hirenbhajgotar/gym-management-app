@@ -120,3 +120,39 @@ Schedule::command('notification:send-membership-expiry-alerts')
 
 Schedule::command('app:archive-inactive-gym-members')
     ->dailyAt('23:00');
+
+// Monitor biometric device heartbeats and detect offline deadman switches
+Schedule::command('biometrics:check-health')
+    ->everyTenMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer();
+
+// Cleanup expired members from ADMS-enabled biometric devices daily at 3 AM
+Schedule::command('app:cleanup-expired-device-members')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Reclaim stale ADMS device commands whose lease expired without acknowledgement
+Schedule::command('app:reclaim-stale-device-commands')
+    ->everyTenMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer();
+
+// Reconcile and retry pending biometric deletions for active devices and cloud providers
+Schedule::command('biometrics:reconcile-pending-deletions')
+    ->hourly()
+    ->withoutOverlapping(15)
+    ->onOneServer();
+
+// Purge superseded biometric templates older than 30 days daily at 4 AM
+Schedule::command('biometrics:cleanup-superseded-templates')
+    ->dailyAt('04:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Reconcile Synced and active biometric templates lacking terminal user_add commands daily at 5 AM
+Schedule::command('biometrics:reconcile-enrollments')
+    ->dailyAt('05:00')
+    ->withoutOverlapping()
+    ->onOneServer();

@@ -4,21 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\GymMemberResource\RelationManagers;
 
-use App\Enums\BiometricTypeEnum;
+use App\Biometrics\Services\BiometricDataDeletionService;
+use App\Enums\BiometricTemplateSyncStatusEnum;
 use App\Models\BiometricTemplate;
 use App\Traits\HasTenantAccess;
-use Filament\Facades\Filament;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables\Actions\CreateAction;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
@@ -32,45 +24,24 @@ class BiometricTemplatesRelationManager extends RelationManager
 
     protected static ?string $icon = 'heroicon-o-finger-print';
 
-    public function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Hidden::make('gym_id')
-                    ->default(fn () => $this->getGymId()),
-
-                Section::make('Biometric Template')
-                    ->schema([
-                        Select::make('biometric_type')
-                            ->label('Biometric Type')
-                            ->options(BiometricTypeEnum::class)
-                            ->required(),
-
-                        Textarea::make('template_data')
-                            ->label('Template Data')
-                            ->rows(3)
-                            ->required()
-                            ->helperText('Base64 encoded biometric template'),
-
-                        Toggle::make('is_active')
-                            ->label('Active')
-                            ->default(true),
-                    ]),
-            ]);
-    }
-
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['enrolledByDevice', 'gymMember']))
             ->columns([
                 TextColumn::make('biometric_type')
                     ->label('Type')
-                    ->badge()
-                    ->color('info'),
+                    ->badge(),
 
-                TextColumn::make('template_id')
-                    ->label('Template ID')
-                    ->searchable(),
+                TextColumn::make('sync_status')
+                    ->label('Sync Status')
+                    ->badge()
+                    ->formatStateUsing(fn ($state, BiometricTemplate $record): string => $record->getSyncStatusBadgeLabel())
+                    ->color(fn ($state, BiometricTemplate $record): string => $record->getSyncStatusBadgeColor()),
+
+                TextColumn::make('enrolledByDevice.device_name')
+                    ->label('Enrolled By Device')
+                    ->placeholder('Device Native / ADMS'),
 
                 TextColumn::make('is_active')
                     ->label('Status')
@@ -81,8 +52,8 @@ class BiometricTemplatesRelationManager extends RelationManager
                     ])
                     ->formatStateUsing(fn (bool $state) => $state ? 'Active' : 'Inactive'),
 
-                TextColumn::make('created_at')
-                    ->label('Enrolled')
+                TextColumn::make('enrolled_at')
+                    ->label('Enrolled At')
                     ->dateTime(),
             ])
             ->filters([
@@ -91,61 +62,41 @@ class BiometricTemplatesRelationManager extends RelationManager
                     ->query(fn (Builder $query) => $query->where('is_active', true)),
             ])
             ->actions([
-                EditAction::make(),
-                DeleteAction::make()
+                Action::make('deprovision')
+                    ->label('De-provision')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('De-provision this template')
+                    ->modalDescription('This requests erasure of the biometric credential from the hardware device. The record is retained and moves to "Pending Hardware Deletion" until the terminal confirms removal.')
+                    ->authorize(fn (BiometricTemplate $record): bool => (bool) auth()->user()?->can('enrollBiometric', $record->gymMember))
                     ->action(function (BiometricTemplate $record) {
-                        $record->update(['is_active' => false]);
+                        $success = resolve(BiometricDataDeletionService::class)->deleteSingleTemplate($record);
+
+                        if (! $success) {
+                            Notification::make()
+                                ->title('De-provisioning Failed')
+                                ->body('The provider did not confirm the template deletion.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $record->refresh();
+
+                        $confirmed = $record->sync_status === BiometricTemplateSyncStatusEnum::Deleted;
+
                         Notification::make()
-                            ->title('Biometric Template Deactivated')
+                            ->title($confirmed ? 'Template De-provisioned' : 'De-provision Requested')
+                            ->body(
+                                $confirmed
+                                    ? 'The credential was never written to the device, or the device confirmed its removal.'
+                                    : 'Hardware erasure is pending confirmation from the device. The record is retained for audit.'
+                            )
                             ->success()
                             ->send();
                     }),
             ])
-            ->headerActions([
-                CreateAction::make()
-                    ->label('Add Biometric Template')
-                    ->icon('heroicon-o-plus-circle')
-                    ->form($this->form(new Form($this))->getComponents())
-                    ->action(fn (array $data) => $this->handleCreateBiometricTemplate($data)),
-            ]);
-    }
-
-    protected function getGymId(): int
-    {
-        $tenant = Filament::getTenant();
-
-        return $tenant?->id ?? $this->ownerRecord->gym_id;
-    }
-
-    protected function handleCreateBiometricTemplate(array $data): void
-    {
-        // Convert template_data to template_ref JSON format
-        if (isset($data['template_data'])) {
-            $data['template_ref'] = json_encode([
-                'data' => $data['template_data'],
-                'created_at' => now()->toISOString(),
-            ]);
-            unset($data['template_data']);
-        }
-
-        // Set provider_type to custom by default (manual enrollment via admin)
-        $data['provider_type'] = 'custom';
-        $data['enrolled_at'] = now();
-
-        // enrolled_by_device_id is null for manual enrollment via admin panel
-        // For device-based enrollment, this is set via the BiometricEnrollController API
-        $data['enrolled_by_device_id'] = null;
-
-        // Set gym_id if not already set via hidden field
-        if (! isset($data['gym_id'])) {
-            $data['gym_id'] = $this->getGymId();
-        }
-
-        $this->getRelationship()->create($data);
-
-        Notification::make()
-            ->title('Biometric Template Created')
-            ->success()
-            ->send();
+            ->headerActions([]);
     }
 }

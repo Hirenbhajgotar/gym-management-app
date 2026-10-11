@@ -18,12 +18,17 @@ class BiometricCheckInRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'gym_member_id' => ['nullable'],
+            'member_id' => ['nullable'],
+            'user_id' => ['nullable'],
+            'pin' => ['nullable'],
+            'template_ref' => ['nullable'],
             'biometric_type' => [
-                'required',
+                'nullable',
                 Rule::enum(BiometricTypeEnum::class),
             ],
-            'data' => ['required', 'string'],
-            'captured_at' => ['required', 'date'],
+            'data' => ['required_without_all:gym_member_id,member_id,user_id,pin,template_ref', 'nullable', 'string'],
+            'captured_at' => ['nullable', 'date'],
             'metadata' => ['nullable', 'array'],
         ];
     }
@@ -31,10 +36,8 @@ class BiometricCheckInRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'biometric_type.required' => 'Biometric type is required',
-            'biometric_type.in' => 'Invalid biometric type. Must be ' . implode(', ', BiometricTypeEnum::cases()),
-            'data.required' => 'Biometric data is required',
-            'captured_at.required' => 'Capture timestamp is required',
+            'biometric_type.in' => 'Invalid biometric type. Must be ' . implode(', ', array_column(BiometricTypeEnum::cases(), 'value')),
+            'data.required_without_all' => 'Biometric data or member identifier is required',
             'captured_at.date' => 'Invalid capture timestamp format',
         ];
     }

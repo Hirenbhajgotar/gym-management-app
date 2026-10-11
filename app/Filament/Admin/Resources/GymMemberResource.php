@@ -7,6 +7,8 @@ namespace App\Filament\Admin\Resources;
 use App\Enums\DefaultRole;
 use App\Enums\PaymentStatus;
 use App\Events\BiometricConsentRevoked;
+use App\Filament\Admin\Actions\EnrollBiometricAction;
+use App\Filament\Admin\Actions\RequestBiometricConsentAction;
 use App\Filament\Admin\Resources\GymMemberResource\Pages\CreateGymMember;
 use App\Filament\Admin\Resources\GymMemberResource\Pages\EditGymMember;
 use App\Filament\Admin\Resources\GymMemberResource\Pages\ListGymMembers;
@@ -15,11 +17,13 @@ use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\Measurements
 use App\Filament\Admin\Resources\GymMemberResource\RelationManagers\PaymentsRelationManager;
 use App\Filament\BaseResources\BaseResource;
 use App\Forms\Components\AddressForm;
-use App\Jobs\SendBiometricConsentEmail;
+use App\Jobs\SendBiometricConsentNotificationJob;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\Trainer;
+use App\Models\User;
 use App\Rules\ValidEmailDomain;
+use App\Services\Biometric\BiometricConsentUrlFactory;
 use Closure;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Checkbox;
@@ -45,6 +49,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -53,7 +58,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Unique;
 use libphonenumber\PhoneNumberType;
@@ -131,6 +135,12 @@ class GymMemberResource extends BaseResource
     {
         return $table
             ->modifyQueryUsing(function (EloquentBuilder $query) {
+                // Eager-load gyms on auth user to avoid per-row N+1 in policy
+                $user = auth()->user();
+                if ($user instanceof User && ! $user->relationLoaded('gyms')) {
+                    $user->load('gyms');
+                }
+
                 // Eager-load biometric consent existence to avoid N+1 queries
                 $query->withExists(['biometricConsents' => function (EloquentBuilder $query) {
                     $query->whereColumn('biometric_consents.gym_id', 'gym_members.gym_id')
@@ -280,7 +290,7 @@ class GymMemberResource extends BaseResource
                     ->label('Frozen Until')
                     ->date('M j, Y')
                     ->placeholder('-')
-                    ->visible(fn ($record) => $record?->isFrozen() ?? true)
+                    ->visible(fn (?GymMember $record): bool => $record !== null ? $record->isFrozen() : true)
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 IconColumn::make('allow_whatsapp_marketing')
@@ -416,12 +426,110 @@ class GymMemberResource extends BaseResource
                     ]),
 
                 ActionGroup::make([
+                    ActionGroup::make([
+                        EnrollBiometricAction::make(),
+
+                        Action::make('resend_consent_email')
+                            ->label('Resend Consent Email')
+                            ->icon('heroicon-o-envelope')
+                            ->visible(
+                                fn (GymMember $record) => ! $record->hasActiveBiometricConsent()
+                                    && filled($record->email)
+                            )
+                            ->authorize(fn (GymMember $record): bool => RequestBiometricConsentAction::canAuthorize($record))
+                            ->action(function (GymMember $record) {
+                                // Defence in depth — see ListGymMembers: Filament
+                                // already refuses to mount or call an action whose
+                                // authorization fails, so this guard cannot be reached
+                                // through the panel.
+                                throw_unless(
+                                    RequestBiometricConsentAction::canAuthorize($record),
+                                    AuthorizationException::class,
+                                    'Unauthorized biometric consent request.'
+                                );
+
+                                // Eager-load gym relation to prevent N+1 when Mailable accesses $gymMember->gym->name
+                                dispatch(new SendBiometricConsentNotificationJob(
+                                    gymMember: $record->load('gym'),
+                                    sendEmail: true,
+                                    sendWhatsApp: false,
+                                ));
+
+                                RequestBiometricConsentAction::auditRowAction(
+                                    RequestBiometricConsentAction::ACTION_RESEND_EMAIL,
+                                    $record,
+                                );
+
+                                Notification::make()
+                                    ->title('Consent email queued for ' . $record->name)
+                                    ->success()
+                                    ->send();
+                            }),
+
+                        Action::make('copy_consent_link')
+                            ->label('Copy Consent Link')
+                            ->icon('heroicon-o-link')
+                            ->color('gray')
+                            ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent())
+                            ->authorize(fn (GymMember $record): bool => RequestBiometricConsentAction::canAuthorize($record))
+                            ->action(function (GymMember $record, $livewire) {
+                                // Defence in depth — see ListGymMembers. This handler
+                                // hands out the signed bearer consent URL itself, so
+                                // the guard is worth keeping regardless.
+                                throw_unless(
+                                    RequestBiometricConsentAction::canAuthorize($record),
+                                    AuthorizationException::class,
+                                    'Unauthorized biometric consent request.'
+                                );
+
+                                RequestBiometricConsentAction::auditRowAction(
+                                    RequestBiometricConsentAction::ACTION_COPY_LINK,
+                                    $record,
+                                );
+
+                                $livewire->js(sprintf(
+                                    'navigator.clipboard.writeText(%s);',
+                                    json_encode(BiometricConsentUrlFactory::make($record)),
+                                ));
+
+                                Notification::make()
+                                    ->title('Link copied')
+                                    ->body('Share this link via WhatsApp, SMS, or any channel.')
+                                    ->success()
+                                    ->send();
+                            }),
+
+                        Action::make('revoke_consent')
+                            ->label('Revoke Biometric Consent')
+                            ->icon('heroicon-o-x-circle')
+                            ->color('danger')
+                            ->visible(fn (GymMember $record) => $record->hasActiveBiometricConsent())
+                            ->requiresConfirmation()
+                            ->modalHeading('Revoke Biometric Consent')
+                            ->modalDescription(
+                                'This will revoke consent and permanently delete all biometric templates for this member. This action cannot be undone.'
+                            )
+                            ->modalSubmitActionLabel('Yes, Revoke and Delete')
+                            ->action(function (GymMember $record) {
+                                $record->activeBiometricConsent()?->update([
+                                    'revoked_at' => now(),
+                                ]);
+
+                                event(new BiometricConsentRevoked($record));
+
+                                Notification::make()
+                                    ->title('Consent revoked')
+                                    ->body('All biometric data for ' . $record->name . ' has been deleted.')
+                                    ->warning()
+                                    ->send();
+                            }),
+                    ])->label('Biometric Actions')->dropdown(false),
+
                     Action::make('quick_measure')
-                        ->label('Measure')
-                        ->icon('heroicon-o-scale')
-                        ->tooltip('Add new measurement')
+                        ->label('Body Measurements')
+                        ->icon('heroicon-o-clipboard-document-list')
                         ->form([
-                            Section::make('Create member measurement')
+                            Section::make(fn (GymMember $record) => 'Add Body Measurement for ' . $record->name)
                                 ->schema(MeasurementsRelationManager::getMeasurementsFormSchema())
                                 ->columns(2),
                         ])
@@ -469,8 +577,10 @@ class GymMemberResource extends BaseResource
                                 ->default(true)
                                 ->hidden(fn (GymMember $record) => $record->isFrozen())
                                 ->helperText(function (GymMember $record) {
-                                    $min = (int) ($record->gym?->getSetting('min_freeze_days', GymMember::DEFAULT_MIN_FREEZE_DAYS) ?? GymMember::DEFAULT_MIN_FREEZE_DAYS);
-                                    $max = (int) ($record->gym?->getSetting('max_freeze_days', GymMember::DEFAULT_MAX_FREEZE_DAYS) ?? GymMember::DEFAULT_MAX_FREEZE_DAYS);
+                                    $minSetting = $record->gym?->getSetting('min_freeze_days', GymMember::DEFAULT_MIN_FREEZE_DAYS);
+                                    $min = is_numeric($minSetting) ? (int) $minSetting : GymMember::DEFAULT_MIN_FREEZE_DAYS;
+                                    $maxSetting = $record->gym?->getSetting('max_freeze_days', GymMember::DEFAULT_MAX_FREEZE_DAYS);
+                                    $max = is_numeric($maxSetting) ? (int) $maxSetting : GymMember::DEFAULT_MAX_FREEZE_DAYS;
 
                                     return "If checked, membership end date will be extended for freeze durations between {$min} and {$max} days.";
                                 }),
@@ -503,7 +613,7 @@ class GymMemberResource extends BaseResource
                                     ->success()
                                     ->send();
                             } else {
-                                $days = isset($data['days']) && $data['days'] > 0 ? (int) $data['days'] : null;
+                                $days = isset($data['days']) && is_numeric($data['days']) && (int) $data['days'] > 0 ? (int) $data['days'] : null;
                                 $extend = (bool) ($data['extend_membership'] ?? false);
                                 $oldEnd = $record->membership_end?->toDateString();
 
@@ -541,50 +651,6 @@ class GymMemberResource extends BaseResource
                         ->modalHeading(fn (GymMember $record) => $record->isFrozen() ? 'Unfreeze Member' : 'Freeze Member')
                         ->modalSubmitActionLabel(fn (GymMember $record) => $record->isFrozen() ? 'Unfreeze' : 'Freeze'),
 
-                    Action::make('resend_consent_email')
-                        ->label('Resend Consent Email')
-                        ->icon('heroicon-o-envelope')
-                        ->color('info')
-                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent()
-                            && filled($record->email)
-                        )
-                        ->action(function (GymMember $record) {
-                            // Eager-load gym relation to prevent N+1 when Mailable accesses $gymMember->gym->name
-                            dispatch(new SendBiometricConsentEmail($record->load('gym')));
-
-                            Notification::make()
-                                ->title('Consent email sent to ' . $record->email)
-                                ->success()
-                                ->send();
-                        }),
-
-                    Action::make('copy_consent_link')
-                        ->label('Copy Consent Link')
-                        ->icon('heroicon-o-link')
-                        ->color('gray')
-                        ->visible(fn (GymMember $record) => ! $record->hasActiveBiometricConsent())
-                        ->action(function (GymMember $record, $livewire) {
-                            $url = URL::temporarySignedRoute(
-                                'biometric.consent.show',
-                                now()->addDays(7),
-                                [
-                                    'gym_member_id' => $record->id,
-                                    'gym_id' => $record->gym_id,
-                                ]
-                            );
-
-                            $escapedUrl = json_encode($url);
-                            $livewire->js("
-                                navigator.clipboard.writeText({$escapedUrl});
-                            ");
-
-                            Notification::make()
-                                ->title('Link copied')
-                                ->body('Share this link via WhatsApp, SMS, or any channel.')
-                                ->success()
-                                ->send();
-                        }),
-
                     // Action::make('open_consent_page')
                     //     ->label('Open on Tablet (Walk-in)')
                     //     ->icon('heroicon-o-device-tablet')
@@ -600,34 +666,60 @@ class GymMemberResource extends BaseResource
                     //     ))
                     //     ->openUrlInNewTab(),
 
-                    Action::make('revoke_consent')
-                        ->label('Revoke Biometric Consent')
-                        ->icon('heroicon-o-x-circle')
-                        ->color('danger')
-                        ->visible(fn (GymMember $record) => $record->hasActiveBiometricConsent())
-                        ->requiresConfirmation()
-                        ->modalHeading('Revoke Biometric Consent')
-                        ->modalDescription(
-                            'This will revoke consent and permanently delete all biometric templates for this member. This action cannot be undone.'
-                        )
-                        ->modalSubmitActionLabel('Yes, Revoke and Delete')
-                        ->action(function (GymMember $record) {
-                            $record->activeBiometricConsent()?->update([
-                                'revoked_at' => now(),
-                            ]);
-
-                            event(new BiometricConsentRevoked($record));
-
-                            Notification::make()
-                                ->title('Consent revoked')
-                                ->body('All biometric data for ' . $record->name . ' has been deleted.')
-                                ->warning()
-                                ->send();
-                        }),
                 ]),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
+                    BulkAction::make(RequestBiometricConsentAction::BULK_ACTION)
+                        ->label('Send Biometric Consent')
+                        ->tooltip('Send biometric consent notification to selected unconsented members')
+                        ->icon('heroicon-o-finger-print')
+                        ->color('primary')
+                        ->modalHeading('Send Biometric Consent Request')
+                        ->modalDescription(fn (EloquentCollection $records): string => RequestBiometricConsentAction::bulkDescription($records))
+                        ->modalSubmitActionLabel('Send Consent Requests')
+                        ->authorize(fn (): bool => RequestBiometricConsentAction::canAuthorize())
+                        ->form(RequestBiometricConsentAction::formSchema())
+                        ->action(function (EloquentCollection $records, array $data): void {
+                            throw_unless(
+                                RequestBiometricConsentAction::canAuthorize(),
+                                AuthorizationException::class,
+                                'Unauthorized biometric consent request.'
+                            );
+
+                            ['sendEmail' => $sendEmail, 'sendWhatsApp' => $sendWhatsApp] =
+                                RequestBiometricConsentAction::channelFlags($data);
+
+                            if (! $sendEmail && ! $sendWhatsApp) {
+                                RequestBiometricConsentAction::notifyNoChannelSelected();
+
+                                return;
+                            }
+
+                            $tenant = Filament::getTenant();
+
+                            // A missing tenant means the rate limit is skipped on
+                            // the one path that accepts a caller-supplied
+                            // selection, so it has to be refused rather than
+                            // tolerated.
+                            throw_unless(
+                                $tenant instanceof Gym,
+                                AuthorizationException::class,
+                                'No gym is selected.',
+                            );
+
+                            $gymId = (int) $tenant->getKey();
+
+                            if (! RequestBiometricConsentAction::throttle($gymId)) {
+                                return;
+                            }
+
+                            $report = RequestBiometricConsentAction::dispatch($records, $sendEmail, $sendWhatsApp);
+
+                            RequestBiometricConsentAction::notifyQueued($report);
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     BulkAction::make('enableWhatsappMarketing')
                         ->label('Enable WhatsApp Marketing')
                         ->tooltip('Enable WhatsApp Marketing for selected members')

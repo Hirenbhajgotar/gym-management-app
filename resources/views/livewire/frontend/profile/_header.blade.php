@@ -1,6 +1,6 @@
-<!-- Flash Messages (Success / Error alerts) -->
+<!-- Flash Messages -->
 @if (session()->has('success'))
-    <div class="mb-8 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.15)] flex items-start gap-3 animate-fade-in">
+    <div class="mb-8 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3 animate-fade-in">
         <span class="material-symbols-outlined text-emerald-400 text-2xl flex-shrink-0 mt-0.5">check_circle</span>
         <div class="flex-1 text-sm font-medium text-emerald-200">
             {{ session('success') }}
@@ -9,7 +9,7 @@
 @endif
 
 @if (session()->has('error'))
-    <div class="mb-8 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 shadow-[0_0_20px_rgba(244,63,94,0.15)] flex items-start gap-3 animate-fade-in">
+    <div class="mb-8 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 animate-fade-in">
         <span class="material-symbols-outlined text-rose-400 text-2xl flex-shrink-0 mt-0.5">error</span>
         <div class="flex-1 text-sm font-medium text-rose-200">
             {{ session('error') }}
@@ -18,34 +18,34 @@
 @endif
 
 <!-- Profile Hero Header -->
-<div class="space-y-6 mb-12 animate-slide-up">
+<div class="space-y-6 mb-12">
     <!-- Status Badge Pill -->
     <div class="flex flex-wrap items-center gap-3">
-        <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#0d1520]/90 border border-emerald-500/40 text-xs font-bold uppercase tracking-widest text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+        <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#0d1520]/90 border border-emerald-500/40 text-xs font-bold uppercase tracking-widest text-emerald-400">
             <span class="relative flex h-2 w-2">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
             </span>
-            <span>ACCOUNT CONTROL CENTER • LIVE OPERATIONAL STATUS</span>
+            <span>ACCOUNT OVERVIEW</span>
         </div>
 
         <div class="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-mono text-gray-400">
             <span class="material-symbols-outlined text-xs text-cyan-400">lock</span>
-            <span>256-BIT ENCRYPTED PORTAL</span>
+            <span>SECURE PORTAL</span>
         </div>
     </div>
 
-    <!-- Authentic Kinetic Headline & Live Stats Header -->
+    <!-- Header Headline & Live Stats -->
     <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div class="space-y-2">
             <h1 class="font-headline font-black text-4xl sm:text-5xl lg:text-6xl leading-[0.95] tracking-tighter text-white uppercase">
                 WELCOME BACK, <br />
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-300 to-[#cafd00] drop-shadow-[0_0_30px_rgba(6,182,212,0.4)]">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-300 to-[#cafd00]">
                     {{ $this->user->name }}
                 </span>
             </h1>
             <p class="text-gray-400 font-medium text-base sm:text-lg max-w-2xl">
-                Monitor your multi-branch gym locations, system telemetry, active membership limits, billing invoices, and plan upgrades.
+                Manage your gym locations, active subscriptions, member capacity, invoices, and billing plans.
             </p>
         </div>
 

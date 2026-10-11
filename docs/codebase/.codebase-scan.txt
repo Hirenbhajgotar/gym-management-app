@@ -1,0 +1,201 @@
+=== DIRECTORY TREE (max depth 3, source files only) ===
+app/Actions
+app/Biometrics
+app/Casts
+app/Console
+app/Contracts
+app/DTOs
+app/Enums
+app/Events
+app/Exceptions
+app/Exports
+app/Filament
+app/Filament/Actions
+app/Filament/Admin
+app/Filament/BasePages
+app/Filament/BaseResources
+app/Filament/BaseWidgets
+app/Filament/Components
+app/Filament/Exports
+app/Filament/Imports
+app/Filament/Pages
+app/Filament/Staff
+app/Filament/SuperAdmin
+app/Forms
+app/Helpers
+app/Http
+app/Http/Controllers
+app/Http/Middleware
+app/Http/Requests
+app/Http/Resources
+app/Imports
+app/Interfaces
+app/Jobs
+app/Listeners
+app/Livewire
+app/Mail
+app/Models
+app/Notifications
+app/Observers
+app/Permissions
+app/Policies
+app/Providers
+app/Providers/Filament
+app/Rules
+app/Services
+app/Tables
+app/Traits
+bootstrap/app.php
+bootstrap/providers.php
+config/app.php
+config/auth.php
+config/biometrics.php
+config/database.php
+config/filament.php
+config/permission.php
+config/queue.php
+config/services.php
+database/factories
+database/migrations
+database/seeders
+docker/mysql-test-init
+public/index.php
+resources/css
+resources/views
+resources/views/livewire
+resources/views/volt
+routes/api.php
+routes/channels.php
+routes/console.php
+routes/web.php
+tests/Feature
+tests/Unit
+tests/TestCase.php
+
+=== STACK DETECTION (manifest files) ===
+--- composer.json ---
+{
+    "name": "laravel/livewire-starter-kit",
+    "require": {
+        "php": "^8.2",
+        "aws/aws-sdk-php": "^3.373",
+        "barryvdh/laravel-dompdf": "^3.1",
+        "codeat3/blade-phosphor-icons": "^2.3",
+        "dotswan/filament-laravel-pulse": "^1.1",
+        "eightynine/filament-excel-import": "^3.1",
+        "facebook/graph-sdk": "*",
+        "filafly/filament-phosphor-icons": "^0.2.0",
+        "filament/filament": "^3.3",
+        "flowframe/laravel-trend": "^0.4.0",
+        "intervention/image": "*",
+        "joaopaulolndev/filament-general-settings": "^1.0",
+        "lara-zeus/qr": "^2.0",
+        "laravel/framework": "^12.0",
+        "laravel/pulse": "^1.4",
+        "laravel/reverb": "^1.0",
+        "laravel/sanctum": "^4.0",
+        "laravel/tinker": "^2.10.1",
+        "livewire/flux": "^2.1.1",
+        "livewire/volt": "^1.7.0",
+        "maatwebsite/excel": "^3.1",
+        "malzariey/filament-daterangepicker-filter": "^3.3",
+        "marcelweidum/filament-expiration-notice": "^1.0",
+        "mokhosh/filament-kanban": "^2.11",
+        "mokhosh/filament-rating": "^1.4",
+        "opcodesio/log-viewer": "^3.24",
+        "predis/predis": "^3.2",
+        "propaganistas/laravel-phone": "^6.0",
+        "razorpay/razorpay": "2.*",
+        "rmsramos/activitylog": "^1.0",
+        "spatie/eloquent-sortable": "^4.5",
+        "spatie/laravel-backup": "^9.3",
+        "spatie/laravel-permission": "^6.20",
+        "spatie/laravel-sitemap": "^8.0",
+        "storviaio/vantage": "^0.1.25",
+        "twilio/sdk": "^8.8",
+        "ysfkaya/filament-phone-input": "^3.1"
+    },
+    "require-dev": {
+        "barryvdh/laravel-debugbar": "^3.15",
+        "barryvdh/laravel-ide-helper": "^3.6",
+        "driftingly/rector-laravel": "^2.5",
+        "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.0",
+        "laravel/boost": "^2.0",
+        "laravel/pail": "^1.2.2",
+        "laravel/pint": "^1.27",
+        "laravel/sail": "^1.41",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "phpunit/phpunit": "^11.5.3"
+    }
+}
+--- package.json ---
+{
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "@tailwindcss/vite": "^4.0.7",
+        "autoprefixer": "^10.4.20",
+        "axios": "^1.7.4",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^1.0",
+        "tailwindcss": "^4.0.7",
+        "vite": "^6.0"
+    },
+    "devDependencies": {
+        "laravel-echo": "^2.0.2",
+        "pusher-js": "^8.4.0"
+    }
+}
+
+=== ENTRY POINTS ===
+Found: public/index.php
+Found: artisan
+
+=== LINTING AND FORMATTING CONFIG ===
+Found: .editorconfig
+Found: pint.json
+Found: phpstan.neon
+Found: rector.php
+
+=== ENVIRONMENT VARIABLE TEMPLATES ===
+--- .env.example ---
+APP_NAME=FitnessFlow
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
+DB_CONNECTION=mysql
+DB_HOST=db
+DB_PORT=3306
+MYSQL_TEST_DATABASE=gym_app_test
+BROADCAST_CONNECTION=reverb
+QUEUE_CONNECTION=redis
+CACHE_STORE=redis
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+TWILIO_ACCOUNT_SID=
+META_APP_ID=
+AWS_REKOGNITION_KEY=
+
+=== TODO / FIXME / HACK (production code only, test dirs excluded) ===
+None found in production application code.
+
+=== MONOREPO SIGNALS ===
+No monorepo signals detected. Single-repo Laravel 12 multi-tenant application.
+
+=== CI/CD PIPELINES ===
+CI/CD: GitHub Actions (.github/workflows)
+
+=== CONTAINERS & ORCHESTRATION ===
+Container: Docker found (Dockerfile)
+Orchestration: Docker Compose found (docker-compose.yml)
+
+=== SECURITY & COMPLIANCE ===
+Security: .coderabbit.yaml, Spatie permission RBAC, signed biometric routes, ADMS token auth, Webhook HMAC verification
+
+=== PERFORMANCE & TESTING ===
+PHPUnit 11 with custom test database safety checks (gym_app_test)
+
+=== SCAN COMPLETE ===
