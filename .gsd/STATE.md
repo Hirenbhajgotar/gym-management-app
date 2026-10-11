@@ -1,46 +1,21 @@
----
-updated: 2026-10-05T12:26:45+05:30
----
-
-# Project State
+# STATE.md — Project State
 
 ## Current Position
+- **Milestone**: v1.0 — Biometric Consent Notification (Email & WhatsApp) (Completed 🎉)
+- **Status**: Milestone Complete
+- **Requirements**: 11 / 11 Complete
 
-**Milestone:** Codebase Assessment & Mapping  
-**Phase:** 0 - Architecture & Stack Inventory  
-**Status:** ready  
-**Plan:** None  
-
-## Last Action
-
-Completed comprehensive codebase mapping via `/map`:
-- Generated `.gsd/ARCHITECTURE.md` detailing multi-tenant panels, biometric hardware engine, WhatsApp automation, and data flows.
-- Generated `.gsd/STACK.md` detailing runtime, packages, infrastructure, and component inventory.
-- Cataloged technical debt items (deprecated WhatsApp/Twilio classes, PHPStan baseline backlog, legacy root scripts).
+## Last Milestone Summary
+- **Milestone**: v1.0 — Biometric Consent Notification (Email & WhatsApp)
+- **Summary**: [.gsd/milestones/v1.0-SUMMARY.md](milestones/v1.0-SUMMARY.md)
+- **Archive**: `.gsd/milestones/v1.0/`
+- **Phases Completed**: 6 phases (Phases 1-6 across 10 plans)
+- **Requirements Satisfied**: REQ-01 through REQ-11 Complete
+- **Test Database**: `gym_app_test` (90/90 tests passed, 476 assertions, 0 regressions)
+- **Code Style**: PSR-12 / Pint clean (47 files clean)
+- **Static Analysis**: 0 errors (PHPStan Level Max + Strict Rules)
+- **Documentation**: [ADR-0003](docs/adr/adr-0003-biometric-consent-distribution-and-dual-gate-architecture.md), sibling ADR cross-references, and CHANGELOG.md updated
 
 ## Next Steps
-
-1. Run `/plan` to decompose upcoming feature or refactoring requirements into actionable phases.
-2. Select target milestone tasks (e.g. Staff Panel stabilization, biometric hardware enhancements, WhatsApp template upgrades).
-
-## Active Decisions
-
-| Decision | Choice | Made | Affects |
-|----------|--------|------|---------|
-| Multi-Tenancy Strategy | Filament native tenancy + Spatie Teams (`gym_id`) | Established | All tenant models, policies, and Filament panels |
-| WhatsApp Architecture | Direct Meta Cloud API (WABA) primary, Twilio legacy fallback | Established | WhatsApp services, billing, broadcast engine |
-| Biometric Engine | Dual-channel: ADMS push + Hikvision ISAPI + Webhook relay | Established | Hardware terminal integration and attendance |
-| Test DB Protection | Strictly enforce `gym_app_test`, hard-fail on `gym_app` | Established | All unit, feature, and CI test workflows |
-
-## Blockers
-
-None.
-
-## Concerns
-
-- `phpstan-baseline.neon` (~1.07MB) contains extensive suppressed legacy static analysis notices.
-- Deprecated services (`TwilioAccountManager`, `TwilioWhatsAppService`, `WabaMigrationService`, `EmbeddedSignupService`) remain for backward compatibility and should be cleaned up post-migration.
-
-## Session Context
-
-Repository is fully cataloged and documented in `.gsd/`. Ready for phase planning or engineering tasks.
+1. User manually stages and commits changes to Git.
+2. Run `/new-milestone` to initialize the next milestone.

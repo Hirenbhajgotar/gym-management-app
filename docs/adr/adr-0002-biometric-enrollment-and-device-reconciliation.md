@@ -170,3 +170,4 @@ We designed and implemented a unified, idempotent, self-healing **Biometric Enro
 - **REF-006**: [BiometricTemplatePropagator Service](file:///app/Biometrics/Services/BiometricTemplatePropagator.php)
 - **REF-007**: [BiometricTemplateSuperseder Service](file:///app/Biometrics/Services/BiometricTemplateSuperseder.php)
 - **REF-008**: [AdmsCommandKey Value Object](file:///app/Biometrics/ValueObjects/AdmsCommandKey.php)
+- **REF-009**: [ADR-0003: Multi-Channel Biometric Consent Distribution and Dual-Gated Notification Architecture](file:///docs/adr/adr-0003-biometric-consent-distribution-and-dual-gate-architecture.md)

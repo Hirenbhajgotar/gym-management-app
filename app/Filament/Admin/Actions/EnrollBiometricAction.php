@@ -43,7 +43,6 @@ class EnrollBiometricAction
         return TableAction::make($name)
             ->label('Enroll Biometric')
             ->icon('heroicon-o-finger-print')
-            ->color('info')
             ->tooltip('Enroll member biometric in hardware device')
             ->modalHeading(function (?GymMember $record = null, mixed $livewire = null): string {
                 $member = self::resolveMember($record, $livewire);

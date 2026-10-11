@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Pages;
 
 use App\Enums\DefaultRole;
+use App\Enums\NotificationType;
 use App\Filament\BasePages\BasePage;
 use App\Models\GymSetting;
 use App\Models\Payment;
@@ -51,6 +52,7 @@ class GymSettings extends BasePage implements HasActions, HasForms
         'followup_reminders',
         'lead_reminders_notifications',
         'qr_checkin_otp_enabled',
+        NotificationType::BIOMETRIC_CONSENT->value,
     ];
 
     public function defaultRolePermissions(): array
@@ -69,7 +71,12 @@ class GymSettings extends BasePage implements HasActions, HasForms
 
     public function mount(): void
     {
-        $settings = GymSetting::query()->where('gym_id', $this->getGym()->id)
+        $gym = $this->getGym();
+        if (! $gym) {
+            return;
+        }
+
+        $settings = GymSetting::query()->where('gym_id', $gym->id)
             ->pluck('value', 'key')
             ->all();
 
@@ -119,8 +126,8 @@ class GymSettings extends BasePage implements HasActions, HasForms
     private function getWhatsAppNotificationTab(): Tab
     {
         $gym = $this->getGym();
-        $account = $gym->whatsAppAccount;
-        $whatsappConfigured = $account?->isActive() && $account?->isVerified();
+        $account = $gym?->whatsAppAccount;
+        $whatsappConfigured = $account?->isActive() === true && $account?->isVerified() === true;
 
         return Tab::make('whatsapp')
             ->label('WhatsApp Settings')
@@ -148,17 +155,28 @@ class GymSettings extends BasePage implements HasActions, HasForms
                             ->afterStateUpdated(function (
                                 callable $set,
                                 $state,
-                            ) {
+                            ) use ($gym) {
                                 $settings = [];
-                                if ($state) {
-                                    $settings = GymSetting::query()->where('gym_id', $this->getGym()->id)
+                                if ($state && $gym !== null) {
+                                    $settings = GymSetting::query()->where('gym_id', $gym->id)
                                         ->whereIn('key', self::NOTIFICATION_KEYS)
                                         ->pluck('value', 'key')
                                         ->all();
                                 }
 
                                 foreach (self::NOTIFICATION_KEYS as $key) {
-                                    $set($key, $state && ($settings[$key] ?? 'false') === 'true');
+                                    // An absent row means the per-type switch was never
+                                    // configured, so it follows the master switch. Treating
+                                    // it as off force-wrote false for every gym created
+                                    // before the key was seeded, which left the master
+                                    // switch arithmetically unable to enable them.
+                                    // blank() rather than === null because a row holding
+                                    // SQL NULL reads back through the accessor's (string)
+                                    // cast as '', which a strict null check misses and
+                                    // would force-write false over the master switch.
+                                    $stored = $settings[$key] ?? null;
+
+                                    $set($key, $state && (blank($stored) || filter_var($stored, FILTER_VALIDATE_BOOLEAN)));
                                 }
                             })
                             ->helperText(
@@ -207,6 +225,10 @@ class GymSettings extends BasePage implements HasActions, HasForms
                             ->helperText(
                                 'Send reminders for pending leads that need attention',
                             ),
+
+                        Toggle::make(NotificationType::BIOMETRIC_CONSENT->value)
+                            ->label(NotificationType::BIOMETRIC_CONSENT->getLabel())
+                            ->helperText(NotificationType::BIOMETRIC_CONSENT->getDescription()),
 
                         Toggle::make('qr_checkin_otp_enabled')
                             ->label('CheckIn/CheckOut OTP')
@@ -348,6 +370,9 @@ class GymSettings extends BasePage implements HasActions, HasForms
     {
         $data = $this->form->getState();
         $gym = $this->getGym();
+        if (! $gym) {
+            return;
+        }
 
         foreach ($data as $key => $value) {
             $this->saveSetting($gym->id, $key, $value);
@@ -366,7 +391,12 @@ class GymSettings extends BasePage implements HasActions, HasForms
 
     public function downloadInvoice(int $paymentId)
     {
-        $payment = Payment::query()->where('gym_id', $this->getGym()->id)
+        $gym = $this->getGym();
+        if (! $gym) {
+            abort(404);
+        }
+
+        $payment = Payment::query()->where('gym_id', $gym->id)
             ->findOrFail($paymentId);
 
         return resolve(InvoiceService::class)->downloadInvoice($payment);

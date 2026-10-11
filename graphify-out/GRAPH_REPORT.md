@@ -1,36 +1,36 @@
-# Graph Report - gym-app  (2026-10-07)
+# Graph Report - gym-app  (2026-10-10)
 
 ## Corpus Check
-- 2597 files · ~1,875,860 words
+- 2639 files · ~1,906,424 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 161 file(s) not represented in the graph (top: .csv 107, (none) 25, .css 14)
+- Unclassified: 163 file(s) not represented in the graph (top: .csv 107, (none) 27, .css 14)
 
 ## Summary
-- 39504 nodes · 72447 edges · 4522 communities (1629 shown, 2893 thin omitted)
-- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 6734 edges (avg confidence: 0.87)
+- 39981 nodes · 74129 edges · 4542 communities (1639 shown, 2903 thin omitted)
+- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 7082 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `77fb2793`
+- Built from commit: `9d61b2ae`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - .now
-- TemplateSubmissionResult
-- Illuminate\Contracts\Queue\ShouldQueue
+- x
+- NotificationChannelResolver
 - components/chart.js
 - Laravel 13 Best Practices - Complete Guide
-- .deleteAction
-- pathlib
-- Filament\Forms\Form
-- Testable
-- GymMemberAttendanceResource
-- rich-editor.js
 - MemberPayment
+- pathlib
+- MemberGrowthChart
+- Testable
+- Illuminate\Support\Facades\Log
+- rich-editor.js
+- Payment
 - filament-laravel-pulse.js
 - app/storage/framework/views/c57ab9b15a36e7867ec59c62007a8823.blade.php
-- WabaMigration
+- Illuminate\Queue\SerializesModels
 - Auth
 - Request
 - Illuminate\Database\Schema\Blueprint
@@ -40,41 +40,41 @@
 - Laravel 13 Best Practices - Complete Guide
 - Laravel 13 Best Practices - Complete Guide
 - Laravel 13 Best Practices - Complete Guide
-- Filament\Resources\Pages\ListRecords
+- WhatsAppMessageCredit
 - app/.cursor/environment.json
 - Laravel 13 Best Practices - Complete Guide
-- Log
-- Illuminate\Http\Request
+- BasePolicy
+- .config
 - DB
 - Queue
-- Exception
+- Expense
 - markdown-editor.js
 - App
 - _update
-- RegisterGym.php
+- TwilioTemplateService
 - Schema
-- .config
+- Log
 - select.js
-- TodaysBirthdaysWidgetTest
+- RateLimiter
 - TeamPermissionRegistrar
 - n
 - constructor
-- ImportDefaultPermissionsJob
-- Notification
-- MetaWhatsAppProvider
-- RateLimiter
+- ExpenseStatus
+- Subscription
+- WhatsApp Embedded Signup Fix Plan
+- ue
 - Laravel 13 Best Practices - Complete Guide
 - Laravel 13 Best Practices - Complete Guide
 - Laravel 13 Best Practices - Complete Guide
 - draw
-- Expense
-- ot
-- .lockForUpdate
+- WhatsAppAccountObserver
+- L
+- e
 - DesignSystemGenerator
-- WhatsAppSetupTest.php
-- PermissionSetting
-- Illuminate\Support\Collection
-- deleteInDirection
+- MetaWhatsAppProvider
+- LoginActivity.php
+- .resolveDataElementOptions
+- WhatsAppCreditTransaction
 - Gym Management Software with CRM Rules for Kilo Code AI Agent
 - Vt
 - Filament\Support\Contracts\HasLabel
@@ -82,72 +82,72 @@
 - Gym Management System - Google Gemini Code Assistant Context
 - $e
 - file-upload.js
-- Throwable
-- MetaApiClient
-- Payment
-- Re
+- GymMemberImport
+- Filament\Tables\Table
+- Currency.php
+- WhatsAppProviderTypeEnum
 - Good Example
 - View
 - Eloquent
 - ImportWhatsAppTemplatesJob
-- MemberReportExport.php
-- ParserHelper
+- ExpenseDetailsSheet
+- WhatsAppChannel
 - _ide_helper.php
 - Gt
 - Http
-- BiometricDeviceResource.php
-- lsp-98e2cf4a33afe7a8.php
-- Concurrency
+- Components
+- lsp-253506b4f266ebf3.php
+- Broadcast
 - Cn
 - Context
-- x
-- WhatsAppMessageCredit
+- Ht
+- .section
 - Illuminate\Database\Migrations\Migration
 - RequestContact
-- Filament\Clusters\Cluster
-- .opencode/skills/design/scripts/cip/core.py
-- BiometricDevice
+- deleteInDirection
+- .agents/skills/design/scripts/cip/core.py
+- BiometricTemplate
 - WhatsAppAccount
 - Queue Check
 - filament/echo.js
 - Session
-- WhatsAppSanitizer
+- WhatsAppPhoneNumber
 - Route
 - updateElements
 - SendBroadcastJob
-- WhatsAppTemplateService
+- WhatsAppProviderFactory
 - getSelectedRange
 - Debugbar
 - File
 - GSD-STYLE.md
-- PaymentForm.php
-- support.js
+- ExportAction
+- F
 - TailwindConfigGenerator
 - WhatsAppAccountStatusEnum
-- RolePermissionsStatsWidget
-- WhatsAppTemplateStatusEnum
+- ErrorReport
+- BaseAttendanceResource
 - TODOs
 - te
 - scan.py
 - Cache
-- isHorizontal
+- ot
 - TestWebStackFreshness
 - Storage
-- WhatsAppTemplateResource
-- F
+- PaymentsRelationManager.php
+- updateElements
 - WhatsAppBroadcast
-- ExportAction
-- FollowUpsRelationManager
+- HasReportFilters
+- FollowUpsRelationManager.php
 - I
-- Config
-- Illuminate\Support\ServiceProvider
+- o
+- format_ascii_box
+- qn
 - s
-- e
-- Filament\Actions\Exports\Models\Export
+- _a
 - .agents/skills/ui-ux-pro-max/scripts/core.py
 - Artisan
 - Illuminate\Database\Eloquent\Builder
-- Filament\Tables\Table
+- Filament\Forms\Form
 - Verification Strategy
 - GSD Planner Agent
 - WhatsAppBroadcastStatusEnum
@@ -160,14 +160,14 @@
 - .agents/skills/ui-ux-pro-max/scripts/validate_data.py
 - notifications.js
 - ExpenseCategory
-- withTargetDOMRange
+- WhatsAppBroadcastChunkJobTest.php
 - _update
 - .opencode/skills/ui-ux-pro-max/scripts/validate_data.py
 - Blade
 - OCR Map Workflow
 - Laravel Security Best Practices
 - Laravel Security Best Practices
-- HasTenantAccess
+- BaseImporter.php
 - Laravel Security Best Practices
 - Laravel Security Best Practices
 - Tailwind CSS Utility Reference
@@ -176,29 +176,28 @@
 - Tailwind CSS Utility Reference
 - Laravel Intelligent Refactor Skill
 - Laravel Intelligent Refactor Skill
-- rr
+- or
 - app/.sisyphus/plans/seo-optimization.md
 - .agents/skills/ui-ux-pro-max/scripts/tests/test_data_contracts.py
-- ChartToImageService.php
-- ExpenseMonthlyTrendChart.php
+- _each
+- ExpenseFactory
 - PhoneNumber
 - Oi
 - setAttribute
 - render
 - .opencode/skills/ui-ux-pro-max/scripts/tests/test_data_contracts.py
-- TrainerAttendanceResource
+- MemberReports.php
 - Convert `pt_salary_per_member` to Percentage-Based Commission
-- .opencode/skills/ui-ux-pro-max/scripts/design_system.py
-- s
+- DesignSystemGenerator
+- WhatsAppSanitizer
 - Gate
 - e
-- BaseTableWidget
+- WhatsAppTemplateResource
 - Mail
 - URL
 - draw
 - filament-phone-input.js
 - Brand Guidelines v1.0
-- CreateRecord
 - require
 - Pulse
 - Brand Guidelines v1.0
@@ -209,7 +208,7 @@
 - Canvas Design System
 - Process
 - Canvas Design System
-- TwilioAccountManager
+- WhatsApp Provider: Owner vs Super-Admin Implementation Plan
 - Laravel Intelligent Refactor Skill
 - Prerequisites
 - Gym Management System - Google Gemini Code Assistant Context
@@ -218,8 +217,8 @@
 - package.json
 - spacing
 - app/.sisyphus/plans/twilio-provider-composition-refactor.md
-- WhatsApp Template Import Command & Queue Job
-- Bus
+- .updateOrCreate
+- Event
 - Advanced Form Patterns with Filament
 - spacing
 - b
@@ -227,25 +226,25 @@
 - Tailwind CSS Responsive Design
 - Gemini Adapter
 - ReportCacheService
-- Artisan
-- WhatsAppUsageLog
+- start
+- ProcessSocialMediaLead
 - GSD Executor Agent
 - TwilioWhatsAppProvider
-- AdmsDeviceCommandResource.php
+- Artisan
 - Form & Input Components
 - Tailwind CSS Responsive Design
-- inRange
-- Is
+- r
+- s
 - button
 - What You Must Do When Invoked
-- WhatsAppProviderFactory
+- TemplatePicker
 - app/.sisyphus/plans/refactor-whatsapp-template-resource.md
 - Vite
 - button
-- Closure
+- .opencode/skills/design/scripts/cip/core.py
 - Typography Specifications
 - .agents/skills/ui-ux-pro-max/scripts/tests/test_design_system_mode.py
-- .agents/skills/ui-ux-pro-max/scripts/tests/test_style_taxonomy.py
+- unittest
 - .opencode/skills/ui-ux-pro-max/scripts/tests/test_design_system_mode.py
 - WhatsappDashboard
 - scan.js
@@ -256,15 +255,15 @@
 - Common System Designs
 - Laravel Best Practices (Cross-Cutting)
 - Bad Example
-- ProcessTwilioTemplateWebhook
+- WhatsAppTemplateStatusMapper
 - WhatsAppProviderInterface
 - Blog
 - Laravel Best Practices (Cross-Cutting)
 - Laravel Best Practices (Cross-Cutting)
-- Ae
-- add
+- ef
+- _notify
 - app/.sisyphus/plans/embedded-signup-refactor.md
-- Plan
+- format_ascii_box
 - Logo Usage Rules
 - Component Specifications
 - .agents/skills/design-system/scripts/html-token-validator.py
@@ -282,36 +281,36 @@
 - radius
 - Building Blocks of Scalable Systems
 - WhatsAppBillingModeEnum
-- Broadcast.php
+- CreateRecord
 - Illuminate\Database\Eloquent\Factories\Factory
-- BlogListing
+- D
 - Illuminate\Support\Facades\Schema
 - Cookie
 - radius
-- he
-- B
+- parse
+- GymMemberAttendanceResource
 - g
 - gray
 - Testing Resources
 - app/.sisyphus/plans/whatsapp-owner-superadmin-provider.md
-- WhatsAppPackage
+- ShareableReportLink
 - Validator
 - Excel
 - gray
 - et
-- Ht
+- Twilio Phone Number Cost Surcharge
 - SEO Optimization Work Plan - FluxFitness
-- FilamentPermissionDiscoveryTest
+- Illuminate\Contracts\Database\Query\Builder
 - Asset Approval Checklist
 - Logo AI Prompt Engineering
 - color
 - whatsapp-purchase-credits.blade.php
 - Door Access Control
-- RequestDemo
+- BaseChartWidget
 - Asset Approval Checklist
 - Logo AI Prompt Engineering
 - color
-- qn
+- Xc
 - Work Plan: Blog SEO Fields + Detail Page Redesign
 - Color Palette Management
 - CIP Deliverable Guide
@@ -319,13 +318,13 @@
 - Reliability and Operations
 - UI Styling Skill
 - initOffsets
-- ADR-002: Door Access Attendance Integrity
+- Concurrency
 - app/.sisyphus/plans/whatsapp-embedded-signup-fix.md
 - TODOs
 - WARP.md
-- WhatsApp Provider: Owner vs Super-Admin Implementation Plan
+- RolesAndPermissionsService
 - BasePage
-- MetaTemplateService
+- .opencode/skills/design-system/scripts/fetch-background.py
 - Super Admin Login Activity Monitoring
 - code:bash (php artisan queue:work --tries=3 --timeout=90)
 - Flow Analysis: {file_path}
@@ -336,23 +335,23 @@
 - CIP Deliverable Guide
 - States and Variants
 - UI Styling Skill
-- fn
-- g
+- support.js
+- S
 - Step 6 - Generate Obsidian vault (opt-in) + HTML
 - z
-- Blog Management System Implementation Plan
+- BlogListing
 - QR Code Attendance System
-- QR Code Attendance - OTP Verification Implementation Plan
+- QRAttendance
 - app/.sisyphus/plans/seo-improvements.md
 - Meta WhatsApp Template Status Webhook
 - SEO Improvements Work Plan
 - WABA Connection Integration into WhatsApp Setup Page
 - Workflow
-- SummaryStatCard
+- .count
 - Work Plan: Reusable OTP Input Component for Filament
-- HasReportFilters.php
+- Auto-Discovery of Default Role Permissions
 - Biometric Provider Abstraction
-- Response
+- TodaysBirthdaysWidgetTest
 - Livewire Components
 - Queue System
 - Livewire Components
@@ -362,42 +361,42 @@
 - Livewire Components
 - Queue System
 - Workflow
-- format_ascii_box
+- BiometricConsentMail
 - Biometric Device Door Lock/Unlock Implementation Plan
-- Illuminate\Foundation\Queue\Queueable
+- Component
 - WhatsApp Per-Tenant Provider Selection Plan
-- GenerateFavicons
+- ExpenseReportsCluster
 - Biometric Consent System — FluxFitness
-- re
+- .agents/skills/ui-ux-pro-max/scripts/reasoning_contract.py
 - Design System
 - Laravel Security Best Practices
 - Tailwind CSS Customization
 - Laravel Security Best Practices
-- OtpInput
-- Auto-Discovery of Default Role Permissions
-- Context Fetch Skill
+- Closure
+- BasePermissionsPage
+- addEventListener
 - Laravel Security Best Practices
 - Laravel Security Best Practices
 - app/.sisyphus/plans/biometric-door-lock-unlock.md
 - Design System
 - Tailwind CSS Customization
-- PulseDashboard.php
+- Page
 - Z
 - Biometric Consent System — FluxFitness
 - Blog Share Functionality Implementation Plan
-- BasePermissionsPage
+- getMinMax
 - Fix phone_number_sid Storage Issue
 - .agents/skills/design-system/scripts/generate-slide.py
 - Back-of-the-Envelope Estimation
 - ManageUserRoleCommand
 - GSD Runbook
 - Project Context
-- Illuminate\Support\Facades\Date
+- BiometricDevice
 - AdminPanelProvider.php
 - ExchangeRateService
-- Page
-- Meta WhatsApp Template Status Webhook
-- WhatsAppProviderTypeEnum
+- getDatasetMeta
+- TrainerReports.php
+- PulseDashboard.php
 - _setCountry
 - Sitemap Generation with Spatie Laravel Sitemap
 - TwilioWhatsAppProvider Composition Refactoring
@@ -412,22 +411,22 @@
 - Database Design and Scaling
 - Quick Reference
 - GSD Debugger Agent
-- ScheduledReport
+- qm
 - Quick Reference
 - Quick Reference
 - Flux
 - Changelog
-- Illuminate\Queue\SerializesModels
-- Pdf
-- CmsPage
-- Component
+- ProcessMetaTemplateWebhook
+- LeadConversionChart
+- ResolvesExportImportPermission
+- SummaryStatCard
 - {Reviewer Name} Review
 - Design
 - filament/app.js
 - Stitch Blog Page Implementation Plan
 - ADDED Requirements
-- TemplatePicker
-- Twilio Phone Number Cost Surcharge
+- Notification
+- WhatsAppPackage
 - Routing by Task Type
 - fontSize
 - Step 2: Propose High-Level Design & Get Buy-In
@@ -435,8 +434,8 @@
 - .agents/skills/ui-ux-pro-max/scripts/tests/test_core_data_quality.py
 - app/.sisyphus/plans/filament-otp-input.md
 - .opencode/skills/ui-ux-pro-max/scripts/tests/test_core_data_quality.py
-- MemberGrowthChart
-- BaseChartWidget
+- Exception
+- Ge
 - Relation
 - Routing by Task Type
 - fontSize
@@ -445,7 +444,7 @@
 - app/WARP.md
 - AppServiceProvider.php
 - Forgot Password Page - Stitch Design Update
-- TwilioWhatsAppService
+- Filament\Actions\Imports\Models\Import
 - Asset Organization Guide
 - Routing & API Resources
 - Routing & API Resources
@@ -457,26 +456,26 @@
 - Primary Color Meanings
 - Core Logo Types
 - csv
-- toString
+- notifyEditorElement
 - preload
-- p1
+- J
 - Gym Management System — Feature Overview & Catalog
 - Brand Consistency Checklist
 - CIP Mockup Prompt Engineering
 - Color Semantics
-- ManagerCreate
-- BaseEmployeeExporter.php
+- ParserHelper
+- SendBiometricConsentNotificationJobTest
 - BiometricSample
 - GEMINI.md
 - Widget
 - Brand Consistency Checklist
 - CIP Mockup Prompt Engineering
 - Color Semantics
-- Filament Permission Auto-Discovery
+- generate_icon
 - .getDefaultDriver
 - app/.sisyphus/plans/sitemap-generator.md
 - code:block1 (Wave 1 (Start Immediately — foundation):)
-- Broadcast
+- Response
 - Verification Process
 - Partial Payments & Installment Tracking for Gym Members
 - Plan: Check-Out QR Code Implementation
@@ -490,9 +489,8 @@
 - System Design Framework
 - Filament v5 — Actions
 - .ai/skills/phpunit-best-practices/SKILL.md
-- WhatsApp Embedded Signup Fix Plan
 - UserRoleAssignmentSeeder
-- BaseChartWidget
+- ExpenseReports
 - Filament v5 — Actions
 - .cursor/skills/phpunit-best-practices/SKILL.md
 - Filament v5 — Actions
@@ -502,11 +500,11 @@
 - BiometricConfigReaderTest.php
 - Session File Manifest
 - OCR Review Workflow
-- .opencode/skills/design/scripts/icon/generate.py
+- parse
 - WhatsApp Setup Page Refactor Plan
-- D
+- C
 - E0
-- BlogFactory.php
+- OtpInput
 - appendBlockForElement
 - Design Principles
 - Design Principles
@@ -514,25 +512,25 @@
 - Relation Managers
 - Form Field Components
 - Relation Managers
-- generate_cip_set
+- Architecture Design
 - /plan Workflow
-- RevenueReports
-- copyUsingObjectMap
+- RevenueReportExport.php
+- ImportTenantWhatsAppTemplatesTest
 - Crypt
 - Biometric ADMS Push Protocol
 - Form Field Components
 - app/.sisyphus/plans/stitch-blog-implementation.md
 - app/.sisyphus/plans/meta-whatsapp-refactor.md
 - Relation Managers
-- Permissions Auto-Discovery Refactor
+- .badge
 - Form Field Components
 - Relation Managers
 - {Reviewer Name} Reviewer
 - Design Principles
 - Design Principles
-- Hd
+- getRangeOfAttachment
 - Multi-Tenant Biometric Authentication System for FluxFitness
-- whatsapp_usage_logs
+- RegisterGymTest
 - app/package.json
 - Icon Design Reference
 - app/.sisyphus/plans/qr-otp-verification.md
@@ -544,11 +542,11 @@
 - Tailwind CSS Development
 - Laravel Boost Guidelines
 - CatalogRefreshTest
-- ExpenseResource.php
+- ManagerCreate
 - Categories
 - Queue System
 - Laravel Specialist
-- WhatsAppPhoneNumber
+- WhatsApp Setup Step 3 — Phone Number Source Selection
 - Biometric Consent System
 - WhatsAppAccountVerificationStatusEnum
 - composer.json
@@ -587,11 +585,11 @@
 - CatalogRefreshTest
 - color-picker.js
 - GSD Plan Checker Agent
-- getDatasetMeta
-- qm
+- RevenueReports
+- fn
 - S
 - _bindDropdownListeners
-- TeamsPermission
+- Staff Panel — Mirror Admin Resources with Policy-Based Permission Gating
 - Banner Design - Multi-Format Creative Banner System
 - Messaging Framework
 - Brand Voice Framework
@@ -608,8 +606,8 @@
 - Filament v5 — Resources
 - Filament v5 — Tables
 - Livewire Components
-- WhatsAppBroadcastValidationTest
-- MeasurementsRelationManager.php
+- Ae
+- MemberMeasurement
 - Token Optimization Guide
 - require-dev
 - Filament v5 — Resources
@@ -630,7 +628,7 @@
 - Layout Patterns
 - Tailwind Integration
 - Layout Patterns
-- CrossTenantTest
+- ResourceAccessTest
 - Add Meta Keywords Field to CMS Pages
 - .agents/skills/brand/references/update.md
 - .pro
@@ -647,15 +645,15 @@
 - app/.sisyphus/plans/twilio-phone-sid-fix.md
 - app/.sisyphus/plans/blog-management.md
 - app/.sisyphus/plans/whatsapp-step3-phone-number-source.md
-- TestDomainDetection
-- TestSearchDomains
+- .agents/skills/ui-ux-pro-max/scripts/tests/test_core.py
+- TwilioTemplateWebhookTest
 - Good Example
 - Good Example
 - Routing & API Resources
 - Quick Reference
-- Livewire 3
-- .count
-- ProfileTest
+- setSelectedRange
+- Tailwind CSS
+- Core Sections (Required)
 - AppServiceProvider
 - Good Example
 - Good Example
@@ -676,10 +674,10 @@
 - Laravel Specialist
 - card
 - TestDomainDetection
-- TestSearchDomains
+- Complete Tech Stack & Exact Versions
 - Draft: WhatsAppProviderInterface Refactor - Interface Segregation
 - Gym Management System with SAAS + CRM
-- Files to Modify
+- .session
 - Draft: QR Code Attendance System
 - Final Verification Wave — RESULTS
 - Acquire Codebase Knowledge
@@ -693,18 +691,18 @@
 - 6. Bugs & Anti-Patterns
 - 4.4: Apply Laravel Architecture Patterns
 - Testing
-- TestWebStackFreshness
+- Illuminate\Http\Request
 - DatePresets
 - Flux UI Development
 - 6. Bugs & Anti-Patterns
 - 4.4: Apply Laravel Architecture Patterns
 - Testing
-- Migration Timeline
+- TestSearchDomains
 - Flux UI Development
 - 6. Bugs & Anti-Patterns
 - 4.4: Apply Laravel Architecture Patterns
 - Testing
-- BaseStatsOverviewWidget
+- PurchaseCredits
 - Map Architect Persona
 - Flow Analyst Persona
 - Format Guidelines
@@ -723,21 +721,20 @@
 - Laravel Code Review Skill (Comprehensive)
 - Entry Types
 - laravel-filament
-- Summary: WhatsApp Template DTO Refactoring — Security Review
 - Laravel Code Review Skill (Comprehensive)
 - Entry Types
 - laravel-filament
-- _notify
+- ADR-0002: Biometric Enrollment and Device Reconciliation Architecture
 - Token Budget Skill
 - Filament\Pages\Dashboard
-- Do Things the Laravel Way
-- `door_events` — Field Reference
+- LeadReportExport.php
+- PHPUnit\Framework\TestCase
 - scripts
 - Laravel Code Review Skill (Comprehensive)
 - Entry Types
 - laravel-filament
-- Do Things the Laravel Way
-- Do Things the Laravel Way
+- Draft: Permissions Auto-Discover Refactor
+- Laravel Boost Guidelines
 - Laravel Code Review Skill (Comprehensive)
 - Entry Types
 - laravel-filament
@@ -749,10 +746,10 @@
 - CIP Design Style Guide
 - .opencode/skills/design-system/scripts/embed-tokens.cjs
 - Flux UI Development
-- WhatsApp EmbeddedSignup Flow Refactoring Plan
+- WorkQueuesCommand
 - ADDED Requirements
 - /verify Workflow
-- .filled
+- TwilioWhatsAppService
 - .phone
 - Analysis Domains
 - Core Sections (Required)
@@ -783,27 +780,27 @@
 - Eloquent ORM
 - Authentication & Permissions
 - Sections
-- Complete Tech Stack & Exact Versions
-- `gyms` — Field Reference
+- Permissions Auto-Discovery Refactor
+- Maatwebsite\Excel\Concerns\WithHeadings
 - .cursor/mcp.json
 - 10. Laravel-Specific Deep Patterns
 - 11. Review Checklist by File Type
 - 5. Runtime Error Prevention
 - Eloquent ORM
-- Laravel Boost Guidelines
+- Files to Modify
 - Sections
 - Volt Development
 - PROJECT_RULES.md — GSD Canonical Rules
 - Context Compressor Skill
-- Complete Tech Stack & Exact Versions
-- Draft: WhatsAppProviderInterface Refactor - Interface Segregation
+- SendBiometricConsentNotificationJob
+- TrainerReportExport
 - 10. Laravel-Specific Deep Patterns
 - 11. Review Checklist by File Type
 - 5. Runtime Error Prevention
 - Eloquent ORM
 - Sections
 - Volt Development
-- Complete Tech Stack & Exact Versions
+- Tailwind CSS
 - commands/map.md
 - Accessibility Engineer Reviewer
 - AI Engineer Reviewer
@@ -838,8 +835,8 @@
 - Slide Strategies
 - TestShadcnInstaller
 - Volt Development
-- date-time-picker.js
-- .discoverFilamentPermissions
+- TestWebStackFreshness
+- BaseAttendanceStats
 - rector.php
 - pulse/dashboard.blade.php
 - WhatsAppAccountBillingModeTest
@@ -859,7 +856,7 @@
 - 1. Business Logic Deep Dive
 - Filament v5 — Panels, Navigation & Theming
 - PHPUnit Best Practices
-- WhatsAppProviderInterface Refactor - Interface Segregation
+- BaseImporter
 - whatsapp_broadcast_recipients
 - ADR-003: Consent Before Enrollment
 - Sections
@@ -867,33 +864,33 @@
 - Filament v5 — Panels, Navigation & Theming
 - PHPUnit Best Practices
 - generate_cip_set
-- LeadConversionChart
-- `biometric_devices` — Field Reference
-- `attendances` — Field Reference
+- ImportDefaultPermissionsJob
+- Do Things the Laravel Way
+- .implode
+- Filament Permission Auto-Discovery
 - Core Sections (Required)
-- Core Sections (Required)
-- Core Sections (Required)
-- PaymentMethodChart
-- ResolvesExportImportPermission
-- Agent Guidelines for Gym Management App
+- generate_cip_set
+- .opencode/skills/design-system/scripts/search-slides.py
+- Complete Tech Stack & Exact Versions
 - Sections
 - 1. Business Logic Deep Dive
 - Filament v5 — Panels, Navigation & Theming
 - PHPUnit Best Practices
-- Translation Rules
+- Illuminate\Support\Collection
 - patch
 - TestGeneratedConfigIsValidJs
 - TestTailwindConfigGenerator
-- TestThresholdGate
+- BaseStatsOverviewWidget
 - Design for Subscription View Action
 - _getFullNumber
-- GymOwnerRegister
+- CrossTenantTest
 - Core Sections (Required)
 - Inquiry Checkpoints
 - BackfillAdmsCommKeyHashesCommand.php
 - .agents/skills/laravel-best-practices/rules/arch-service-classes.md
 - Filament v5 — Table Filters
 - 5.1: Execution Protocol
+- /research-phase Workflow
 - Flux UI Development
 - Eloquent ORM
 - Eloquent ORM
@@ -903,8 +900,8 @@
 - Eloquent ORM
 - Step 1: Understand the Problem & Establish Design Scope
 - Monitoring and Alerting
-- BlogCategoryEnum
-- ReportPdfGenerator
+- WhatsAppTemplateWebhookTest
+- TwilioService
 - chrome-devtools
 - .ai/skills/laravel-best-practices/rules/arch-service-classes.md
 - Filament v5 — Table Filters
@@ -917,20 +914,20 @@
 - Filament v5 — Table Filters
 - 5.1: Execution Protocol
 - ADR-004: Biometric ADMS Push Protocol and Hardware Lifecycle Management
-- Core Sections (Required)
-- BaseAttendanceResource
+- `attendances` — Field Reference
+- he
 - .github/skills/laravel-best-practices/rules/arch-service-classes.md
-- /research-phase Workflow
+- BillingModeStepTest
 - Filament v5 — Table Filters
 - 5.1: Execution Protocol
-- BiometricDeviceFactory
-- Components
+- BlogDetail
+- `gyms` — Field Reference
 - Context Health Monitor
 - Steps
-- BlogDetail
-- t
-- WhatsAppBillingService
-- serializeSelectionToDataTransfer
+- RequestContactFactory
+- Interface Methods
+- Gym Management Software with CRM Rules for Kilo Code AI Agent
+- ValidEmailDomain
 - Slides Reference
 - HTML Slide Template
 - .agents/skills/design/scripts/logo/search.py
@@ -941,7 +938,7 @@
 - Filament v5 — Notifications
 - Filament v5 — Widgets
 - HTML Slide Template
-- TestThresholdGate
+- AGENTS.md
 - Good Example
 - Good Example
 - Good Example
@@ -949,8 +946,8 @@
 - Filament v5 — Notifications
 - Filament v5 — Widgets
 - .opencode/skills/design/scripts/logo/search.py
-- WhatsAppBroadcastIntegrationTest.php
-- ExpenseCategoryFactory.php
+- gsd-planner.md
+- BlogCategoryEnum
 - config
 - Good Example
 - Good Example
@@ -959,7 +956,7 @@
 - Filament v5 — Notifications
 - Filament v5 — Widgets
 - `adms_device_commands` — Field Reference
-- .generate_config_string
+- Core Sections (Required)
 - Good Example
 - Good Example
 - Good Example
@@ -967,8 +964,8 @@
 - Filament v5 — Notifications
 - error-report-modal
 - Filament v5 — Widgets
-- Country
-- AdmsDeviceCommandResendTest
+- Do Things the Laravel Way
+- ADR-002: Door Access Attendance Integrity
 - /new-project Workflow
 - Slides Reference
 - HTML Slide Template
@@ -977,7 +974,7 @@
 - Add Subscription View Action
 - Draft: WhatsApp Per-Tenant Provider Selection
 - FilamentColor
-- RegisterGymTest
+- Laravel Boost
 - acquire-codebase-knowledge/SKILL.md
 - Create Architectural Decision Record
 - .agents/skills/laravel-best-practices/rules/controller-api-resources.md
@@ -991,7 +988,7 @@
 - CDN (Content Delivery Network)
 - Rate Limiter
 - Tips for Each Step
-- TestTokenizer
+- Livewire 3
 - WhatsAppTemplateStatusMapperTest
 - .ai/skills/laravel-best-practices/rules/controller-api-resources.md
 - 13. Deep Analysis Checklist
@@ -1000,9 +997,9 @@
 - 9. Testing Patterns
 - The #1 Source of Bugs: Action Namespaces
 - Example: Add User Authentication
-- TrainerReports
+- .opencode/skills/ui-ux-pro-max/scripts/reasoning_contract.py
 - Session: YYYY-MM-DD HH:MM
-- ExcelImportAction
+- MemberReportExport
 - log-viewer.php
 - .cursor/skills/laravel-best-practices/rules/controller-api-resources.md
 - 13. Deep Analysis Checklist
@@ -1020,7 +1017,7 @@
 - Background Jobs
 - The #1 Source of Bugs: Action Namespaces
 - Testing Resources
-- r
+- .agents/skills/design-system/scripts/tests/test_validate_tokens.py
 - Date
 - validate-all.sh script
 - context7
@@ -1031,16 +1028,15 @@
 - Categories
 - Open Code Review - Agent Instructions
 - Slides
-- TestTokenizer
-- RolesAndPermissionsServiceImportDefaultPermissionsTest
+- 2025_07_07_131430_create_pulse_tables.php
+- PHP
 - Draft: Blog Management System Implementation
 - Draft: Fix phone_number_sid Storage Issue
-- CohortRetentionChart
-- 2026_01_18_125022_replace_is_active_with_status_in_users_table.php
-- /complete-milestone Workflow
 - /sprint Workflow
-- 2025_10_06_111031_remove_unique_key_from_gym_settings.php
-- Draft: WhatsApp EmbeddedSignup Flow Refactoring
+- PhpOffice\PhpSpreadsheet\Worksheet\Worksheet
+- /complete-milestone Workflow
+- .clearTemplateRefCache
+- .format
 - Brand Guidelines Template
 - Banner Design (Built-in)
 - Icon Design (Built-in)
@@ -1076,8 +1072,8 @@
 - 7. Security Patterns
 - Unique ID Generator
 - Autoscaling
-- TestBm25CoreBehavior
-- TestMetricMath
+- 2026_01_18_125022_replace_is_active_with_status_in_users_table.php
+- Be
 - .ai/skills/laravel-best-practices/rules/arch-action-classes.md
 - .ai/skills/laravel-best-practices/rules/arch-dto-pattern.md
 - .ai/skills/laravel-best-practices/rules/arch-event-driven.md
@@ -1116,7 +1112,7 @@
 - 4. Idempotency Patterns
 - 7. Security Patterns
 - GymUser
-- BiometricTemplateFactory
+- GymLiveAttendance
 - Do Things the Laravel Way
 - psr-4
 - logging.php
@@ -1151,58 +1147,58 @@
 - .cursor/skills/laravel-best-practices/rules/validation-form-requests.md
 - 4. Idempotency Patterns
 - 7. Security Patterns
-- 2025_10_15_152346_add_user_id_to_payments_table.php
+- GenerateFavicons
 - 2025_04_15_155640_add_order_column_to_plan_features_table.php
-- .updateOrCreate
+- t
 - 2025_04_20_092731_remove_billing_cycle_from_membership_plans.php
 - 0001_01_01_000001_create_cache_table.php
 - 2025_05_03_160717_add_event_column_to_activity_log_table.php
 - 2025_05_05_125737_rename_state_id_column_in_cities.php
 - 2025_05_09_151445_add_index_of_status_in_countries.php
 - 2025_05_09_151642_add_index_of_status_in_states.php
-- BM25
+- Context Fetch Skill
 - 2025_05_18_155122_add_status_index_in_cities.php
-- CRITICAL: Required Artifacts (Must Create In Order)
+- BiometricReceiptStatusEnum
 - 2025_05_27_172841_add_membership_start_end_date_in_member_payments.php
 - 2025_05_31_163800_update_payment_status_in_gym_members.php
 - 2025_06_02_132052_remove_address_in_gym_members.php
 - 2025_05_10_161433_add_trainer_id_to_gym_members_table.php
-- 2025_07_01_170527_add_files_column_in_feedback.php
+- pe
 - rules/graphify.md
 - workflows/graphify.md
-- ADR-006: WhatsApp Broadcast Architecture
+- Key Schema Decisions
 - 2025_07_16_071634_add_category_in_error_reports.php
 - 2025_07_16_134715_add_extra_column_in_error_reports.php
 - 2025_07_18_162802_add_category_in_permissions.php
 - 2025_07_19_055437_add_display_name_and_description_in_permissions.php
 - 2025_05_31_175537_update_payment_status_to_nullable_in_gym_members.php
-- Atomic state API (preferred)
-- 2025_12_15_134259_add_invoice_columns_to_payments_table.php
+- STATE.md — Project State
+- te
 - 2025_09_10_090854_add_source_id_and_raw_data_in_leads.php
-- 2025_06_29_125701_remove_owner_id_from_gyms_table.php
-- Key Schema Decisions
-- TrainerObserver
-- 2025_09_05_055423_add_tags_and_next_action_to_leads_table.php
-- ._base_config
+- ExpenseCategoryFactory.php
+- 2025_04_20_154701_add_new_gym_membership_plan_id_in_gym_members.php
+- Filament\Actions\Exports\Models\Export
+- 2025_05_03_160718_add_batch_uuid_column_to_activity_log_table.php
+- TemplatePreview
 - Phase {N} Summary
-- Subscription
+- Atomic state API (preferred)
 - 2026_02_12_133628_create_whatsapp_templates_table.php
-- TODOs
+- `biometric_devices` — Field Reference
 - 2025_12_30_162911_add_latest_payment_at_to_gym_members_table.php
 - 2026_01_03_135244_add_logo_to_gyms_table.php
 - 2026_01_09_100048_add_is_enterprise_to_plans_table.php
 - SPEC.md — Project Specification
 - 2026_01_31_180000_add_system_expense_categories_support.php
 - 2026_02_12_133639_create_whatsapp_packages_table.php
-- BM25
-- 2026_02_25_064553_add_deleted_at_to_whatsapp_templates_table.php
-- ValidEmailDomain.php
-- 2025_07_07_131430_create_pulse_tables.php
+- 2025_07_01_170527_add_files_column_in_feedback.php
+- 2025_09_05_055423_add_tags_and_next_action_to_leads_table.php
+- CRITICAL: Required Artifacts (Must Create In Order)
+- 2025_10_10_144622_remove_subscription_fields_from_gyms_table.php
 - 2026_04_06_191114_add_seo_columns_to_blogs_table.php
 - 2026_03_18_111810_add_meta_keywords_to_cms_pages_table.php
 - 2026_01_08_092808_remove_weight_height_from_gym_members_table.php
-- Phase 0: Session State Verification (ALWAYS DO FIRST)
-- ExpenseCategoryPolicy
+- 2025_10_15_152346_add_user_id_to_payments_table.php
+- 2025_11_24_122015_add_profile_photo_in_users.php
 - 2026_03_31_175200_add_unique_constraint_to_whatsapp_templates_table.php
 - 2026_02_18_113630_add_variable_placeholder_to_whatsapp_templates_table.php
 - /insert-phase Workflow
@@ -1210,25 +1206,26 @@
 - 2026_04_13_000000_add_qr_code_checkout_token_to_gyms_table.php
 - 2026_03_28_000001_add_purpose_and_door_columns_to_biometric_devices_table.php
 - /pause Workflow
-- 2026_05_10_000000_add_waba_status_synced_at_to_whatsapp_accounts_table.php
+- 2025_12_15_134259_add_invoice_columns_to_payments_table.php
 - /remove-phase Workflow
-- Tailwind CSS
+- 2026_02_25_064553_add_deleted_at_to_whatsapp_templates_table.php
 - 2026_05_28_165130_add_batch_id_to_whatsapp_broadcasts.php
 - 2026_05_29_000001_add_status_index_to_whatsapp_broadcasts.php
-- 2026_06_30_000001_update_pt_salary_per_member_to_percentage.php
+- 2026_04_09_135605_add_verify_service_sid_to_whatsapp_accounts_table.php
 - 2026_07_02_164437_add_unique_member_per_gym_to_gym_members_table.php
-- ProcessLogo
+- date-time-picker.js
 - /web-search Workflow
 - 2026_07_16_113620_add_index_to_provisioned_at_on_payments_table.php
-- Tailwind CSS
-- 2026_08_18_000001_add_whatsapp_marketing_snapshot_to_gym_members_table.php
+- 2026_05_10_000000_add_waba_status_synced_at_to_whatsapp_accounts_table.php
+- WhatsAppUsageLogStatusEnum
 - 2026_09_02_000001_add_refund_columns_to_whatsapp_broadcasts_table.php
 - 2026_09_10_000000_add_extend_membership_to_gym_members_table.php
 - Cross-Platform Commands Reference
-- AGENTS.md
-- 2026_09_23_133154_add_adms_columns_to_biometric_devices_table.php
+- 2c. Action: Close
+- BackfillBiometricConsentNotificationSettingMigrationTest
 - Scenario: Building a Simple Todo API
 - 📑 Table of Contents
+- .filled
 - /add-phase Workflow
 - .github/skills/laravel-best-practices/rules/arch-action-classes.md
 - .github/skills/laravel-best-practices/rules/arch-dto-pattern.md
@@ -1265,105 +1262,112 @@
 - Brand Guidelines Template
 - Banner Design (Built-in)
 - Icon Design (Built-in)
-- TestBm25CoreBehavior
+- 2026_05_11_175525_drop_waba_mode_from_whatsapp_accounts_table.php
 - ADDED Requirements
 - Add Subscription Relation Management
 - /update Workflow
 - .clone
-- Filament\Forms\Components\Component
+- 2026_05_22_220537_add_last_number_cost_charged_at_to_whatsapp_phone_numbers.php
 - 2026_02_21_121438_change_twilio_auth_token_type_to_text_in_whatsapp_accounts.php
 - Logo Design (Built-in)
-- TestPersistence
-- TestFixtureValidation
-- ExpenseCategoryObserver
-- 2026_01_31_180001_consolidate_expense_categories_to_system_defaults.php
+- 2026_07_14_120000_add_razorpay_order_id_to_checkout_sessions.php
+- 2026_09_23_133154_add_adms_columns_to_biometric_devices_table.php
+- Config
+- 2026_10_07_000000_index_deleted_at_on_biometric_templates_table.php
 - pulse.php
 - sitemap.php
 - 2025_04_14_162944_create_general-settings_table.php
-- PHP
-- TestingEnvironmentDatabaseTest
-- Illuminate\Console\Command
+- Laravel 12
+- ExpenseBudgetObserver
 - 2025_04_27_045858_create_notifications_table.php
-- 2025_05_03_160716_create_activity_log_table.php
 - 2025_05_05_122544_create_countries_table.php
-- ADR-005: WhatsApp Provider Abstraction
-- _run
-- whatsapp_credit_transactions
+- 2025_05_03_160716_create_activity_log_table.php
+- r
+- DashboardCacheService
+- Phase 0: Session State Verification (ALWAYS DO FIRST)
+- TestTokenizer
 - Architecture
 - Quick Reference
 - Quick Reference
-- e
+- BlogFactory.php
 - Quick Reference
 - Quick Reference
-- Work Objectives
+- PHASE 6: Final Verification (REGRESSION CHECK)
 - 2025_09_04_143457_create_follow_ups_table.php
-- 2025_09_04_144049_create_lead_conversions_table.php
-- 2025_09_11_000004_create_social_media_webhook_logs_table.php
-- Fe
+- 2025_06_02_154642_create_failed_import_rows_table.php
+- 2025_07_04_081612_create_attendances_table.php
+- Plan 4.2: Feature Tests for WhatsApp Dual-Gate Visibility Matrix & Delivery QA
 - 2025_06_02_154641_create_exports_table.php
-- GenerateSvgLogo
-- 2025_07_19_144625_create_permission_settings_table.php
-- 2026_01_05_134105_create_cms_pages_table.php
+- Plan 5.1: Biometric Device Availability Gate & Welcome Mail Integration
+- WhatsAppBroadcastValidationTest
+- RolesAndPermissionsServiceImportDefaultPermissionsTest
 - 2026_01_07_150103_create_member_measurements_table.php
 - Features
-- 2026_01_29_170002_create_expenses_table.php
-- 2025_04_20_154701_add_new_gym_membership_plan_id_in_gym_members.php
+- Do Things the Laravel Way
+- Do Things the Laravel Way
 - 2025_09_10_072058_create_tenant_social_configs_table.php
 - 2026_02_20_094450_add_individual_waba_support_to_whatsapp_accounts_table.php
-- 2026_02_03_141007_create_scheduled_reports_table.php
-- 2025_09_15_122027_create_notification_logs_table.php
+- 2025_07_19_144625_create_permission_settings_table.php
+- Agent Guidelines for Gym Management App
 - /audit-milestone Workflow
 - /discuss-phase Workflow
 - 2026_02_12_133639_create_whatsapp_usage_logs_table.php
 - 2026_02_12_133640_create_whatsapp_credit_transactions_table.php
 - /install Workflow
 - /resume Workflow
-- .agents/skills/design-system/scripts/search-slides.py
-- 2025_05_03_160718_add_batch_uuid_column_to_activity_log_table.php
-- _row_identities
+- 2025_09_15_122027_create_notification_logs_table.php
+- Complete Tech Stack & Exact Versions
+- 2026_01_05_134105_create_cms_pages_table.php
 - 2025_05_27_152112_add_payment_status_in_gym_members.php
 - ADR-004: QR Code Attendance Architecture
 - GSD Quick Reference Card
 - 2025_10_07_130155_create_gym_whatsapp_balances_table.php
-- MemberProgressChart
+- 2026_01_29_170001_create_expense_categories_table.php
 - 2026_03_23_120003_add_biometric_columns_to_attendances_table.php
-- copilot-instructions.md
+- Laravel Boost Guidelines
 - 2025_06_14_170825_add_slug_to_gyms_table.php
-- _row_identities
+- Fe
 - 2026_03_27_120000_add_offline_id_to_attendances_table.php
 - For /graphify explain
 - EloquentSerializeFacade
-- TestPersistence
+- 2026_02_03_141007_create_scheduled_reports_table.php
 - .agents/skills/frontend-design/SKILL.md
 - .temp_project
 - .ai/skills/frontend-design/SKILL.md
 - BiometricConsentGiven
 - WhatsAppTemplateStatusMapper
+- .throttle
+- 2026_02_12_133317_create_whatsapp_accounts_table.php
+- 2026_02_20_094509_create_waba_migrations_table.php
 - artisan
 - 2025_10_10_080355_add_plan_id_to_gyms_table.php
 - 2026_04_17_202810_add_waba_phone_number_id_to_whatsapp_phone_numbers_table.php
-- 2026_05_22_220537_add_last_number_cost_charged_at_to_whatsapp_phone_numbers.php
+- 2026_03_23_120002_create_biometric_consents_table.php
 - excel.php
 - firecrawl-mcp
 - laravel-boost
 - .cursor/skills/frontend-design/SKILL.md
 - /list-phase-assumptions Workflow
-- 2c. Action: Close
+- Filament\Forms\Components\Component
 - 2026_07_30_152445_add_billing_mode_to_whatsapp_accounts_table.php
-- gsd-planner.md
-- Laravel Boost
-- Laravel Boost
-- PHP
+- 2026_07_13_130102_create_checkout_sessions_table.php
+- Livewire v3 Component Patterns
+- Phase 4: Comprehensive Positive & Negative Test Suite & QA
+- TestBm25CoreBehavior
+- TrainerObserver
 - 2026_08_15_193000_add_archived_and_marketing_fields_to_gym_members_table.php
-- 2025_11_24_122015_add_profile_photo_in_users.php
+- Advanced Testing Strategies
 - .github/skills/frontend-design/SKILL.md
 - For /graphify query
+- Core Sections (Required)
+- Common Business Logic Patterns
 - Builder
 - 2025_11_28_093304_add_auto_reply_enabled_in_tenant_social_configs_table.php
+- Testing Patterns & Requirements
 - 2025_12_10_065600_add_razorpay_signature_to_payments_table.php
 - /add-todo Workflow
 - /progress Workflow
-- ComponentAttributeBag
+- Subscription & Payment System Redesign — Work Plan
 - /whats-new Workflow
 - TestResponse
 - laravel-boost
@@ -1450,32 +1454,17 @@
 - .test_check_shadcn_config_not_exists
 - .test_get_installed_components_empty
 - .test_get_installed_components_with_files
-- Work Objectives
-- Work Objectives
-- .test_add_fonts
-- .test_add_spacing
-- .test_add_breakpoints
-- Work Objectives
+- MemberProgressChart
 - .test_recommend_plugins_nextjs
-- UpdateBillingModeActionTest
-- .test_init_default_typescript
-- ExpenseCategorySeeder
-- Development Workflow & Commands
+- Factory
 - .test_generate_config_with_plugins
-- .test_validate_config_valid
-- Code Reviewer Mode
-- .test_validate_config_empty_theme
-- Laravel 12
+- TestPersistence
 - .test_init_javascript
-- .test_write_config_invalid_path
+- Laravel Boost
 - .test_full_configuration_typescript
 - .test_init_framework
-- .test_full_configuration_javascript
-- TestFixtureValidation
 - [v1.5.0] - 2026-05-29
-- .test_base_config_structure
 - [v1.4.0] - 2026-04-17
-- .test_default_output_path_javascript
 - .test_add_colors
 - Categories
 - Overview
@@ -1726,12 +1715,11 @@
 - code:bash ($(cat graphify-out/.graphify_python) -c ")
 - code:bash ($(cat graphify-out/.graphify_python) -c ")
 - code:bash ($(cat graphify-out/.graphify_python) -c ")
-- TrainerClientChart
+- Plan 5.1 Summary: Biometric Device Availability Gate & Welcome Mail Integration
+- BiometricTemplateFactory
 - _ide_helper_models.php
 - Part B - Semantic extraction (parallel subagents)
 - For /graphify path
-- .clearTemplateRefCache
-- .implode
 - 2026_03_04_110000_add_logged_out_at_to_user_login_logs_table.php
 - .opencode/commands/ocr/address.md
 - .opencode/commands/ocr/create-reviewer.md
@@ -1763,33 +1751,18 @@
 - .test_check_shadcn_config_not_exists
 - .test_get_installed_components_empty
 - .test_get_installed_components_with_files
-- .test_add_colors_multiple_times
-- .test_add_color_palette
-- .test_add_fonts
 - .test_add_spacing
 - .test_add_breakpoints
 - .test_add_plugins_no_duplicates
 - .test_recommend_plugins_nextjs
 - .test_generate_typescript_config
-- .test_init_default_typescript
-- .test_generate_javascript_config
-- .test_generate_config_with_colors
 - .test_generate_config_with_plugins
-- .test_validate_config_valid
 - .test_validate_config_no_content
-- .test_validate_config_empty_theme
-- .test_write_config
 - .test_init_javascript
-- .test_write_config_creates_content
-- .test_write_config_invalid_path
 - .test_full_configuration_typescript
 - .test_init_framework
-- .test_full_configuration_javascript
-- .test_default_output_path_typescript
 - .test_custom_output_path
-- .test_base_config_structure
 - .test_default_content_paths_react
-- .test_default_content_paths_vue
 - .test_add_colors
 - openspec/changes/add-subscription-view-action/tasks.md
 - openspec/changes/archive/2025-11-10-add-subscription-relation-management/tasks.md
@@ -1829,7 +1802,6 @@
 - Good Example
 - Good Example
 - Good Example
-- LeadObserver
 - Flux UI Development
 - .parent
 - Draft: Auto-Import WhatsApp Templates on Manual WABA Registration
@@ -1996,20 +1968,15 @@
 - What graphify is for
 - What You Must Do When Invoked
 - Context Template
-- formatDateTimeFromString
 - Debug Template
 - State Snapshot Template
 - user-setup.md
-- 2026_04_09_135605_add_verify_service_sid_to_whatsapp_accounts_table.php
+- Core Sections (Required)
 - /check-todos Workflow
-- 2025_06_02_154642_create_failed_import_rows_table.php
-- 2026_05_11_175525_drop_waba_mode_from_whatsapp_accounts_table.php
 - app/.kilocode/rules/laravel-gym-app.md
 - 2026_03_23_120001_create_biometric_templates_table.php
 - 2026_07_06_203337_add_discount_fields_to_member_payments_table.php
-- 2025_09_06_140419_add_membership_id_and_updated_by_in_leads.php
 - Design for Subscription View Action
-- 2025_10_10_144622_remove_subscription_fields_from_gyms_table.php
 - 2025_11_25_124244_add_profile_photo_in_trainers.php
 - 2026_01_21_071829_change_twilio_columns_in_notification_settings_table.php
 - 2026_05_22_220632_add_phone_number_surcharge_to_whatsapp_credit_transactions.php
@@ -2043,7 +2010,6 @@
 - Good Example
 - Sections
 - 2026_07_13_130158_add_provisioned_at_to_payments_table.php
-- 2026_07_14_120000_add_razorpay_order_id_to_checkout_sessions.php
 - Volt Development
 - 2026_07_22_210000_make_phone_number_sid_nullable_in_whatsapp_phone_numbers_table.php
 - 2026_09_19_214637_add_token_hash_to_biometric_devices_table.php
@@ -2054,40 +2020,42 @@
 - 2026_09_25_110000_add_sync_status_to_biometric_templates_table.php
 - Roadmap Template
 - State Template
-- 2026_07_13_130102_create_checkout_sessions_table.php
+- Phase 5 Verification: Welcome Email Biometric Attendance Notice & Consent Link
+- DECISIONS.md — Architectural Decision Log
+- TODO.md — Project Todo List
 - TODO.md — Pending Items
 - Token Report Template
 - UAT Template
-- TestMetricMath
-- .limit
-- setup_search.sh script
-- 2026_10_07_000000_index_deleted_at_on_biometric_templates_table.php
-- 2025_06_02_154640_create_imports_table.php
-- 2025_07_04_081612_create_attendances_table.php
-- Laravel 12
+- TestingEnvironmentDatabaseTest
 - Phase 2: Gather Change Context
-- 2025_10_02_082101_create_whatsapp_templates_table.php
-- 2025_10_07_130412_create_whatsapp_message_packages_table.php
-- 2026_02_12_133317_create_whatsapp_accounts_table.php
+- 2025_06_29_125701_remove_owner_id_from_gyms_table.php
+- setup_search.sh script
+- 2025_09_06_140419_add_membership_id_and_updated_by_in_leads.php
+- 2025_10_06_111031_remove_unique_key_from_gym_settings.php
+- 2026_06_30_000001_update_pt_salary_per_member_to_percentage.php
+- 2026_08_18_000001_add_whatsapp_marketing_snapshot_to_gym_members_table.php
+- Development Workflow & Commands
 - 2026_07_13_130020_create_plan_prices_table.php
 - DECISIONS.md — Architecture Decision Records
 - PLAN.md Template
+- TeamsPermission
+- .test_add_colors_multiple_times
+- .test_add_plugins_no_duplicates
 - Requirements Template
 - Summary Template
+- .test_validate_config_no_content
+- .test_write_config
+- .test_custom_output_path
 - [v1.7.0] - 2026-09-08
-- 2026_01_29_170001_create_expense_categories_table.php
+- .test_default_content_paths_react
 - 2026_02_12_133639_create_whatsapp_broadcast_recipients_table.php
 - 2026_02_20_094504_create_waba_setup_sessions_table.php
-- 2026_02_20_094509_create_waba_migrations_table.php
 - RESEARCH.md Template
 - VERIFICATION.md Template
 - help.md
 - 2026_03_23_120000_create_biometric_devices_table.php
-- 2026_03_23_120002_create_biometric_consents_table.php
-- 2026_07_01_180709_create_member_payment_transactions_table.php
 - 2026_09_23_133303_create_adms_device_commands_table.php
 - search_repo.sh script
-- .basename
 - [v1.6.0] - 2026-07-30
 - laravel-boost
 - args
@@ -2232,7 +2200,7 @@
 - Must NOT Have
 - Parallel Execution Waves
 - QA Policy
-- Laravel Boost Guidelines
+- copilot-instructions.md
 - Success Criteria
 - Test Decision
 - TL;DR
@@ -3042,7 +3010,6 @@
 - Must NOT Have (Guardrails)
 - Original Request
 - Test Decision
-- Do Things the Laravel Way
 - Test File
 - TL;DR
 - Verification Strategy
@@ -3050,7 +3017,6 @@
 - code:block1 (Wave 1 (Foundation — value objects + input DTOs):)
 - code:block10 (Scenario: Sync result)
 - feedback-trigger
-- BasePolicy
 - code:block11 (Scenario: Verify updated interface signatures)
 - code:block12 (Scenario: Verify PHPDoc references)
 - code:block13 (Scenario: Verify DTO return types)
@@ -3390,9 +3356,20 @@
 - code:php ($this->mockCommand->shouldReceive('ask'))
 - code:php ($this->assertDatabaseHas('users', ['email' => 'test@example.)
 - code:php ($this->assertTrue($user->hasRole('super_admin'));)
-- Factory
+- ComponentAttributeBag
+- 2025_06_02_154640_create_imports_table.php
+- 2025_09_04_144049_create_lead_conversions_table.php
+- 2025_09_11_000004_create_social_media_webhook_logs_table.php
+- 2025_10_02_082101_create_whatsapp_templates_table.php
+- 2025_10_07_130412_create_whatsapp_message_packages_table.php
 - code:bash (openspec list              # What's in progress?)
+- 2026_01_29_170002_create_expenses_table.php
+- 2026_07_01_180709_create_member_payment_transactions_table.php
+- Core PHP 8.2+ Development Patterns
+- .test_add_color_palette
 - app/resources/views/livewire/auth/verify-email.blade.php
+- Docker Development Environment
+- Tailwind CSS v4 Conventions
 - Background Processing
 - Authorization & Security Patterns
 - Caching Strategy
@@ -3409,6 +3386,19 @@
 - code:php (// app/Services/CheckInService.php)
 - code:php (// tests/Feature/MemberManagementTest.php)
 - Bad Example
+- Advanced Database Patterns
+- Advanced Filament Patterns
+- Security Best Practices
+- Artisan Commands for Gym Management
+- Authorization & Security Patterns
+- Job Queue Patterns
+- .test_add_fonts
+- Export & Import Functionality
+- Filament v3 Integration Patterns
+- .test_add_spacing
+- .test_add_breakpoints
+- .test_generate_typescript_config
+- .test_init_default_typescript
 - Bad Example
 - #[CoversClass] for Coverage Boundaries
 - #[Group] for Arbitrary Categorization
@@ -3504,7 +3494,9 @@
 - Prefer $this Over self for Assertions
 - Explicit Visibility and Type Hints
 - Rule Title Here
+- .test_generate_javascript_config
 - BiometricConsentRevoked
+- .test_generate_config_with_colors
 - Bad Example
 - #[CoversClass] for Coverage Boundaries
 - #[Group] for Arbitrary Categorization
@@ -3539,10 +3531,32 @@
 - Rule Title Here
 - .opencode/package.json
 - app/resources/views/livewire/gym-owner-register.blade.php
+- .test_validate_config_valid
+- .test_validate_config_empty_theme
+- .test_write_config_creates_content
+- .test_write_config_invalid_path
+- .test_full_configuration_javascript
+- .test_default_output_path_typescript
+- .test_base_config_structure
+- .test_default_content_paths_vue
+- .test_add_colors_multiple_times
+- .test_add_color_palette
+- .test_add_fonts
+- .test_init_default_typescript
+- .test_generate_javascript_config
+- .test_generate_config_with_colors
+- .test_validate_config_valid
+- .test_validate_config_empty_theme
+- .test_write_config
+- .test_write_config_creates_content
+- .test_write_config_invalid_path
+- .test_full_configuration_javascript
+- .test_default_output_path_typescript
+- .test_base_config_structure
+- .test_default_content_paths_vue
 - code:bash (# Essential commands)
 - code:bash (# Always use strict mode for comprehensive checks)
 - home-controller.blade.php
-- .section
 - Good Example
 - Good Example
 - app/.agents/skills/frontend-design/SKILL.md
@@ -3788,16 +3802,16 @@
 - resources/views/shared-reports/trainers.blade.php
 
 ## God Nodes (most connected - your core abstractions)
-1. `Gym` - 687 edges
-2. `GymMember` - 652 edges
-3. `User` - 551 edges
+1. `Gym` - 737 edges
+2. `GymMember` - 708 edges
+3. `User` - 560 edges
 4. `Schema` - 457 edges
-5. `Log` - 404 edges
+5. `Log` - 416 edges
 6. `Eloquent` - 392 edges
-7. `TestCase` - 359 edges
-8. `WhatsAppAccount` - 316 edges
-9. `Livewire` - 271 edges
-10. `Cache` - 269 edges
+7. `TestCase` - 377 edges
+8. `WhatsAppAccount` - 332 edges
+9. `Livewire` - 291 edges
+10. `Cache` - 277 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Schema Structure (v5)` --references--> `Schema`  [INFERRED]
@@ -3814,67 +3828,67 @@
 ## Import Cycles
 - None detected.
 
-## Communities (4522 total, 2893 thin omitted)
+## Communities (4542 total, 2903 thin omitted)
 
 ### Community 0 - ".now"
 Cohesion: 0.01
-Nodes (79): {closure#1}(), {closure#12}(), MemberReports, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}() (+71 more)
+Nodes (79): {closure#1}(), {closure#12}(), MemberReports, {closure#1}(), {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}() (+71 more)
 
-### Community 1 - "TemplateSubmissionResult"
-Cohesion: 0.03
-Nodes (40): CreateTemplateData, self, TemplateCollectionResult, TemplateDbSyncResult, TemplateFetchResult, self, TemplateMasterSyncResult, self (+32 more)
+### Community 1 - "x"
+Cohesion: 0.11
+Nodes (76): $t(), De(), al(), at(), B(), he(), br(), Bt() (+68 more)
 
-### Community 2 - "Illuminate\Contracts\Queue\ShouldQueue"
-Cohesion: 0.02
-Nodes (31): {closure#4}(), AccountActivatedNotification, AccountDeactivatedNotification, BaseTenantNotification, ExpensePendingApprovalNotification, ExpenseStatusChangedNotification, GymOwnerWelcomeNotification, LeadFollowUpNotification (+23 more)
+### Community 2 - "NotificationChannelResolver"
+Cohesion: 0.05
+Nodes (26): BiometricConsentTemplateResolver, {closure#1}(), NotificationChannelResolver, TemplateLookup, 2026-10-07, JOURNAL.md — Project Activity Journal, Context, Objective (+18 more)
 
 ### Community 3 - "components/chart.js"
 Cohesion: 0.01
-Nodes (127): abutsStart(), Ac(), addControllers(), addPlugins(), addScales(), $c(), calculateCircumference(), ci() (+119 more)
+Nodes (110): TL;DR Quick Checklist, _a(), ae(), afterTickToLabelConversion(), Ao(), beforeTickToLabelConversion(), $c(), ci() (+102 more)
 
 ### Community 4 - "Laravel 13 Best Practices - Complete Guide"
 Cohesion: 0.03
 Nodes (76): 1. Architecture & Structure (CRITICAL), 2. Eloquent & Database (CRITICAL), 3. Controllers & Routing (HIGH), 4. Validation & Requests (HIGH), 5. Security (HIGH), 6. Performance (MEDIUM), 7. API Design (MEDIUM), API Resources for Response Transformation (+68 more)
 
-### Community 5 - ".deleteAction"
+### Community 5 - "MemberPayment"
 Cohesion: 0.02
-Nodes (45): CreateScheduledReport, EditScheduledReport, ScheduledReportResource, LeadKanbanBoard, EditExpenseBudget, EditExpenseCategory, EditExpense, EditGym (+37 more)
+Nodes (56): PaymentStatus, {closure#1}(), {closure#10}(), {closure#5}(), {closure#6}(), {closure#7}(), AttendanceHeatmapChart, AttendanceTrendChart (+48 more)
 
 ### Community 6 - "pathlib"
 Cohesion: 0.02
-Nodes (159): Regression test for sync-brand-to-tokens.cjs. The color parser required a…, load_env(), CIP Design Generator - Generate corporate identity mockups using Gemini Nano…, Load environment variables from .env files, generate_html(), get_deliverable_info(), get_image_base64(), main() (+151 more)
+Nodes (176): Regression test for sync-brand-to-tokens.cjs. The color parser required a…, load_env(), CIP Design Generator - Generate corporate identity mockups using Gemini Nano…, Load environment variables from .env files, generate_html(), get_deliverable_info(), get_image_base64(), main() (+168 more)
 
-### Community 7 - "Filament\Forms\Form"
-Cohesion: 0.01
-Nodes (53): ErrorCategory, ExpensePaymentMethod, ExpenseStatus, LeadReportExport, AttendanceReports, {closure#1}(), {closure#2}(), {closure#1}() (+45 more)
-
-### Community 9 - "GymMemberAttendanceResource"
+### Community 7 - "MemberGrowthChart"
 Cohesion: 0.10
-Nodes (5): GymMemberAttendanceResource, CreateGymMemberAttendance, EditGymMemberAttendance, ListGymMemberAttendances, MemberAttendanceStats
+Nodes (4): MemberDemographicsChart, MemberGrowthChart, MemberPlanDistributionChart, MemberStatusChart
+
+### Community 9 - "Illuminate\Support\Facades\Log"
+Cohesion: 0.02
+Nodes (72): ArchiveInactiveGymMembersCommand, AutoCheckoutAttendance, BirthdayNotificationCommand, CheckLowWhatsAppCreditsCommand, CheckMissingMembersByPhone, CleanDeletedGymOwnersCommand, CleanResolvedErrorReportsCommand, CleanupDeletedWhatsAppTemplates (+64 more)
 
 ### Community 10 - "rich-editor.js"
 Cohesion: 0.02
-Nodes (127): activateAttributeIfSupported(), addHTMLAttribute(), appendStringToTextAtIndex(), applyBlockAttribute(), attachmentDidChangeAttributes(), attachmentDidChangeUploadProgress(), attachmentIsManaged(), canRedo() (+119 more)
+Nodes (141): activateAttributeIfSupported(), addHTMLAttribute(), appendStringToTextAtIndex(), applyBlockAttribute(), attachmentDidChangeAttributes(), attachmentDidChangeUploadProgress(), attachmentIsManaged(), box() (+133 more)
 
-### Community 11 - "MemberPayment"
+### Community 11 - "Payment"
 Cohesion: 0.01
-Nodes (85): GenderEnum, MaritalStatusEnum, PaymentStatus, {closure#1}(), {closure#5}(), {closure#1}(), {closure#1}(), {closure#1}() (+77 more)
+Nodes (81): ReconcileSubscriptionsCommand, InvoiceablePayment, PaymentCompleted, {closure#23}(), RazorpayWebhookController, MemberInvoiceController, {closure#1}(), GenerateInvoiceJob (+73 more)
 
 ### Community 12 - "filament-laravel-pulse.js"
-Cohesion: 0.02
-Nodes (145): A(), aa, al(), Ao(), ar, ba(), beforeLayout(), bl() (+137 more)
+Cohesion: 0.03
+Nodes (143): A(), aa, al(), Ao(), ar, ba(), beforeLayout(), Bi() (+135 more)
 
 ### Community 13 - "app/storage/framework/views/c57ab9b15a36e7867ec59c62007a8823.blade.php"
 Cohesion: 0.50
 Nodes (3): addToCart($event.detail.productId), pages, ___SINGLE_BACKTICK___
 
-### Community 14 - "WabaMigration"
+### Community 14 - "Illuminate\Queue\SerializesModels"
 Cohesion: 0.04
-Nodes (25): WhatsAppMigrateToIndividualWaba, MigrateTenantToIndividualWaba, self, WabaMigration, EmbeddedSignupService, WabaMigrationService, Artisan Commands, Integration Map (+17 more)
+Nodes (29): AdmsAccessDenied, DoorControllerUnreachable, EmbeddedSignupCompleted, ImportCompleted, LeadCreated, MemberCheckedIn, MemberCheckedOut, AttendanceStatsUpdated (+21 more)
 
 ### Community 15 - "Auth"
 Cohesion: 0.01
-Nodes (44): BaseEmployeeResource, {closure#1}(), {closure#2}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}() (+36 more)
+Nodes (57): Step 2: Identify Keywords, BiometricLogRedactor, {closure#1}(), {closure#2}(), RegisterGym, {closure#10}(), {closure#12}(), {closure#13}() (+49 more)
 
 ### Community 17 - "Illuminate\Database\Schema\Blueprint"
 Cohesion: 0.02
@@ -3882,15 +3896,15 @@ Nodes (130): {closure#1}(), {closure#2}(), {closure#3}(), down(), up(), {closure
 
 ### Community 18 - "stat/chart.js"
 Cohesion: 0.02
-Nodes (124): Ft(), he(), km(), aa(), addControllers(), addPlugins(), addScales(), alpha() (+116 more)
+Nodes (125): Ft(), aa(), addControllers(), addPlugins(), addScales(), alpha(), an(), At() (+117 more)
 
 ### Community 19 - "FeedbackResource.php"
 Cohesion: 0.02
-Nodes (52): PermissionCategory, {closure#14}(), ViewExpense, {closure#1}(), {closure#2}(), {closure#3}(), ViewLead, ListWhatsAppTransactions (+44 more)
+Nodes (37): {closure#14}(), ViewExpense, LeadResource, CreateLead, EditLead, {closure#1}(), {closure#2}(), ViewLead (+29 more)
 
 ### Community 20 - "MetaContext"
-Cohesion: 0.06
-Nodes (8): MetaContext, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), MetaWabaService, Task Details, MetaWabaServiceTest
+Cohesion: 0.04
+Nodes (10): MetaApiClient, MetaContext, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), MetaWabaService, Task Details (+2 more)
 
 ### Community 21 - "Laravel 13 Best Practices - Complete Guide"
 Cohesion: 0.01
@@ -3904,77 +3918,81 @@ Nodes (136): 1. Architecture & Structure (CRITICAL), 2. Eloquent & Database (CRI
 Cohesion: 0.01
 Nodes (136): 1. Architecture & Structure (CRITICAL), 2. Eloquent & Database (CRITICAL), 3. Controllers & Routing (HIGH), 4. Validation & Requests (HIGH), 5. Security (HIGH), 6. Performance (MEDIUM), 7. API Design (MEDIUM), API Resources for Response Transformation (+128 more)
 
-### Community 24 - "Filament\Resources\Pages\ListRecords"
-Cohesion: 0.01
-Nodes (63): ListScheduledReports, ListAdmsDeviceCommands, ExpenseBudgetResource, CreateExpenseBudget, ListExpenseBudgets, ExpenseCategoryResource, CreateExpenseCategory, ListExpenseCategories (+55 more)
+### Community 24 - "WhatsAppMessageCredit"
+Cohesion: 0.03
+Nodes (37): CreditManagementInterface, WhatsAppMessageCredit, WhatsAppUsageLog, MetaCreditService, TwilioCreditService, {closure#1}(), {closure#2}(), Columns (+29 more)
 
 ### Community 26 - "Laravel 13 Best Practices - Complete Guide"
 Cohesion: 0.01
 Nodes (136): 1. Architecture & Structure (CRITICAL), 2. Eloquent & Database (CRITICAL), 3. Controllers & Routing (HIGH), 4. Validation & Requests (HIGH), 5. Security (HIGH), 6. Performance (MEDIUM), 7. API Design (MEDIUM), API Resources for Response Transformation (+128 more)
 
-### Community 27 - "Log"
+### Community 27 - "BasePolicy"
 Cohesion: 0.03
-Nodes (22): {closure#1}(), ExportDownloadMiddleware, PhoneNumberManagementInterface, ProcessSocialMediaLead, {closure#2}(), {closure#3}(), SubscriptionRenewalJob, QRAttendance (+14 more)
+Nodes (30): AdmsDeviceCommandPolicy, AttendancesPolicy, BasePolicy, BiometricDevicePolicy, CityPolicy, CountryPolicy, GymMemberAttendancePolicy, GymMemberPolicy (+22 more)
 
-### Community 28 - "Illuminate\Http\Request"
+### Community 28 - ".config"
 Cohesion: 0.03
-Nodes (67): BiometricReceiptService, AdmsController, BiometricCheckInController, BiometricDeviceController, BiometricOfflineSyncController, BiometricWebhookController, FacebookLeadController, HikvisionAdmsController (+59 more)
+Nodes (17): {closure#15}(), {closure#16}(), {closure#17}(), VerifySocialMediaWebhook, TenantSocialConfig, IndiaMartLeadProcessor, InstagramLeadProcessor, JustDialLeadProcessor (+9 more)
 
 ### Community 29 - "DB"
 Cohesion: 0.02
-Nodes (4): {closure#3}(), up(), DB, DatabaseWithoutRefreshDatabaseTest
+Nodes (19): {closure#3}(), {closure#12}(), {closure#2}(), {closure#4}(), {closure#3}(), {closure#4}(), {closure#1}(), {closure#3}() (+11 more)
 
-### Community 30 - "Queue"
-Cohesion: 0.02
-Nodes (6): Queue, TwilioTemplateWebhookTest, WhatsAppTemplateWebhookTest, EmbeddedSignupControllerTest, ImportTenantWhatsAppTemplatesTest, WhatsAppBroadcastOrchestratorTest
-
-### Community 31 - "Exception"
-Cohesion: 0.04
-Nodes (25): {closure#1}(), {closure#2}(), {closure#3}(), CleanResolvedErrorReportsCommand, LeadSource, RegisterOwnNumberAction, AccountManagementInterface, CleanResolvedErrorReportsJob (+17 more)
+### Community 31 - "Expense"
+Cohesion: 0.06
+Nodes (5): CleanInvalidExportsCommand, {closure#1}(), Expense, ExpenseObserver, ExpensePolicy
 
 ### Community 32 - "markdown-editor.js"
 Cohesion: 0.04
-Nodes (108): Ac(), ai(), An(), ao(), bf(), bo(), Cc(), cd() (+100 more)
+Nodes (116): Ac(), ai(), An(), ao(), bf(), bo(), Cc(), cd() (+108 more)
 
 ### Community 34 - "_update"
 Cohesion: 0.04
-Nodes (85): addBox(), addElements(), afterBuildTicks(), afterCalculateLabelRotation(), afterDataLimits(), afterDraw(), afterFit(), afterSetDimensions() (+77 more)
+Nodes (69): addBox(), afterBuildTicks(), afterCalculateLabelRotation(), afterDataLimits(), afterFit(), afterSetDimensions(), afterUpdate(), B() (+61 more)
 
-### Community 35 - "RegisterGym.php"
-Cohesion: 0.19
-Nodes (3): {closure#2}(), RegisterGym, Filament\Pages\Tenancy\RegisterTenant
+### Community 35 - "TwilioTemplateService"
+Cohesion: 0.03
+Nodes (43): TemplateDbSyncResult, TemplateFetchResult, self, TemplateMasterSyncResult, self, UpdateTemplateData, TwilioTemplateService, {closure#1}() (+35 more)
 
 ### Community 36 - "Schema"
 Cohesion: 0.02
 Nodes (49): {closure#1}(), down(), up(), {closure#1}(), down(), up(), {closure#1}(), down() (+41 more)
 
-### Community 37 - ".config"
-Cohesion: 0.03
-Nodes (17): {closure#15}(), {closure#16}(), WebhookTestController, VerifySocialMediaWebhook, TenantSocialConfig, FacebookLeadProcessor, IndiaMartLeadProcessor, InstagramLeadProcessor (+9 more)
+### Community 37 - "Log"
+Cohesion: 0.02
+Nodes (18): {closure#1}(), self, self, ExportDownloadMiddleware, {closure#3}(), TwilioAccountService, TwilioContext, {closure#2}() (+10 more)
 
 ### Community 38 - "select.js"
+Cohesion: 0.05
+Nodes (76): $c(), X(), me(), D(), E(), g(), H(), _i() (+68 more)
+
+### Community 39 - "RateLimiter"
 Cohesion: 0.03
-Nodes (37): [g](), a(), Be, d(), de, e, ee(), g() (+29 more)
+Nodes (14): ClaimWelcomeCreditsAction, ConnectExistingWabaAction, ProcessWabaSetupAction, PurchaseNumberAction, RegisterOwnNumberAction, SearchNumbersAction, SendTestMessageAction, StartEmbeddedSignupAction (+6 more)
 
 ### Community 41 - "n"
 Cohesion: 0.07
-Nodes (98): be(), _a(), Ae(), af(), ar(), as(), Ba(), Bc() (+90 more)
+Nodes (101): be(), _a(), Ae(), af(), ar(), as(), Ba(), Bc() (+93 more)
 
 ### Community 42 - "constructor"
 Cohesion: 0.04
-Nodes (106): addAttribute(), addAttributeAtRange(), addAttributesAtRange(), appendText(), applyBlockAttributeAtRange(), breakFormattedBlock(), charAt(), consolidate() (+98 more)
+Nodes (109): addAttribute(), addAttributeAtRange(), addAttributesAtRange(), appendText(), applyBlockAttributeAtRange(), breakFormattedBlock(), charAt(), consolidate() (+101 more)
 
-### Community 43 - "ImportDefaultPermissionsJob"
-Cohesion: 0.15
-Nodes (3): {closure#1}(), ImportDefaultPermissionsJob, ImportDefaultPermissionsJobTest
+### Community 43 - "ExpenseStatus"
+Cohesion: 0.04
+Nodes (14): {closure#1}(), ExpensePaymentMethod, self, {closure#1}(), ExpenseStatus, self, {closure#9}(), {closure#6}() (+6 more)
 
-### Community 44 - "Notification"
+### Community 44 - "Subscription"
 Cohesion: 0.02
-Nodes (43): {closure#1}(), DeleteOldLeads, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), PendingLeadNotificationCommand, SendFollowUpRemindersCommand (+35 more)
+Nodes (38): SendSubscriptionExpiryAlerts, {closure#4}(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), Subscription, AccountActivatedNotification (+30 more)
 
-### Community 46 - "RateLimiter"
-Cohesion: 0.03
-Nodes (36): ClaimWelcomeCreditsAction, ConnectExistingWabaAction, ProcessWabaSetupAction, PurchaseNumberAction, SearchNumbersAction, StartEmbeddedSignupAction, VerifyOwnNumberAction, SetupActions (+28 more)
+### Community 45 - "WhatsApp Embedded Signup Fix Plan"
+Cohesion: 0.10
+Nodes (20): Commit Strategy, Concrete Deliverables, Core Objective, Definition of Done, Execution Strategy, Final Checklist, Final Verification Wave, Must Have (+12 more)
+
+### Community 46 - "ue"
+Cohesion: 0.14
+Nodes (4): Mo(), Pe(), So(), ue
 
 ### Community 47 - "Laravel 13 Best Practices - Complete Guide"
 Cohesion: 0.03
@@ -3989,40 +4007,36 @@ Cohesion: 0.03
 Nodes (76): 1. Architecture & Structure (CRITICAL), 2. Eloquent & Database (CRITICAL), 3. Controllers & Routing (HIGH), 4. Validation & Requests (HIGH), 5. Security (HIGH), 6. Performance (MEDIUM), 7. API Design (MEDIUM), API Resources for Response Transformation (+68 more)
 
 ### Community 50 - "draw"
+Cohesion: 0.06
+Nodes (64): adjustHitBoxes(), afterDraw(), ah(), ba(), beforeDatasetDraw(), beforeDatasetsDraw(), beforeDraw(), Bn() (+56 more)
+
+### Community 52 - "L"
 Cohesion: 0.05
-Nodes (96): adjustHitBoxes(), Af(), ah(), an(), ba(), beforeDatasetDraw(), beforeDatasetsDraw(), beforeDraw() (+88 more)
+Nodes (18): Be, ci(), De(), di(), dl(), gc(), jl(), L() (+10 more)
 
-### Community 51 - "Expense"
+### Community 53 - "e"
 Cohesion: 0.05
-Nodes (6): {closure#6}(), {closure#1}(), Expense, ExpenseObserver, ExpensePolicy, Illuminate\Auth\Access\HandlesAuthorization
-
-### Community 52 - "ot"
-Cohesion: 0.03
-Nodes (23): as(), Be, beforeDraw(), beforeUpdate(), D(), De(), di(), dr() (+15 more)
-
-### Community 53 - ".lockForUpdate"
-Cohesion: 0.04
-Nodes (41): HandleConsentRevoked, SubscriptionProvisioner, 1) Architectural Style, 3) Layer/Module Responsibilities, 4) Reused Patterns, 5) Known Architectural Risks, 6) Evidence, Architecture (+33 more)
+Nodes (50): contains(), count(), cu(), determineDataLimits(), Di(), diff(), diffNow(), equals() (+42 more)
 
 ### Community 54 - "DesignSystemGenerator"
 Cohesion: 0.06
 Nodes (29): _contrast_ratio(), _derive_dark_palette(), DesignSystemGenerator, _filter_anti_patterns_for_mode(), _palette_is_dark(), _query_wants_dark(), WCAG relative luminance of a #RRGGBB string, or None if unparseable., True when a colors.csv row's Background is a dark surface. (+21 more)
 
-### Community 55 - "WhatsAppSetupTest.php"
-Cohesion: 0.04
-Nodes (8): EmbeddedSignupInterface, self, WabaSetupSession, MetaEmbeddedSignupService, Context, Problem Analysis, User Clarification (Critical), What Exists Already
+### Community 55 - "MetaWhatsAppProvider"
+Cohesion: 0.05
+Nodes (12): EmbeddedSignupInterface, WabaSetupInterface, MetaWhatsAppProvider, MetaEmbeddedSignupService, Interview Summary, Original Request, Reference Pattern (Twilio), TL;DR (+4 more)
 
-### Community 56 - "PermissionSetting"
+### Community 56 - "LoginActivity.php"
+Cohesion: 0.09
+Nodes (9): {closure#10}(), {closure#12}(), {closure#7}(), {closure#9}(), LoginActivity, Filament\Tables\Concerns\InteractsWithTable, Filament\Tables\Contracts\HasTable, Filament\Tables\Enums\FiltersLayout (+1 more)
+
+### Community 57 - ".resolveDataElementOptions"
 Cohesion: 0.06
-Nodes (18): PermissionSetting, PermissionDiscoveryService, {closure#1}(), DefaultPermissionResourceTrait, self, DerivesPermissionsSlug, ResolvesPolicyTableName, {closure#1}() (+10 more)
+Nodes (13): D(), Dn(), dr(), fr(), c(), ks(), Ne, pi() (+5 more)
 
-### Community 57 - "Illuminate\Support\Collection"
-Cohesion: 0.03
-Nodes (18): {closure#1}(), SeedSampleDataCommand, {closure#1}(), {closure#1}(), {closure#1}(), {closure#2}(), {closure#53}(), TrainerImporter (+10 more)
-
-### Community 58 - "deleteInDirection"
-Cohesion: 0.03
-Nodes (103): ArrowLeft(), ArrowRight(), attachFiles(), backspace(), canApplyToDocument(), canDecreaseBlockAttributeLevel(), ce(), compositionend() (+95 more)
+### Community 58 - "WhatsAppCreditTransaction"
+Cohesion: 0.06
+Nodes (23): WhatsAppCreditTransactionEnum, WhatsAppCreditTransaction, {closure#2}(), {closure#4}(), {closure#5}(), {closure#7}(), {closure#8}(), Columns (+15 more)
 
 ### Community 59 - "Gym Management Software with CRM Rules for Kilo Code AI Agent"
 Cohesion: 0.02
@@ -4030,55 +4044,51 @@ Nodes (89): Advanced Database Patterns, Advanced Filament Patterns, Advanced For
 
 ### Community 60 - "Vt"
 Cohesion: 0.04
-Nodes (20): ah(), ai(), ci(), Ct(), dl(), F(), jl(), kc() (+12 more)
+Nodes (20): afterUpdate(), An, Ct(), F(), G(), gi(), gr(), Je() (+12 more)
 
 ### Community 61 - "Filament\Support\Contracts\HasLabel"
-Cohesion: 0.03
-Nodes (36): BiometricReceiptStatusEnum, {closure#1}(), self, ErrorPriority, ErrorStatus, {closure#1}(), self, {closure#1}() (+28 more)
+Cohesion: 0.04
+Nodes (20): ErrorPriority, ErrorStatus, FollowUpStatus, LeadTag, NotificationAccountStatusEnum, NotificationVerificationStatusEnum, {closure#1}(), self (+12 more)
 
 ### Community 62 - "constructor"
 Cohesion: 0.04
-Nodes (92): after(), before(), buildTicks(), chartOptionScopes(), constructor(), count(), create(), Dc() (+84 more)
+Nodes (82): abutsStart(), after(), before(), chartOptionScopes(), clone(), constructor(), create(), Dc() (+74 more)
 
 ### Community 63 - "Gym Management System - Google Gemini Code Assistant Context"
 Cohesion: 0.02
-Nodes (84): Advanced Database Patterns, Advanced Filament Patterns, Advanced Form Patterns with Filament, Advanced Livewire Patterns, Advanced Testing Strategies, API Authentication with Sanctum, Artisan Commands for Gym Management, Authorization & Security Patterns (+76 more)
+Nodes (89): Advanced Database Patterns, Advanced Filament Patterns, Advanced Form Patterns with Filament, Advanced Livewire Patterns, Advanced Testing Strategies, API Authentication with Sanctum, Artisan Commands for Gym Management, Authorization & Security Patterns (+81 more)
 
 ### Community 64 - "$e"
-Cohesion: 0.05
-Nodes (17): At(), Bn(), _c(), Cn(), $e, ia(), Ki, mh() (+9 more)
+Cohesion: 0.04
+Nodes (19): ah(), ai(), At(), Bn(), Cn(), $e, ia(), Ki (+11 more)
 
 ### Community 65 - "file-upload.js"
 Cohesion: 0.05
 Nodes (56): ba(), bi(), c(), ca(), clickPercent(), constructor(), de(), define() (+48 more)
 
-### Community 66 - "Throwable"
-Cohesion: 0.04
-Nodes (34): {closure#2}(), {closure#1}(), {closure#2}(), {closure#3}(), NotificationHelper, ErrorContextMiddleware, ErrorReport, ErrorReportObserver (+26 more)
-
-### Community 67 - "MetaApiClient"
-Cohesion: 0.09
-Nodes (4): ManualConnectRequest, MetaApiClient, EmbeddedSignupController, MetaTemplateServiceSubmitTest
-
-### Community 68 - "Payment"
+### Community 66 - "GymMemberImport"
 Cohesion: 0.03
-Nodes (18): InvoiceablePayment, {closure#1}(), GenerateInvoiceJob, CheckoutSession, Payment, PaymentObserver, GymOwnerRegistrationService, InvoiceService (+10 more)
+Nodes (36): GenderEnum, MaritalStatusEnum, UserStatus, CreateManager, DateHelper, BiometricEnrollRequest, {closure#1}(), OfflineSyncRequest (+28 more)
 
-### Community 69 - "Re"
-Cohesion: 0.18
-Nodes (50): $c(), X(), ca(), me(), D(), E(), g(), gl() (+42 more)
+### Community 67 - "Filament\Tables\Table"
+Cohesion: 0.01
+Nodes (120): SyncPermissionsCommand, {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#2}(), {closure#3}(), CreateScheduledReport (+112 more)
+
+### Community 69 - "WhatsAppProviderTypeEnum"
+Cohesion: 0.04
+Nodes (14): static, TemplatePlaceholder, static, TemplateVariable, {closure#1}(), {closure#2}(), self, TemplateCategoryEnum (+6 more)
 
 ### Community 73 - "ImportWhatsAppTemplatesJob"
-Cohesion: 0.08
-Nodes (16): ImportTenantWhatsAppTemplates, ImportWhatsAppTemplatesJob, 1. ConnectExistingWabaAction (Primary), 2. EmbeddedSignupController::manualConnect() (Secondary), Draft: Auto-Import WhatsApp Templates on Manual WABA Registration, Edge Cases, Existing Infrastructure, Queue Check (+8 more)
-
-### Community 74 - "MemberReportExport.php"
-Cohesion: 0.05
-Nodes (21): CategorySummarySheet, ExpenseDetailsSheet, ExpenseReportExport, MemberReportExport, MembersExport, RevenueReportExport, TrainerReportExport, {closure#13}() (+13 more)
-
-### Community 75 - "ParserHelper"
 Cohesion: 0.03
-Nodes (17): NotificationType, {closure#1}(), ParserHelper, AttendanceReminderNotification, ClassReminderNotification, HasMemberRecipient, FollowUpReminderNotification, PaymentReminderNotification (+9 more)
+Nodes (62): ImportTenantWhatsAppTemplates, ImportWhatsAppTemplates, ImportWhatsAppTemplatesJob, 1. ConnectExistingWabaAction (Primary), 2. EmbeddedSignupController::manualConnect() (Secondary), Draft: Auto-Import WhatsApp Templates on Manual WABA Registration, Edge Cases, Existing Infrastructure (+54 more)
+
+### Community 74 - "ExpenseDetailsSheet"
+Cohesion: 0.16
+Nodes (6): CategorySummarySheet, ExpenseDetailsSheet, Maatwebsite\Excel\Concerns\ShouldAutoSize, Maatwebsite\Excel\Concerns\WithMultipleSheets, Maatwebsite\Excel\Concerns\WithStyles, Maatwebsite\Excel\Concerns\WithTitle
+
+### Community 75 - "WhatsAppChannel"
+Cohesion: 0.18
+Nodes (5): WhatsAppChannel, GymContextResolver, Arr, stdClass, WhatsAppChannelTest
 
 ### Community 76 - "_ide_helper.php"
 Cohesion: 0.04
@@ -4086,91 +4096,95 @@ Nodes (86): Benchmark, EditBiometricDevice, EditBlog, EditBusinessType, EditCity
 
 ### Community 77 - "Gt"
 Cohesion: 0.06
-Nodes (17): Ac(), addBox(), afterDatasetsUpdate(), beforeDatasetsDraw(), ds(), gs(), Gt(), index() (+9 more)
+Nodes (18): Ac(), addBox(), afterDatasetsUpdate(), _c(), cc(), ds(), gs(), Gt() (+10 more)
 
 ### Community 78 - "Http"
-Cohesion: 0.05
-Nodes (18): RateLimitExceededException, RateLimitExceededException, {closure#1}(), Http, Illuminate\Contracts\Queue\Job, Illuminate\Http\Client\Request, {closure#1}(), {closure#1}() (+10 more)
+Cohesion: 0.03
+Nodes (54): WhatsAppBroadcastRecipient, {closure#1}(), Http, Illuminate\Contracts\Bus\Dispatcher, Illuminate\Contracts\Bus\QueueingDispatcher, Illuminate\Contracts\Queue\Job, Illuminate\Database\Eloquent\Factories\Sequence, Illuminate\Http\Client\Request (+46 more)
 
-### Community 79 - "BiometricDeviceResource.php"
-Cohesion: 0.02
-Nodes (50): BiometricProvidersEnum, BiometricDeviceResource, {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#15}(), {closure#17}() (+42 more)
+### Community 79 - "Components"
+Cohesion: 0.17
+Nodes (11): 1. Multi-Tenant Administration Panels (Filament v3), 3. Biometric Attendance & Access Control Engine, 4. WhatsApp Automation & Marketing Suite, 5. Membership Lifecycle & Smart Freeze Engine, 6. Billing, Invoicing & SaaS Subscriptions, 7. Dynamic Role-Based Access Control (RBAC), Architecture, Components (+3 more)
 
-### Community 80 - "lsp-98e2cf4a33afe7a8.php"
-Cohesion: 0.07
-Nodes (32): Illuminate\Support\Facades\File, Pest\Contracts\HasPrintableTestCaseName, Pest\Support\Str, Pest\TestSuite, PHPUnit\Framework\TestCase, PHPUnit\Runner\TestSuiteLoader, PHPUnit\TextUI\XmlConfiguration\LoadedFromFileConfiguration, PHPUnit\TextUI\XmlConfiguration\Loader (+24 more)
+### Community 80 - "lsp-253506b4f266ebf3.php"
+Cohesion: 0.12
+Nodes (15): Pest\Expectation, Pest\TestSuite, ReflectionParameter, ReflectionProperty, boot(), {closure#1}(), {closure#4}(), {closure#5}() (+7 more)
 
 ### Community 82 - "Cn"
-Cohesion: 0.10
-Nodes (68): getType(), Ae(), Cn(), b(), Bt(), Ct(), dn(), Dt() (+60 more)
+Cohesion: 0.09
+Nodes (72): getType(), at(), Cn(), b(), Bt(), Ct(), dn(), Dt() (+64 more)
 
-### Community 84 - "x"
-Cohesion: 0.12
-Nodes (73): $t(), De(), al(), at(), B(), he(), br(), Bt() (+65 more)
+### Community 84 - "Ht"
+Cohesion: 0.08
+Nodes (28): addEventListener(), bindResponsiveEvents(), bu(), Do(), du(), Eo(), Fn(), m() (+20 more)
 
-### Community 85 - "WhatsAppMessageCredit"
+### Community 85 - ".section"
 Cohesion: 0.03
-Nodes (32): CheckLowWhatsAppCreditsCommand, WhatsAppCreditTransaction, WhatsAppMessageCredit, {closure#1}(), {closure#2}(), {closure#1}(), {closure#2}(), {closure#3}() (+24 more)
+Nodes (36): {closure#1}(), {closure#12}(), {closure#14}(), {closure#16}(), {closure#17}(), {closure#2}(), {closure#21}(), {closure#8}() (+28 more)
 
 ### Community 86 - "Illuminate\Database\Migrations\Migration"
 Cohesion: 0.03
 Nodes (49): {closure#1}(), down(), up(), {closure#1}(), down(), up(), {closure#1}(), down() (+41 more)
 
 ### Community 87 - "RequestContact"
-Cohesion: 0.05
-Nodes (7): {closure#1}(), {closure#2}(), RequestContact, RequestContactObserver, static, RequestContactFactory, RequestContactResourceTest
-
-### Community 88 - "Filament\Clusters\Cluster"
-Cohesion: 0.22
-Nodes (6): Attendances, Permissions, GymManagement, Location, PermissionManager, Filament\Clusters\Cluster
-
-### Community 89 - ".opencode/skills/design/scripts/cip/core.py"
 Cohesion: 0.04
-Nodes (52): BM25, detect_domain(), _load_csv(), Load CSV and return list of dicts, Core search function using BM25, Auto-detect the most relevant domain from query, Main search function with auto-domain detection, Search across all domains and combine results (+44 more)
+Nodes (12): RequestCallbackAction, {closure#6}(), {closure#7}(), {closure#9}(), {closure#1}(), {closure#2}(), RequestDemo, RequestContact (+4 more)
 
-### Community 90 - "BiometricDevice"
+### Community 88 - "deleteInDirection"
+Cohesion: 0.05
+Nodes (59): attachFiles(), backspace(), ce(), compositionShouldAcceptFile(), createElement(), createLinkHTML(), cut(), d() (+51 more)
+
+### Community 89 - ".agents/skills/design/scripts/cip/core.py"
+Cohesion: 0.04
+Nodes (52): BM25, detect_domain(), get_cip_brief(), _load_csv(), Load CSV and return list of dicts, Core search function using BM25, Auto-detect the most relevant domain from query, Main search function with auto-domain detection (+44 more)
+
+### Community 90 - "BiometricTemplate"
 Cohesion: 0.01
-Nodes (94): BiometricDataDeletionService, {closure#1}(), BiometricDeProvisioner, BiometricTemplatePropagator, {closure#1}(), BiometricTemplateSuperseder, AdmsCommandKey, self (+86 more)
+Nodes (85): BiometricConsentRequiredException, BiometricDataDeletionService, BiometricDeProvisioner, BiometricTemplatePropagator, {closure#1}(), BiometricTemplateSuperseder, AdmsCommandKey, self (+77 more)
 
 ### Community 91 - "WhatsAppAccount"
 Cohesion: 0.02
-Nodes (14): {closure#1}(), {closure#2}(), {closure#1}(), WhatsAppAccount, Key Helper Methods, Livewire, LivewireManager, WhatsAppSetupTest (+6 more)
+Nodes (16): {closure#1}(), {closure#2}(), {closure#1}(), {closure#1}(), WhatsAppAccount, {closure#1}(), Livewire, LivewireManager (+8 more)
 
 ### Community 93 - "filament/echo.js"
 Cohesion: 0.09
 Nodes (15): a(), ar(), b(), cr(), d(), f(), H(), ji() (+7 more)
 
-### Community 95 - "WhatsAppSanitizer"
+### Community 95 - "WhatsAppPhoneNumber"
 Cohesion: 0.03
-Nodes (24): BroadcastConnectionException, WhatsAppSanitizer, MessagingInterface, TestMessagingInterface, {closure#1}(), MetaMessagingService, {closure#1}(), TwilioMessagingService (+16 more)
+Nodes (26): MessagingInterface, WhatsAppPhoneNumber, {closure#2}(), MetaMessagingService, {closure#3}(), TwilioMessagingService, {closure#5}(), {closure#7}() (+18 more)
+
+### Community 96 - "Route"
+Cohesion: 0.02
+Nodes (17): ImportController, Logout, Route, Illuminate\Support\Facades\Route, {closure#2}(), {closure#1}(), {closure#2}(), {closure#3}() (+9 more)
 
 ### Community 97 - "updateElements"
-Cohesion: 0.05
-Nodes (60): ac(), Ai(), Ao(), applyStack(), as(), aspectRatio(), ca(), _calculateBarIndexPixels() (+52 more)
+Cohesion: 0.06
+Nodes (55): ac(), Ai(), Ao(), applyStack(), ar(), as(), aspectRatio(), ca() (+47 more)
 
 ### Community 98 - "SendBroadcastJob"
-Cohesion: 0.04
-Nodes (32): ProcessScheduledBroadcastsCommand, SendBroadcastJob, Commit Strategy, Concrete Deliverables, Context, Core Objective, Critical Path, Current Architecture (Problems) (+24 more)
+Cohesion: 0.03
+Nodes (16): SendBroadcastJob, 1. Upfront Credit Deduction, 2. Dispatch Pattern, 3. Chunked Processing, 4. Batch Progress Tracking, 5. Recipient-Level Status Tracking, 6. Failure Classification & Transient Retry, 7. Automatic Credit Refund Pipeline (+8 more)
 
-### Community 99 - "WhatsAppTemplateService"
-Cohesion: 0.06
-Nodes (26): CleanupDeletedWhatsAppTemplates, WhatsAppTemplateService, WhatsAppTemplateService, Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done (+18 more)
+### Community 99 - "WhatsAppProviderFactory"
+Cohesion: 0.07
+Nodes (16): WhatsAppProviderFactory, 2. Factory Pattern with SWR Caching, Data Flow, Integration Points, Notifications, Observers, Overview, WhatsApp Observers & Notifications (+8 more)
 
 ### Community 100 - "getSelectedRange"
-Cohesion: 0.07
-Nodes (54): attachmentManagerDidRequestRemovalOfAttachment(), breaksOnReturn(), canSetCurrentAttribute(), canSetCurrentBlockAttribute(), compositionControllerDidRequestRemovalOfAttachment(), decreaseBlockAttributeLevel(), decreaseListLevel(), drop() (+46 more)
+Cohesion: 0.05
+Nodes (74): attachmentManagerDidRequestRemovalOfAttachment(), breaksOnReturn(), canDecreaseBlockAttributeLevel(), canDecreaseNestingLevel(), canIncreaseNestingLevel(), canSetCurrentAttribute(), canSetCurrentBlockAttribute(), canSetCurrentTextAttribute() (+66 more)
 
 ### Community 103 - "GSD-STYLE.md"
 Cohesion: 0.04
 Nodes (45): Anti-Patterns, Capability Tiers, Code Implementation, Code Review, Debugging, GSD Model-Agnostic Principle, Model Selection Playbook, Model Switching Mid-Session (+37 more)
 
-### Community 104 - "PaymentForm.php"
+### Community 104 - "ExportAction"
 Cohesion: 0.07
-Nodes (14): DurationMonth, {closure#1}(), PaymentMethod, self, {closure#10}(), {closure#11}(), {closure#3}(), {closure#4}() (+6 more)
+Nodes (13): ExportAction, static, ImportAction, static, MembershipPlanExporter, ListMembershipPlans, ManageTrainers, TrainerExporter (+5 more)
 
-### Community 105 - "support.js"
+### Community 105 - "F"
 Cohesion: 0.07
-Nodes (52): ai(), apply(), at(), B(), co(), ds(), $e(), es() (+44 more)
+Nodes (40): al(), bd(), bf(), Cc(), cd(), Ce(), data(), Ds() (+32 more)
 
 ### Community 106 - "TailwindConfigGenerator"
 Cohesion: 0.06
@@ -4180,89 +4194,97 @@ Nodes (23): main(), Any, Path, Add custom font families. Args: fonts: Dict of fo
 Cohesion: 0.08
 Nodes (9): self, WhatsAppAccountStatusEnum, Columns, Indexes, Migration History, Relationships, Security Notes, whatsapp_accounts (+1 more)
 
-### Community 108 - "RolePermissionsStatsWidget"
-Cohesion: 0.10
-Nodes (6): ManagerPermissionsPage, ReceptionistPermissionsPage, {closure#1}(), {closure#1}(), self, RolePermissionsStatsWidget
-
-### Community 109 - "WhatsAppTemplateStatusEnum"
+### Community 108 - "ErrorReport"
 Cohesion: 0.07
-Nodes (13): self, WhatsAppTemplateStatusEnum, WhatsAppTemplateStatusMapper, Columns, Indexes, Key Helper Methods, Migration History, Relationships (+5 more)
+Nodes (9): {closure#1}(), ErrorReportResource, CreateErrorReport, {closure#1}(), {closure#2}(), {closure#3}(), ListErrorReports, ErrorReport (+1 more)
+
+### Community 109 - "BaseAttendanceResource"
+Cohesion: 0.05
+Nodes (12): CreateTrainerAttendance, EditTrainerAttendance, ListTrainerAttendances, TrainerAttendanceResource, TrainerAttendanceStats, CreateTrainer, EditTrainer, TrainerResource (+4 more)
 
 ### Community 110 - "TODOs"
 Cohesion: 0.25
 Nodes (8): code:block10 (Scenario: Interface file syntax validation), code:block4 (Scenario: Interface file syntax validation), code:block5 (Scenario: Interface file syntax validation), code:block6 (Scenario: Interface file syntax validation), code:block7 (Scenario: Interface file syntax validation), code:block8 (Scenario: Interface file syntax validation), code:block9 (Scenario: Interface file syntax validation), TODOs
 
 ### Community 111 - "te"
-Cohesion: 0.04
-Nodes (21): Aa(), Bi(), bn(), cf(), Id(), Jc(), ji(), kd() (+13 more)
+Cohesion: 0.05
+Nodes (14): Aa(), Bi(), bn(), Id(), ji(), kd(), on(), qd() (+6 more)
 
 ### Community 112 - "scan.py"
 Cohesion: 0.07
 Nodes (42): collect_code_metrics(), detect_ci_cd_pipelines(), detect_containers(), detect_monorepo(), detect_performance_markers(), detect_security_configs(), find_entry_points(), find_env_templates() (+34 more)
 
-### Community 114 - "isHorizontal"
-Cohesion: 0.06
-Nodes (58): afterAutoSkip(), ar(), buildLookupTable(), buildTicks(), calculateLabelRotation(), _calculatePadding(), _computeAngle(), _computeGridLineItems() (+50 more)
+### Community 113 - "Cache"
+Cohesion: 0.04
+Nodes (7): {closure#1}(), MemberProgressChart, {closure#4}(), {closure#5}(), {closure#1}(), {closure#2}(), Cache
+
+### Community 114 - "ot"
+Cohesion: 0.04
+Nodes (19): as(), beforeUpdate(), generateLabels(), Gn(), ha(), hs, kr(), ll() (+11 more)
 
 ### Community 115 - "TestWebStackFreshness"
-Cohesion: 0.05
-Nodes (16): Freshness and migration contracts for native, desktop, and 3D stacks., _rows(), TestNativeDesktopStackFreshness, Freshness and generation-isolation contracts for web stack guidance., _rows(), TestWebStackFreshness, ambiguous_python_import_454de6233029, ambiguous_python_import_582ea344dbdf (+8 more)
+Cohesion: 0.14
+Nodes (5): Freshness and generation-isolation contracts for web stack guidance., _rows(), TestWebStackFreshness, ambiguous_python_import_582ea344dbdf, ambiguous_python_import_d7332e36978e
 
 ### Community 116 - "Storage"
 Cohesion: 0.04
-Nodes (3): {closure#1}(), Storage, ExcelImportTest
+Nodes (4): {closure#3}(), {closure#1}(), Storage, ExcelImportTest
 
-### Community 117 - "WhatsAppTemplateResource"
-Cohesion: 0.06
-Nodes (11): CreateWhatsAppTemplate, {closure#2}(), {closure#4}(), EditWhatsAppTemplate, {closure#1}(), {closure#3}(), {closure#5}(), ListWhatsAppTemplates (+3 more)
+### Community 117 - "PaymentsRelationManager.php"
+Cohesion: 0.03
+Nodes (35): DurationMonth, {closure#1}(), PaymentMethod, self, {closure#10}(), {closure#11}(), {closure#3}(), {closure#4}() (+27 more)
 
-### Community 118 - "F"
+### Community 118 - "updateElements"
 Cohesion: 0.04
-Nodes (94): afterTickToLabelConversion(), ai(), applyStack(), aspectRatio(), au(), r(), bd(), beforeTickToLabelConversion() (+86 more)
+Nodes (81): applyStack(), aspectRatio(), au(), buildTicks(), _calculateBarIndexPixels(), _calculateBarValuePixels(), calculateCircumference(), calculateLabelRotation() (+73 more)
 
 ### Community 119 - "WhatsAppBroadcast"
-Cohesion: 0.05
-Nodes (16): {closure#1}(), WhatsAppBroadcast, WhatsAppBroadcastRecipient, Key Helper Methods, Relationships, TODOs, ProcessScheduledBroadcastsCommandTest, SendMessageChunkJobTest (+8 more)
+Cohesion: 0.04
+Nodes (37): ProcessScheduledBroadcastsCommand, {closure#1}(), WhatsAppBroadcast, BroadcastMemberQuery, BroadcastOrchestrator, BroadcastRateLimiter, Key Helper Methods, 1. Biometric Check-In & Door Unlock Flow (+29 more)
 
-### Community 120 - "ExportAction"
-Cohesion: 0.12
-Nodes (9): ExportAction, static, ImportAction, static, ListMembershipPlans, ManageTrainers, Filament\Actions\Exports\Enums\ExportFormat, Filament\Resources\Pages\ManageRecords (+1 more)
+### Community 120 - "HasReportFilters"
+Cohesion: 0.08
+Nodes (8): {closure#1}(), CohortRetentionChart, SavedReportFilter, {closure#3}(), {closure#4}(), {closure#5}(), {closure#8}(), HasReportFilters
 
-### Community 121 - "FollowUpsRelationManager"
-Cohesion: 0.11
-Nodes (8): {closure#1}(), {closure#11}(), {closure#13}(), {closure#14}(), {closure#4}(), {closure#7}(), {closure#9}(), FollowUpsRelationManager
+### Community 121 - "FollowUpsRelationManager.php"
+Cohesion: 0.06
+Nodes (19): SendFollowUpRemindersCommand, {closure#4}(), {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}() (+11 more)
 
 ### Community 122 - "I"
-Cohesion: 0.15
-Nodes (41): ar(), q(), Bi(), I(), c(), H(), d(), di() (+33 more)
+Cohesion: 0.17
+Nodes (34): Bi(), I(), c(), d(), di(), $e(), f(), g() (+26 more)
 
-### Community 124 - "Illuminate\Support\ServiceProvider"
-Cohesion: 0.28
-Nodes (3): ExportServiceProvider, VoltServiceProvider, Illuminate\Support\ServiceProvider
+### Community 123 - "o"
+Cohesion: 0.08
+Nodes (37): average(), c(), dataset(), G(), getActiveElements(), getBasePosition(), getBaseValue(), getCenterPoint() (+29 more)
 
-### Community 125 - "s"
-Cohesion: 0.04
-Nodes (30): bc(), ca(), Dn(), l(), En, o(), fr(), c() (+22 more)
-
-### Community 126 - "e"
+### Community 124 - "format_ascii_box"
 Cohesion: 0.07
-Nodes (46): acquireContext(), add(), As(), beforeUpdate(), bh(), _cachedScopes(), createResolver(), describe() (+38 more)
+Nodes (27): ansi_ljust(), _detect_page_type(), format_ascii_box(), format_markdown(), format_master_md(), format_page_override_md(), generate_design_system(), _generate_intelligent_overrides() (+19 more)
 
-### Community 127 - "Filament\Actions\Exports\Models\Export"
-Cohesion: 0.10
-Nodes (8): BaseEmployeeExporter, ManagerExporter, ReceptionistExporter, ExportPolicy, AuthServiceProvider, {closure#1}(), Filament\Actions\Exports\Models\Export, Illuminate\Foundation\Support\Providers\AuthServiceProvider
+### Community 125 - "qn"
+Cohesion: 0.12
+Nodes (4): beforeDatasetsDraw(), beforeDraw(), index(), qn()
+
+### Community 126 - "s"
+Cohesion: 0.06
+Nodes (52): active(), add(), _animateOptions(), As(), bh(), s(), _cachedScopes(), cancel() (+44 more)
+
+### Community 127 - "_a"
+Cohesion: 0.17
+Nodes (32): _a(), aa(), ba(), Be(), br(), Ca(), ce(), Dn() (+24 more)
 
 ### Community 128 - ".agents/skills/ui-ux-pro-max/scripts/core.py"
-Cohesion: 0.08
-Nodes (46): _contains_phrase(), detect_domain(), _domain_keywords(), _exact_match_diagnostic(), _exact_stack_identifier(), _file_signature(), _get_bm25(), _legacy_successor_guidance() (+38 more)
+Cohesion: 0.06
+Nodes (59): BM25, _contains_phrase(), detect_domain(), _domain_keywords(), _exact_match_diagnostic(), _exact_row_identity(), _exact_stack_identifier(), _file_signature() (+51 more)
 
 ### Community 130 - "Illuminate\Database\Eloquent\Builder"
 Cohesion: 0.01
-Nodes (145): {closure#1}(), DefaultResourcesCast, {closure#2}(), {closure#3}(), {closure#1}(), {closure#3}(), {closure#4}(), {closure#1}() (+137 more)
+Nodes (139): {closure#1}(), DefaultResourcesCast, {closure#1}(), {closure#2}(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}() (+131 more)
 
-### Community 131 - "Filament\Tables\Table"
+### Community 131 - "Filament\Forms\Form"
 Cohesion: 0.01
-Nodes (139): {closure#2}(), {closure#8}(), {closure#14}(), {closure#18}(), {closure#1}(), {closure#3}(), {closure#8}(), {closure#14}() (+131 more)
+Nodes (151): Attendances, Permissions, {closure#1}(), {closure#2}(), {closure#5}(), {closure#2}(), {closure#2}(), {closure#4}() (+143 more)
 
 ### Community 132 - "Verification Strategy"
 Cohesion: 0.40
@@ -4273,8 +4295,8 @@ Cohesion: 0.04
 Nodes (46): `<action>`, Anti-Patterns to Avoid, Building Dependencies, Checklist Before Submitting Plans, Checkpoint Reached, Context Budget Rules, Dependency Graph, `<done>` (+38 more)
 
 ### Community 134 - "WhatsAppBroadcastStatusEnum"
-Cohesion: 0.05
-Nodes (12): self, WhatsAppBroadcastStatusEnum, BroadcastMemberQuery, BroadcastOrchestrator, BroadcastRateLimiter, Broadcast Status Flow, Columns, Indexes (+4 more)
+Cohesion: 0.06
+Nodes (12): {closure#3}(), self, WhatsAppBroadcastStatusEnum, {closure#6}(), Broadcast Status Flow, Columns, Indexes, Migration History (+4 more)
 
 ### Community 135 - "UserRoleAssignmentSeeder Test Documentation"
 Cohesion: 0.09
@@ -4293,32 +4315,28 @@ Cohesion: 0.67
 Nodes (3): code:block14 (Scenario: Verify DTO return types), code:block16 (Scenario: Verify DTO return types), TODOs
 
 ### Community 139 - "dateRangeComponent.js"
-Cohesion: 0.06
-Nodes (27): $2(), Az(), c0(), c1(), cM(), D1(), db(), G2() (+19 more)
+Cohesion: 0.05
+Nodes (36): $2(), aM(), Az(), c1(), cM(), D1(), fM(), g() (+28 more)
 
 ### Community 140 - ".opencode/skills/ui-ux-pro-max/scripts/core.py"
-Cohesion: 0.08
-Nodes (45): _contains_phrase(), detect_domain(), _domain_keywords(), _exact_match_diagnostic(), _exact_stack_identifier(), _file_signature(), _get_bm25(), _legacy_successor_guidance() (+37 more)
+Cohesion: 0.06
+Nodes (60): difflib, BM25, _contains_phrase(), detect_domain(), _domain_keywords(), _exact_match_diagnostic(), _exact_row_identity(), _exact_stack_identifier() (+52 more)
 
 ### Community 141 - ".agents/skills/ui-ux-pro-max/scripts/validate_data.py"
 Cohesion: 0.09
 Nodes (44): _catalog_date(), _check_app_interface_contract(), _check_catalog_contract(), _check_catalog_summary(), _check_chart_contract(), _check_color_contract(), _check_core_data_contract(), _check_file() (+36 more)
 
 ### Community 142 - "notifications.js"
-Cohesion: 0.05
-Nodes (34): Command Pruning Lifecycle, Device Command Queue & Status Enum, Available Components, Flux UI Component Library (Free Edition), Available Components, Flux UI Component Library (Free Edition), Usage Examples, Usage Examples (+26 more)
+Cohesion: 0.06
+Nodes (23): Command Pruning Lifecycle, Device Command Queue & Status Enum, actions(), constructor(), danger(), dispatch(), dispatchSelf(), dispatchTo() (+15 more)
 
 ### Community 143 - "ExpenseCategory"
-Cohesion: 0.11
-Nodes (3): {closure#1}(), {closure#3}(), ExpenseCategory
-
-### Community 144 - "withTargetDOMRange"
-Cohesion: 0.08
-Nodes (39): canAcceptDataTransfer(), canDecreaseNestingLevel(), canIncreaseNestingLevel(), compositionControllerDidFocus(), compositionDidRequestChangingSelectionToLocationRange(), createDOMRangeFromPoint(), createLocationRangeFromDOMRange(), decreaseNestingLevel() (+31 more)
+Cohesion: 0.07
+Nodes (11): {closure#1}(), ExpenseCategory, ExpenseCategoryObserver, ExpenseCategoryPolicy, {closure#1}(), deleteDuplicateGymCategories(), getDefaultCategories(), migrateBudgetsToSystemCategories() (+3 more)
 
 ### Community 145 - "_update"
 Cohesion: 0.08
-Nodes (41): afterBuildTicks(), afterCalculateLabelRotation(), afterDataLimits(), afterFit(), afterSetDimensions(), afterTickToLabelConversion(), afterUpdate(), beforeBuildTicks() (+33 more)
+Nodes (43): afterBuildTicks(), afterCalculateLabelRotation(), afterDataLimits(), afterFit(), afterSetDimensions(), afterTickToLabelConversion(), afterUpdate(), beforeBuildTicks() (+35 more)
 
 ### Community 146 - ".opencode/skills/ui-ux-pro-max/scripts/validate_data.py"
 Cohesion: 0.09
@@ -4336,9 +4354,9 @@ Nodes (36): Authentication and Tokens, Authorization: Policies and Gates, code:p
 Cohesion: 0.05
 Nodes (36): Authentication and Tokens, Authorization: Policies and Gates, code:php (use Illuminate\Http\Request;), code:php (protected $casts = [), code:php (use Illuminate\Http\Request;), code:php (// config/cors.php), code:php (use Illuminate\Support\Facades\Log;), code:php (use Illuminate\Support\Facades\URL;) (+28 more)
 
-### Community 151 - "HasTenantAccess"
-Cohesion: 0.08
-Nodes (13): UserStatus, {closure#1}(), {closure#2}(), CreateGymMember, ListGymMembers, CreateManager, CreateReceptionist, EmployeeDetail (+5 more)
+### Community 151 - "BaseImporter.php"
+Cohesion: 0.05
+Nodes (26): AfterImport, {closure#1}(), {closure#4}(), ExcelImportAction, static, BaseExcelImport, {closure#1}(), {closure#1}() (+18 more)
 
 ### Community 152 - "Laravel Security Best Practices"
 Cohesion: 0.05
@@ -4353,8 +4371,8 @@ Cohesion: 0.05
 Nodes (43): Arbitrary Values, Aspect Ratio, Background Colors, Border Color, Border Radius, Border Style, Border Width, Borders (+35 more)
 
 ### Community 155 - "SendMessageChunkJob"
-Cohesion: 0.04
-Nodes (36): WhatsAppFailureClassifier, SendMessageChunkJob, Consequences, Negative / Trade-offs, Positive, Architecture, Core Services & Helpers, Data Flow (+28 more)
+Cohesion: 0.05
+Nodes (32): WhatsAppFailureClassifier, SendMessageChunkJob, Consequences, Negative / Trade-offs, Positive, Jobs & Queues, SendBroadcastJob, SendMessageChunkJob (+24 more)
 
 ### Community 157 - "Tailwind CSS Utility Reference"
 Cohesion: 0.05
@@ -4368,69 +4386,69 @@ Nodes (42): 1.1: Launch @code-explorer (BACKGROUND), 1.2: Direct Tool Exploratio
 Cohesion: 0.05
 Nodes (42): 1.1: Launch @code-explorer (BACKGROUND), 1.2: Direct Tool Exploration (While Agents Run), 1.3: Collect Results, 2.1: Construct Definitive Codemap, 2.2: Identify Refactoring Constraints, 3.1: Detect Test Infrastructure, 3.2: Analyze Test Coverage, 3.3: Determine Verification Strategy (+34 more)
 
-### Community 160 - "rr"
-Cohesion: 0.10
-Nodes (11): cr(), ie(), kl(), kn(), lr(), g(), rr, f() (+3 more)
+### Community 160 - "or"
+Cohesion: 0.07
+Nodes (13): cr(), ie(), kl(), kn(), lr(), oa(), or, g() (+5 more)
 
 ### Community 162 - ".agents/skills/ui-ux-pro-max/scripts/tests/test_data_contracts.py"
 Cohesion: 0.07
-Nodes (14): Cross-file semantic contracts for curated design data., read_rows(), split_values(), style_identities(), TestGeneratedCatalogContract, TestLandingAndStackContract, TestReasoningContract, TestStyleIdentityContract (+6 more)
+Nodes (13): Cross-file semantic contracts for curated design data., read_rows(), split_values(), style_identities(), TestGeneratedCatalogContract, TestLandingAndStackContract, TestReasoningContract, TestStyleIdentityContract (+5 more)
 
-### Community 163 - "ChartToImageService.php"
+### Community 163 - "_each"
+Cohesion: 0.08
+Nodes (32): addControllers(), addElements(), addPlugins(), addScales(), buildOrUpdateControllers(), buildOrUpdateElements(), Ca(), Cn() (+24 more)
+
+### Community 164 - "ExpenseFactory"
 Cohesion: 0.13
-Nodes (4): {closure#4}(), Intervention\Image\Drivers\Gd\Driver, Intervention\Image\Image, Intervention\Image\ImageManager
-
-### Community 164 - "ExpenseMonthlyTrendChart.php"
-Cohesion: 0.06
-Nodes (7): {closure#6}(), ExpenseCategoryChart, ExpenseMonthlyTrendChart, {closure#6}(), ExpensePaymentMethodChart, Filament\Support\RawJs, Livewire\Attributes\Reactive
+Nodes (5): {closure#1}(), self, RecurringFrequency, ExpenseFactory, static
 
 ### Community 165 - "PhoneNumber"
-Cohesion: 0.08
+Cohesion: 0.06
 Nodes (6): PhoneNumber, {closure#1}(), {closure#2}(), Stringable, Illuminate\Support\Stringable, PhoneNumberTest
 
 ### Community 166 - "Oi"
-Cohesion: 0.10
-Nodes (12): afterDraw(), afterEvent(), afterInit(), Ho, jr(), me(), Oi, ql() (+4 more)
+Cohesion: 0.09
+Nodes (15): afterDraw(), afterEvent(), afterInit(), Ho, jn(), jr(), me(), mh() (+7 more)
 
 ### Community 167 - "setAttribute"
 Cohesion: 0.05
-Nodes (69): lt(), sa(), add(), applyKeyboardCommand(), attachmentEditorDidRequestRemovalOfAttachment(), attributeChangedCallback(), canBeGrouped(), checkValidity() (+61 more)
+Nodes (65): lt(), sa(), add(), applyKeyboardCommand(), attachmentEditorDidRequestRemovalOfAttachment(), attributeChangedCallback(), canBeGrouped(), checkValidity() (+57 more)
 
 ### Community 168 - "render"
-Cohesion: 0.05
-Nodes (52): actionIsExternal(), beforeinput(), canInvokeAction(), compositionControllerDidBlur(), compositionControllerDidSyncDocumentView(), compositionDidAddAttachment(), compositionDidChangeAttachmentPreviewURL(), compositionDidChangeCurrentAttributes() (+44 more)
+Cohesion: 0.06
+Nodes (49): cacheViewForObject(), compositionDidLoadSnapshot(), copyUsingObjectMap(), copyUsingObjectsFromDocument(), createAttachmentNodes(), createChildView(), createContainerElement(), createDocumentFragmentForSync() (+41 more)
 
 ### Community 169 - ".opencode/skills/ui-ux-pro-max/scripts/tests/test_data_contracts.py"
 Cohesion: 0.07
-Nodes (13): ambiguous_python_import_05bf9768288d, ambiguous_python_import_09136615f237, ambiguous_python_import_1b4bc25f4c5b, ambiguous_python_import_3b8c6e17a22d, ambiguous_python_import_c91af7d72111, Cross-file semantic contracts for curated design data., read_rows(), split_values() (+5 more)
+Nodes (14): ambiguous_python_import_05bf9768288d, ambiguous_python_import_09136615f237, ambiguous_python_import_1b4bc25f4c5b, ambiguous_python_import_3b8c6e17a22d, ambiguous_python_import_c91af7d72111, copy, Cross-file semantic contracts for curated design data., read_rows() (+6 more)
 
-### Community 170 - "TrainerAttendanceResource"
-Cohesion: 0.09
-Nodes (5): CreateTrainerAttendance, EditTrainerAttendance, ListTrainerAttendances, TrainerAttendanceResource, TrainerAttendanceStats
+### Community 170 - "MemberReports.php"
+Cohesion: 0.03
+Nodes (21): {closure#10}(), {closure#11}(), {closure#6}(), {closure#7}(), {closure#8}(), {closure#2}(), {closure#5}(), {closure#1}() (+13 more)
 
 ### Community 171 - "Convert `pt_salary_per_member` to Percentage-Based Commission"
 Cohesion: 0.11
 Nodes (19): Concrete Deliverables, Context, Convert `pt_salary_per_member` to Percentage-Based Commission, Core Objective, Definition of Done, Execution Strategy, Final Checklist, Metis Review (+11 more)
 
-### Community 172 - ".opencode/skills/ui-ux-pro-max/scripts/design_system.py"
-Cohesion: 0.04
-Nodes (59): ambiguous_python_import_7d9fe45fb6dc, ambiguous_python_import_7df170bf16b9, ansi_ljust(), _contrast_ratio(), _derive_dark_palette(), DesignSystemGenerator, _detect_page_type(), _filter_anti_patterns_for_mode() (+51 more)
+### Community 172 - "DesignSystemGenerator"
+Cohesion: 0.06
+Nodes (29): _contrast_ratio(), _derive_dark_palette(), DesignSystemGenerator, _filter_anti_patterns_for_mode(), _palette_is_dark(), _query_wants_dark(), WCAG relative luminance of a #RRGGBB string, or None if unparseable., True when a colors.csv row's Background is a dark surface. (+21 more)
 
-### Community 173 - "s"
-Cohesion: 0.08
-Nodes (41): br(), C(), Co(), cr(), l(), endOf(), Et(), format() (+33 more)
+### Community 173 - "WhatsAppSanitizer"
+Cohesion: 0.06
+Nodes (14): BroadcastConnectionException, RateLimitExceededException, WhatsAppSanitizer, RateLimitExceededException, {closure#5}(), {closure#4}(), GuzzleHttp\Exception\ConnectException, GuzzleHttp\Exception\RequestException (+6 more)
 
 ### Community 175 - "e"
-Cohesion: 0.06
-Nodes (50): addEventListener(), Bi(), bindResponsiveEvents(), cs(), Ct(), data(), determineDataLimits(), di() (+42 more)
+Cohesion: 0.09
+Nodes (30): br(), di(), dn(), en(), getPadding(), Hi(), ii(), In() (+22 more)
 
-### Community 176 - "BaseTableWidget"
+### Community 176 - "WhatsAppTemplateResource"
 Cohesion: 0.06
-Nodes (7): DashboardMemberAttendanceTable, MembershipExpiryAlerts, PendingExpenseApprovalsWidget, RecentActivity, RecentExpensesWidget, BaseTableWidget, Filament\Widgets\TableWidget
+Nodes (11): CreateWhatsAppTemplate, {closure#2}(), {closure#4}(), EditWhatsAppTemplate, {closure#1}(), {closure#3}(), {closure#5}(), ListWhatsAppTemplates (+3 more)
 
 ### Community 179 - "draw"
-Cohesion: 0.07
-Nodes (50): acquireContext(), adjustHitBoxes(), afterDraw(), bc(), Bl(), clear(), _computeLabelArea(), _computeTitleHeight() (+42 more)
+Cohesion: 0.06
+Nodes (69): acquireContext(), adjustHitBoxes(), Bl(), calculateLabelRotation(), _calculatePadding(), clear(), _computeGridLineItems(), _computeLabelArea() (+61 more)
 
 ### Community 180 - "filament-phone-input.js"
 Cohesion: 0.08
@@ -4439,10 +4457,6 @@ Nodes (29): _addToDialCodeMap(), _appendListItems(), _generateMarkup(), _getHidd
 ### Community 181 - "Brand Guidelines v1.0"
 Cohesion: 0.05
 Nodes (37): 1. Color Palette, 2. Typography, 3. Logo Usage, 4. Voice & Tone, 5. Imagery Guidelines, 6. Design Components, Accessibility, AI Image Generation (+29 more)
-
-### Community 182 - "CreateRecord"
-Cohesion: 0.06
-Nodes (33): CreateBiometricDevice, CreateBlog, CreateBusinessType, CreateCity, CreateCmsPage, CreateCountry, CreateErrorReport, CreateExpense (+25 more)
 
 ### Community 183 - "require"
 Cohesion: 0.05
@@ -4472,17 +4486,13 @@ Nodes (37): $type, $value, background, destructive, destructive-foreground, fore
 Cohesion: 0.06
 Nodes (35): 1. Visual Communication First, 2. Minimal Text Integration, 3. Expert Craftsmanship, 4. Systematic Patterns, Analog Meditation, Approach, Canvas Boundaries, Canvas Design System (+27 more)
 
-### Community 191 - "Process"
-Cohesion: 0.04
-Nodes (21): 1) Runtime Summary, 2) Production Frameworks and Dependencies, 3) Development Toolchain, 4) Key Commands, 5) Environment and Config, 6) Evidence, Core Sections (Required), Technology Stack (+13 more)
-
 ### Community 192 - "Canvas Design System"
 Cohesion: 0.06
 Nodes (35): 1. Visual Communication First, 2. Minimal Text Integration, 3. Expert Craftsmanship, 4. Systematic Patterns, Analog Meditation, Approach, Canvas Boundaries, Canvas Design System (+27 more)
 
-### Community 193 - "TwilioAccountManager"
-Cohesion: 0.06
-Nodes (6): TwilioContext, Client, TwilioAccountManager, Client, TwilioAccountCleanupTest, Twilio\Rest\Client
+### Community 193 - "WhatsApp Provider: Owner vs Super-Admin Implementation Plan"
+Cohesion: 0.10
+Nodes (23): Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Execution Strategy, Final Checklist, Final Verification Wave (+15 more)
 
 ### Community 194 - "Laravel Intelligent Refactor Skill"
 Cohesion: 0.05
@@ -4493,12 +4503,12 @@ Cohesion: 0.06
 Nodes (34): Accessibility, Available Domains, Available Stacks, Common Rules for Professional UI, Common Sticking Points, Example Workflow, How to Use This Skill, Icons & Visual Elements (+26 more)
 
 ### Community 196 - "Gym Management System - Google Gemini Code Assistant Context"
-Cohesion: 0.02
-Nodes (89): Advanced Database Patterns, Advanced Filament Patterns, Advanced Form Patterns with Filament, Advanced Livewire Patterns, Advanced Testing Strategies, API Authentication with Sanctum, Artisan Commands for Gym Management, Authorization & Security Patterns (+81 more)
+Cohesion: 0.06
+Nodes (35): Advanced Form Patterns with Filament, Advanced Livewire Patterns, Broadcasting Events, Caching Strategy, Complex Form with Relationships, Core Technology Architecture, Custom Notification Classes, Data Analytics & Reporting (+27 more)
 
 ### Community 197 - "Laravel Intelligent Refactor Skill"
-Cohesion: 0.05
-Nodes (42): 1.1: Launch @code-explorer (BACKGROUND), 1.2: Direct Tool Exploration (While Agents Run), 1.3: Collect Results, 2.1: Construct Definitive Codemap, 2.2: Identify Refactoring Constraints, 3.1: Detect Test Infrastructure, 3.2: Analyze Test Coverage, 3.3: Determine Verification Strategy (+34 more)
+Cohesion: 0.06
+Nodes (34): 1.1: Launch @code-explorer (BACKGROUND), 1.2: Direct Tool Exploration (While Agents Run), 1.3: Collect Results, 2.1: Construct Definitive Codemap, 2.2: Identify Refactoring Constraints, 3.1: Detect Test Infrastructure, 3.2: Analyze Test Coverage, 3.3: Determine Verification Strategy (+26 more)
 
 ### Community 198 - "Prerequisites"
 Cohesion: 0.06
@@ -4512,13 +4522,13 @@ Nodes (32): dependencies, autoprefixer, axios, concurrently, laravel-vite-plugin
 Cohesion: 0.06
 Nodes (34): $type, $value, $type, $value, $type, $value, $type, $value (+26 more)
 
-### Community 202 - "WhatsApp Template Import Command & Queue Job"
-Cohesion: 0.08
-Nodes (23): Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy, Final Checklist (+15 more)
+### Community 202 - ".updateOrCreate"
+Cohesion: 0.27
+Nodes (8): Dimension Integration in 6-Phase Protocol, The 9 Refactor Dimensions, Dimension Integration in 6-Phase Protocol, The 9 Refactor Dimensions, Dimension Integration in 6-Phase Protocol, The 9 Refactor Dimensions, Dimension Integration in 6-Phase Protocol, The 9 Refactor Dimensions
 
-### Community 203 - "Bus"
-Cohesion: 0.02
-Nodes (3): Bus, Event, WhatsAppBroadcastPerformanceTest
+### Community 203 - "Event"
+Cohesion: 0.04
+Nodes (4): ExportServiceProvider, VoltServiceProvider, Event, Illuminate\Support\ServiceProvider
 
 ### Community 205 - "spacing"
 Cohesion: 0.06
@@ -4526,7 +4536,7 @@ Nodes (34): $type, $value, $type, $value, $type, $value, $type, $value (+26 more
 
 ### Community 206 - "b"
 Cohesion: 0.13
-Nodes (34): _0(), A2(), b(), b1(), C(), D(), d2(), dz() (+26 more)
+Nodes (36): _0(), A2(), b(), b1(), C(), D(), d2(), E1() (+28 more)
 
 ### Community 207 - "Form & Input Components"
 Cohesion: 0.06
@@ -4540,25 +4550,21 @@ Nodes (32): 1. Mobile-First Design, 2. Consistent Breakpoint Usage, 3. Test at B
 Cohesion: 0.06
 Nodes (29): Anti-Patterns, Artifacts Mode, Claude Adapter, Context Optimization, Effort Levels, Extended Thinking Mode, File Conventions, Anti-Patterns (+21 more)
 
-### Community 211 - "Artisan"
-Cohesion: 0.04
-Nodes (3): Artisan, Schedule, Signal
-
-### Community 212 - "WhatsAppUsageLog"
-Cohesion: 0.08
-Nodes (4): CreditManagementInterface, WhatsAppUsageLog, MetaCreditService, TwilioCreditService
+### Community 211 - "start"
+Cohesion: 0.09
+Nodes (29): beforeinput(), canApplyToDocument(), compositionend(), compositionstart(), compositionupdate(), elementDidMutate(), end(), forgetPlaceholder() (+21 more)
 
 ### Community 213 - "GSD Executor Agent"
 Cohesion: 0.07
 Nodes (29): Anti-Patterns, ✅ Atomic commits, Authentication Gates, Checkpoint Protocol, Checkpoint Return Format, Checkpoint Types, Confirm the commit landed, Continuation Handling (+21 more)
 
 ### Community 214 - "TwilioWhatsAppProvider"
-Cohesion: 0.11
-Nodes (5): TwilioWhatsAppProvider, Interview Summary, Original Request, Reference Pattern (Twilio), TL;DR
+Cohesion: 0.06
+Nodes (4): AccountManagementInterface, PhoneNumberManagementInterface, TestMessagingInterface, TwilioWhatsAppProvider
 
-### Community 215 - "AdmsDeviceCommandResource.php"
-Cohesion: 0.08
-Nodes (14): BiometricLogRedactor, {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}(), {closure#4}(), {closure#5}() (+6 more)
+### Community 215 - "Artisan"
+Cohesion: 0.05
+Nodes (3): Artisan, Schedule, Signal
 
 ### Community 216 - "Form & Input Components"
 Cohesion: 0.06
@@ -4568,13 +4574,13 @@ Nodes (32): Accordion, Alert, Alert Dialog, Avatar, Badge, Button, Card, Checkbo
 Cohesion: 0.06
 Nodes (32): 1. Mobile-First Design, 2. Consistent Breakpoint Usage, 3. Test at Breakpoint Boundaries, 4. Use Container for Content Width, 5. Progressive Enhancement, 6. Avoid Too Many Breakpoints, Best Practices, Breakpoint System (+24 more)
 
-### Community 218 - "inRange"
+### Community 218 - "r"
 Cohesion: 0.07
-Nodes (40): ad(), al(), ar(), average(), Br(), cd(), Ch(), data() (+32 more)
+Nodes (43): acquireContext(), ad(), ai(), ar(), r(), average(), Br(), Ch() (+35 more)
 
-### Community 219 - "Is"
-Cohesion: 0.08
-Nodes (33): At(), average(), c(), dataset(), _eventHandler(), Fa(), getCenterPoint(), getMaximumSize() (+25 more)
+### Community 219 - "s"
+Cohesion: 0.09
+Nodes (33): _a(), ba(), _cachedScopes(), configure(), createResolver(), da(), datasetAnimationScopeKeys(), datasetElementScopeKeys() (+25 more)
 
 ### Community 220 - "button"
 Cohesion: 0.08
@@ -4584,17 +4590,17 @@ Nodes (32): $type, $value, bg, fg, font-size, hover-bg, padding-x, padding-y (+2
 Cohesion: 0.06
 Nodes (31): For --cluster-only, For git commit hook, For /graphify add, For /graphify explain, For /graphify path, For /graphify query, For native CLAUDE.md integration, For --update (incremental re-extraction) (+23 more)
 
-### Community 222 - "WhatsAppProviderFactory"
-Cohesion: 0.10
-Nodes (8): WhatsAppAccountObserver, WhatsAppProviderFactory, 2. Factory Pattern with SWR Caching, Observers, WhatsAppAccountObserver, WhatsAppPackageObserver, WhatsAppTemplateObserver, WhatsAppProviderFactoryTest
+### Community 222 - "TemplatePicker"
+Cohesion: 0.12
+Nodes (5): {closure#9}(), static, TemplatePicker, TemplatePickerTest, TemplatePickerTest
 
 ### Community 225 - "button"
 Cohesion: 0.08
 Nodes (32): $type, $value, bg, fg, font-size, hover-bg, padding-x, padding-y (+24 more)
 
-### Community 226 - "Closure"
-Cohesion: 0.11
-Nodes (8): {closure#14}(), {closure#15}(), static, TemplateCard, Closure, Illuminate\Support\MessageBag, Illuminate\Support\ViewErrorBag, TemplateCardTest
+### Community 226 - ".opencode/skills/design/scripts/cip/core.py"
+Cohesion: 0.12
+Nodes (18): BM25, detect_domain(), get_cip_brief(), _load_csv(), Load CSV and return list of dicts, Core search function using BM25, Auto-detect the most relevant domain from query, Main search function with auto-domain detection (+10 more)
 
 ### Community 227 - "Typography Specifications"
 Cohesion: 0.06
@@ -4604,9 +4610,9 @@ Nodes (30): Accessibility, Base System, Best Practices, Clean & Modern, Common F
 Cohesion: 0.06
 Nodes (8): The exact reproduction from issue #428., Regression tests for color-mode coherence in design_system.py (issue #428).…, TestAntiPatternGating, TestEndToEndCoherence, TestLuminance, TestModeResolution, TestPaletteSelection, ambiguous_python_import_d407427e7373
 
-### Community 229 - ".agents/skills/ui-ux-pro-max/scripts/tests/test_style_taxonomy.py"
-Cohesion: 0.07
-Nodes (11): Regression tests for the public style taxonomy and search contract., read_rows(), TestStyleTaxonomy, ambiguous_python_import_45f74098ab5a, ambiguous_python_import_7b7efc49fbce, ambiguous_python_import_8419a9312a7f, ambiguous_python_import_f9f642e2a15c, Regression tests for the public style taxonomy and search contract. (+3 more)
+### Community 229 - "unittest"
+Cohesion: 0.04
+Nodes (15): Unit tests for metric math and relevance fixture validation., TestFixtureValidation, TestMetricMath, TestThresholdGate, ambiguous_python_import_b32743ad9392, importlib_util, Unit tests for metric math and relevance fixture validation., TestFixtureValidation (+7 more)
 
 ### Community 230 - ".opencode/skills/ui-ux-pro-max/scripts/tests/test_design_system_mode.py"
 Cohesion: 0.06
@@ -4625,8 +4631,8 @@ Cohesion: 0.06
 Nodes (30): Accessibility, Base System, Best Practices, Clean & Modern, Common Font Pairings, Contrast Requirements, CSS Implementation, Editorial (+22 more)
 
 ### Community 234 - "yl"
-Cohesion: 0.05
-Nodes (12): ha(), hs, le(), ll(), nh(), ns(), oa(), or (+4 more)
+Cohesion: 0.11
+Nodes (5): le(), nh(), ns(), os(), yl
 
 ### Community 236 - "Laravel Best Practices (Cross-Cutting)"
 Cohesion: 0.07
@@ -4640,17 +4646,13 @@ Nodes (29): Chat System, Common System Designs, Design Decisions, Design Decisio
 Cohesion: 0.07
 Nodes (29): 10. Type Safety, 1. Database Transactions, 2. Cache Locks for Race Conditions, 3. Queue Job Patterns, 4. Eloquent Patterns, 5. API Error Handling, 6. Form Request + Policy Pattern, 7. Event-Driven Architecture (+21 more)
 
-### Community 240 - "ProcessTwilioTemplateWebhook"
-Cohesion: 0.07
-Nodes (23): ProcessTwilioTemplateWebhook, Agent Dispatch Summary, Commit Strategy, Concrete Deliverables, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy (+15 more)
-
 ### Community 241 - "WhatsAppProviderInterface"
-Cohesion: 0.07
-Nodes (5): WhatsAppProviderInterface, Context, Interface Segregation Principle, Original Request, Research Findings
+Cohesion: 0.02
+Nodes (82): WhatsAppMigrateToIndividualWaba, WhatsAppProviderInterface, EmbeddedSignupService, WabaMigrationService, Artisan Commands, ProcessScheduledBroadcastsCommand, WhatsAppMigrateToIndividualWaba, Current Flow (WhatsAppSetup.php lines 1355-1386) (+74 more)
 
 ### Community 242 - "Blog"
 Cohesion: 0.16
-Nodes (4): {closure#1}(), Blog, BlogObserver, BlogSeeder
+Nodes (5): {closure#1}(), {closure#2}(), Blog, BlogObserver, BlogSeeder
 
 ### Community 243 - "Laravel Best Practices (Cross-Cutting)"
 Cohesion: 0.07
@@ -4660,17 +4662,17 @@ Nodes (29): 10. Type Safety, 1. Database Transactions, 2. Cache Locks for Race C
 Cohesion: 0.07
 Nodes (29): 10. Type Safety, 1. Database Transactions, 2. Cache Locks for Race Conditions, 3. Queue Job Patterns, 4. Eloquent Patterns, 5. API Error Handling, 6. Form Request + Policy Pattern, 7. Event-Driven Architecture (+21 more)
 
-### Community 245 - "Ae"
-Cohesion: 0.07
-Nodes (19): Ae(), afterUpdate(), An, bh(), Bi(), ch(), G(), ge() (+11 more)
+### Community 245 - "ef"
+Cohesion: 0.11
+Nodes (24): aa(), Af(), an(), bl(), cf(), ct(), ef(), Ff() (+16 more)
 
-### Community 246 - "add"
-Cohesion: 0.07
-Nodes (43): _a(), active(), add(), al(), _animateOptions(), ba(), _cachedScopes(), cancel() (+35 more)
+### Community 246 - "_notify"
+Cohesion: 0.15
+Nodes (17): active(), al(), _animateOptions(), cancel(), _createAnimations(), _createDescriptors(), _descriptors(), ka() (+9 more)
 
-### Community 248 - "Plan"
-Cohesion: 0.03
-Nodes (28): Invocation Contract, RequestCallbackAction, {closure#23}(), Number, HomeController, {closure#2}(), {closure#3}(), {closure#4}() (+20 more)
+### Community 248 - "format_ascii_box"
+Cohesion: 0.07
+Nodes (27): ansi_ljust(), _detect_page_type(), format_ascii_box(), format_markdown(), format_master_md(), format_page_override_md(), generate_design_system(), _generate_intelligent_overrides() (+19 more)
 
 ### Community 249 - "Logo Usage Rules"
 Cohesion: 0.07
@@ -4687,6 +4689,10 @@ Nodes (25): get_context(), is_allowed_exception(), is_allowed_rgba(), is_inside_
 ### Community 252 - "shadcn/ui Accessibility Patterns"
 Cohesion: 0.07
 Nodes (28): Accordion, Alert, ARIA Labels, Checkbox and Radio, Color Contrast, Command Palette Navigation, Component-Specific Patterns, Dialog/Modal Navigation (+20 more)
+
+### Community 253 - "OfflineQueueManager"
+Cohesion: 0.14
+Nodes (3): OfflineQueueManager, {closure#2}(), GET /filament/failed-import-download/{importId}()
 
 ### Community 255 - "Logo Usage Rules"
 Cohesion: 0.07
@@ -4705,12 +4711,12 @@ Cohesion: 0.07
 Nodes (28): Accordion, Alert, ARIA Labels, Checkbox and Radio, Color Contrast, Command Palette Navigation, Component-Specific Patterns, Dialog/Modal Navigation (+20 more)
 
 ### Community 261 - "WhatsAppTemplate"
-Cohesion: 0.03
-Nodes (47): SubmitTemplateAction, {closure#18}(), {closure#49}(), {closure#12}(), {closure#17}(), {closure#2}(), {closure#22}(), {closure#24}() (+39 more)
+Cohesion: 0.02
+Nodes (90): SubmitTemplateAction, CreateTemplateData, self, TemplateCollectionResult, self, TemplateSubmissionResult, {closure#54}(), {closure#12}() (+82 more)
 
 ### Community 262 - "getDatasetMeta"
-Cohesion: 0.07
-Nodes (39): afterDatasetsUpdate(), buildOrUpdateControllers(), datasetAnimationScopeKeys(), _destroyDatasetMeta(), generateLabels(), getController(), getDatasetMeta(), getDataVisibility() (+31 more)
+Cohesion: 0.04
+Nodes (69): addElements(), afterDatasetsUpdate(), afterDraw(), bindEvents(), bindResponsiveEvents(), bindUserEvents(), buildOrUpdateControllers(), buildOrUpdateElements() (+61 more)
 
 ### Community 263 - "radius"
 Cohesion: 0.10
@@ -4721,16 +4727,20 @@ Cohesion: 0.07
 Nodes (27): Benefits, Building Blocks of Scalable Systems, Cache Eviction Policies, Cache Invalidation Approaches, Cache Layers, Cache Strategies, Caching, Common Caching Problems (+19 more)
 
 ### Community 265 - "WhatsAppBillingModeEnum"
-Cohesion: 0.24
-Nodes (3): UpdateBillingModeAction, WhatsAppBillingModeEnum, WhatsAppCreditServiceTest
+Cohesion: 0.17
+Nodes (5): UpdateBillingModeAction, WhatsAppBillingModeEnum, {closure#3}(), UpdateBillingModeActionTest, WhatsAppCreditServiceTest
 
-### Community 266 - "Broadcast.php"
-Cohesion: 0.03
-Nodes (31): GymSettings, {closure#12}(), {closure#4}(), QRCodeManager, Broadcast, {closure#1}(), {closure#10}(), {closure#15}() (+23 more)
+### Community 266 - "CreateRecord"
+Cohesion: 0.06
+Nodes (33): CreateBiometricDevice, CreateBlog, CreateBusinessType, CreateCity, CreateCmsPage, CreateCountry, CreateErrorReport, CreateExpense (+25 more)
 
 ### Community 267 - "Illuminate\Database\Eloquent\Factories\Factory"
-Cohesion: 0.03
-Nodes (35): InteractionType, BiometricConsentFactory, {closure#1}(), {closure#2}(), static, {closure#2}(), BiometricEventReceiptFactory, {closure#1}() (+27 more)
+Cohesion: 0.02
+Nodes (40): CheckMembershipExpiry, InteractionType, App\Models\Task, Added, BiometricConsentFactory, {closure#1}(), {closure#2}(), static (+32 more)
+
+### Community 268 - "D"
+Cohesion: 0.12
+Nodes (22): cl(), Ct(), D(), data(), Eo(), fl(), Fo(), He() (+14 more)
 
 ### Community 269 - "Illuminate\Support\Facades\Schema"
 Cohesion: 0.03
@@ -4740,13 +4750,13 @@ Nodes (53): {closure#1}(), down(), up(), {closure#1}(), down(), up(), up(), {clo
 Cohesion: 0.10
 Nodes (28): $type, $value, lg, sm, $type, $value, $type, $value (+20 more)
 
-### Community 273 - "he"
-Cohesion: 0.10
-Nodes (13): fa, he(), il, ka(), li(), na(), tl(), Tn() (+5 more)
+### Community 273 - "parse"
+Cohesion: 0.16
+Nodes (24): E(), el(), format(), formats(), getLabelAndValue(), getLabelForValue(), getLabels(), getMaxOffset() (+16 more)
 
-### Community 274 - "B"
-Cohesion: 0.10
-Nodes (25): B(), bi(), Cc(), Ce(), _computeLabelSizes(), Df(), Fc(), Fo() (+17 more)
+### Community 274 - "GymMemberAttendanceResource"
+Cohesion: 0.12
+Nodes (4): GymMemberAttendanceResource, CreateGymMemberAttendance, EditGymMemberAttendance, ListGymMemberAttendances
 
 ### Community 275 - "g"
 Cohesion: 0.21
@@ -4760,25 +4770,25 @@ Nodes (27): $type, $value, $type, $value, $type, $value, $type, $value (+19 more
 Cohesion: 0.08
 Nodes (22): Common Test Assertions, Common Test Assertions, Create Page, Edit Page, Filament v5 — Testing, List Page, Setup, Testing Actions (+14 more)
 
-### Community 279 - "WhatsAppPackage"
-Cohesion: 0.11
-Nodes (11): {closure#1}(), WhatsAppPackage, WhatsAppPackageObserver, WhatsAppMessagePackagesSeeder, Columns, Indexes, Key Helper Methods, Migration History (+3 more)
-
 ### Community 282 - "gray"
 Cohesion: 0.08
 Nodes (27): $type, $value, $type, $value, $type, $value, $type, $value (+19 more)
 
 ### Community 283 - "et"
-Cohesion: 0.18
-Nodes (5): et(), jo(), nt(), sa(), wn()
+Cohesion: 0.12
+Nodes (11): bc(), l(), En, et(), jo(), ms(), nt(), sa() (+3 more)
 
-### Community 284 - "Ht"
-Cohesion: 0.11
-Nodes (22): addEventListener(), bindEvents(), bindResponsiveEvents(), bindUserEvents(), bu(), _checkEventBindings(), Ht(), isAttached() (+14 more)
+### Community 284 - "Twilio Phone Number Cost Surcharge"
+Cohesion: 0.09
+Nodes (22): Agent Dispatch Summary, Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Execution Strategy, Final Checklist (+14 more)
 
 ### Community 285 - "SEO Optimization Work Plan - FluxFitness"
 Cohesion: 0.07
 Nodes (26): Agent Dispatch Summary, Commit Strategy, Concrete Deliverables, Context, Core Objective, Decisions Needed, Definition of Done, Dependency Matrix (+18 more)
+
+### Community 286 - "Illuminate\Contracts\Database\Query\Builder"
+Cohesion: 0.12
+Nodes (13): CheckBiometricDeviceHealthCommand, {closure#1}(), {closure#2}(), {closure#1}(), {closure#4}(), {closure#1}(), {closure#2}(), {closure#17}() (+5 more)
 
 ### Community 287 - "Asset Approval Checklist"
 Cohesion: 0.08
@@ -4793,8 +4803,12 @@ Cohesion: 0.12
 Nodes (26): $type, $value, $type, $value, $type, $value, 500, 600 (+18 more)
 
 ### Community 291 - "Door Access Control"
-Cohesion: 0.09
-Nodes (24): self, Door Status Values, ADMS Dual-Channel (Relay/Wiegand via Webhook + Provisioning via ADMS), API / Endpoints, Architecture, Business Rules & Edge Cases, Compliance & Data Privacy, Data Flow (+16 more)
+Cohesion: 0.06
+Nodes (33): self, `door_events` — Field Reference, Door Status Values, Event Types, Field Reference, Indexes, Migration History, Notes (+25 more)
+
+### Community 292 - "BaseChartWidget"
+Cohesion: 0.10
+Nodes (20): AttendanceHeatmapChart, AttendanceTrendChart, BaseChartWidget, ExpenseCategoryChart, ExpenseMonthlyTrendChart, ExpensePaymentMethodChart, GymRevenueChart, LeadConversionChart (+12 more)
 
 ### Community 293 - "Asset Approval Checklist"
 Cohesion: 0.08
@@ -4808,9 +4822,9 @@ Nodes (25): Common Pitfalls, Core Prompt Structure, Detailed Brief, Eco/Sustaina
 Cohesion: 0.12
 Nodes (26): $type, $value, $type, $value, $type, $value, 500, 600 (+18 more)
 
-### Community 296 - "qn"
-Cohesion: 0.09
-Nodes (30): aa(), alpha(), Gc(), greyscale(), hslString(), _i(), ih(), Jc() (+22 more)
+### Community 296 - "Xc"
+Cohesion: 0.10
+Nodes (27): alpha(), Gc(), greyscale(), hslString(), _i(), ih(), Jc(), jo() (+19 more)
 
 ### Community 297 - "Work Plan: Blog SEO Fields + Detail Page Redesign"
 Cohesion: 0.08
@@ -4837,32 +4851,28 @@ Cohesion: 0.08
 Nodes (24): Accessibility Patterns, Alternative: Tailwind-Only Setup, Best Practices, Common Patterns, Component Layer: shadcn/ui, Component Library Guide, Component + Styling Setup, Core Stack (+16 more)
 
 ### Community 303 - "initOffsets"
-Cohesion: 0.11
-Nodes (24): afterAutoSkip(), buildLookupTable(), Fn(), getAllParsedValues(), getDataTimestamps(), getDecimalForPixel(), getDecimalForValue(), getLabelTimestamps() (+16 more)
-
-### Community 304 - "ADR-002: Door Access Attendance Integrity"
-Cohesion: 0.25
-Nodes (8): ADR-002: Door Access Attendance Integrity, Alternatives Considered, Consequences, Context, Negative / Trade-offs, Positive, Related Decisions, Status
+Cohesion: 0.09
+Nodes (27): afterAutoSkip(), buildLookupTable(), fa(), getAllParsedValues(), getDataTimestamps(), getDecimalForPixel(), getDecimalForValue(), getMatchingVisibleMetas() (+19 more)
 
 ### Community 306 - "TODOs"
 Cohesion: 0.40
 Nodes (5): code:block12 (Scenario: All unit tests pass), code:block15 (Scenario: All feature tests pass), code:php (<?php), code:block17 (Scenario: All unit tests pass), TODOs
 
 ### Community 307 - "WARP.md"
-Cohesion: 0.12
-Nodes (15): Code Quality, Database, Debugging, Development Commands, Environment Variables, Key Configuration, Production Deployment, Project Overview (+7 more)
+Cohesion: 0.07
+Nodes (29): ApplyTenantScopes, 2. Tenant Context & Data Isolation, Architecture, Background Jobs, Code Quality, Common Gotchas, Database, Database Queries in Tenant Context (+21 more)
 
-### Community 308 - "WhatsApp Provider: Owner vs Super-Admin Implementation Plan"
-Cohesion: 0.10
-Nodes (23): Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Execution Strategy, Final Checklist, Final Verification Wave (+15 more)
+### Community 308 - "RolesAndPermissionsService"
+Cohesion: 0.02
+Nodes (41): HasFilamentPermissions, GoalProgressWidget, GymHealthScoreWidget, BudgetOverviewWidget, CRMStatsWidget, {closure#1}(), BaseStatsOverviewWidget, BaseWidget (+33 more)
 
 ### Community 309 - "BasePage"
 Cohesion: 0.08
 Nodes (25): AttendanceReports, BasePage, EmailVerificationPrompt, EquipmentUsageReports, ExpenseReports, ExpenseReportsCluster, GymSettings, LeadReports (+17 more)
 
-### Community 310 - "MetaTemplateService"
-Cohesion: 0.12
-Nodes (3): MetaTemplateService, MetaTemplateServiceTest, TemplateFieldMapperTest
+### Community 310 - ".opencode/skills/design-system/scripts/fetch-background.py"
+Cohesion: 0.16
+Nodes (18): generate_css_for_background(), get_background_image(), get_curated_images(), get_overlay_css(), get_pexels_search_url(), load_backgrounds_config(), load_brand_colors(), main() (+10 more)
 
 ### Community 311 - "Super Admin Login Activity Monitoring"
 Cohesion: 0.10
@@ -4900,33 +4910,33 @@ Nodes (24): Accessibility, Accessibility Requirements, ARIA States, Color Contra
 Cohesion: 0.08
 Nodes (24): Accessibility Patterns, Alternative: Tailwind-Only Setup, Best Practices, Common Patterns, Component Layer: shadcn/ui, Component Library Guide, Component + Styling Setup, Core Stack (+16 more)
 
-### Community 321 - "fn"
-Cohesion: 0.09
-Nodes (60): _a(), aa(), ba(), Be(), br(), Ca(), ce(), Cr() (+52 more)
+### Community 321 - "support.js"
+Cohesion: 0.06
+Nodes (54): Ae(), ai(), apply(), ar(), q(), B(), co(), ds() (+46 more)
 
-### Community 322 - "g"
-Cohesion: 0.13
-Nodes (25): _1(), aM(), c2(), E1(), E2(), F1(), fM(), g() (+17 more)
+### Community 322 - "S"
+Cohesion: 0.17
+Nodes (19): _1(), c2(), dz(), E2(), F1(), I1(), J0(), l() (+11 more)
 
 ### Community 323 - "Step 6 - Generate Obsidian vault (opt-in) + HTML"
 Cohesion: 0.67
 Nodes (3): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), Step 6 - Generate Obsidian vault (opt-in) + HTML
 
 ### Community 324 - "z"
-Cohesion: 0.12
-Nodes (23): a0(), cb(), ez(), F(), H0(), I0(), iM(), J2() (+15 more)
+Cohesion: 0.13
+Nodes (25): a0(), cb(), ez(), F0(), H0(), I(), I0(), iM() (+17 more)
 
-### Community 325 - "Blog Management System Implementation Plan"
-Cohesion: 0.11
-Nodes (17): Blog Management System Implementation Plan, Commit Strategy, Context, Dependency Matrix, Execution Strategy, Final Checklist, Final Verification Wave (MANDATORY), Interview Summary (+9 more)
+### Community 325 - "BlogListing"
+Cohesion: 0.07
+Nodes (25): BlogListing, Blog Management System Implementation Plan, Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Dependency Matrix (+17 more)
 
 ### Community 326 - "QR Code Attendance System"
 Cohesion: 0.08
 Nodes (24): Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy, Final Checklist (+16 more)
 
-### Community 327 - "QR Code Attendance - OTP Verification Implementation Plan"
-Cohesion: 0.08
-Nodes (23): 1. Twilio Verify API Integration, 2. Settings Toggle, 3. OtpService Enhancement, 4. QRAttendance Component Update, 5. Background Job (Optional for v2), Acceptance Criteria, Current State, Dependencies (+15 more)
+### Community 327 - "QRAttendance"
+Cohesion: 0.06
+Nodes (26): QRAttendance, OtpService, 1. Twilio Verify API Integration, 2. Settings Toggle, 3. OtpService Enhancement, 4. QRAttendance Component Update, 5. Background Job (Optional for v2), Acceptance Criteria (+18 more)
 
 ### Community 330 - "SEO Improvements Work Plan"
 Cohesion: 0.08
@@ -4940,17 +4950,17 @@ Nodes (24): Agent Dispatch Summary, Commit Strategy, Concrete Deliverables, Cont
 Cohesion: 0.08
 Nodes (23): Art Direction Styles (Reuse from Banner), Color & Contrast, Design Best Practices, HTML Design Rules, HTML Template Structure, Option A: Chrome Headless CLI (Recommended — zero dependencies), Option B: chrome-devtools skill, Option C: Playwright script (+15 more)
 
-### Community 333 - "SummaryStatCard"
-Cohesion: 0.09
-Nodes (5): HasColorPalette, static, SummaryStatCard, Filament\Support\Facades\FilamentColor, SummaryStatCardTest
+### Community 333 - ".count"
+Cohesion: 0.03
+Nodes (13): BiometricPropagationResult, ValidatePhoneNumberSidsCommand, {closure#1}(), {closure#2}(), {closure#2}(), ChartToImageService, {closure#4}(), ReportPdfGenerator (+5 more)
 
 ### Community 334 - "Work Plan: Reusable OTP Input Component for Filament"
-Cohesion: 0.08
-Nodes (22): Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Execution Strategy, Final Checklist, Final Verification Wave (+14 more)
+Cohesion: 0.09
+Nodes (21): Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Execution Strategy, Final Checklist, Final Verification Wave (+13 more)
 
-### Community 335 - "HasReportFilters.php"
-Cohesion: 0.07
-Nodes (12): SavedReportFilter, ShareableReportLink, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}() (+4 more)
+### Community 335 - "Auto-Discovery of Default Role Permissions"
+Cohesion: 0.10
+Nodes (19): Agent Dispatch Summary, Auto-Discovery of Default Role Permissions, Concrete Deliverables, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy, Final Checklist (+11 more)
 
 ### Community 336 - "Biometric Provider Abstraction"
 Cohesion: 0.12
@@ -4992,17 +5002,17 @@ Nodes (26): Best Practices, code:php (namespace App\Jobs;), code:php (// config/
 Cohesion: 0.08
 Nodes (23): Art Direction Styles (Reuse from Banner), Color & Contrast, Design Best Practices, HTML Design Rules, HTML Template Structure, Option A: Chrome Headless CLI (Recommended — zero dependencies), Option B: chrome-devtools skill, Option C: Playwright script (+15 more)
 
-### Community 347 - "format_ascii_box"
-Cohesion: 0.07
-Nodes (27): ansi_ljust(), _detect_page_type(), format_ascii_box(), format_markdown(), format_master_md(), format_page_override_md(), generate_design_system(), _generate_intelligent_overrides() (+19 more)
+### Community 347 - "BiometricConsentMail"
+Cohesion: 0.08
+Nodes (20): BiometricConsentMail, Context, Objective, Plan 1.2: Multi-Channel Biometric Consent Delivery Job & Pipeline, Success Criteria, Tasks, Plan 1.2: Multi-Channel Biometric Consent Delivery Job & Pipeline — Summary, Verification Evidence (+12 more)
 
 ### Community 348 - "Biometric Device Door Lock/Unlock Implementation Plan"
 Cohesion: 0.08
 Nodes (23): Biometric Device Door Lock/Unlock Implementation Plan, Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy (+15 more)
 
-### Community 349 - "Illuminate\Foundation\Queue\Queueable"
-Cohesion: 0.04
-Nodes (31): {closure#2}(), {closure#5}(), {closure#10}(), {closure#12}(), ProcessMetaTemplateWebhook, PushWhatsAppTemplateToGymJob, {closure#1}(), {closure#2}() (+23 more)
+### Community 349 - "Component"
+Cohesion: 0.10
+Nodes (19): BiometricTemplatesRelationManager, BlogDetail, BlogListing, CmsPageController, Component, DatabaseNotifications, FollowUpsRelationManager, GlobalSearch (+11 more)
 
 ### Community 350 - "WhatsApp Per-Tenant Provider Selection Plan"
 Cohesion: 0.08
@@ -5012,9 +5022,9 @@ Nodes (23): Commit Strategy, Concrete Deliverables, Context, Core Objective, Cur
 Cohesion: 0.15
 Nodes (12): Biometric Consent System — FluxFitness, Commit Strategy, Context, Execution Strategy, Final Verification Wave (MANDATORY), QA Policy, Success Criteria, Test Decision (+4 more)
 
-### Community 353 - "re"
-Cohesion: 0.05
-Nodes (51): BM25, detect_domain(), get_cip_brief(), _load_csv(), Load CSV and return list of dicts, Core search function using BM25, Auto-detect the most relevant domain from query, Main search function with auto-domain detection (+43 more)
+### Community 353 - ".agents/skills/ui-ux-pro-max/scripts/reasoning_contract.py"
+Cohesion: 0.32
+Nodes (7): apply_decision_rules(), _object_without_duplicates(), parse_decision_rules(), Return deterministic mutations and an audit trail; never execute data., Closed, non-executable grammar for design-system decision rules., Parse the canonical condition -> action-array representation., _validate_action()
 
 ### Community 354 - "Design System"
 Cohesion: 0.09
@@ -5022,7 +5032,7 @@ Nodes (22): Best Practices, Chart.js Integration, Command, Component Spec Patter
 
 ### Community 355 - "Laravel Security Best Practices"
 Cohesion: 0.09
-Nodes (22): Authentication and Tokens, Authorization: Policies and Gates, Core Security Settings, CORS and API Exposure, CSRF Protection, Dependency Security, Encrypted Attributes, File Upload Safety (+14 more)
+Nodes (21): Authentication and Tokens, Authorization: Policies and Gates, Core Security Settings, CORS and API Exposure, CSRF Protection, Dependency Security, Encrypted Attributes, File Upload Safety (+13 more)
 
 ### Community 356 - "Tailwind CSS Customization"
 Cohesion: 0.09
@@ -5030,27 +5040,27 @@ Nodes (22): @apply Directive, Best Practices, Color Customization, Complete Tail
 
 ### Community 357 - "Laravel Security Best Practices"
 Cohesion: 0.09
-Nodes (22): Authentication and Tokens, Authorization: Policies and Gates, Core Security Settings, CORS and API Exposure, CSRF Protection, Dependency Security, Encrypted Attributes, File Upload Safety (+14 more)
+Nodes (21): Authentication and Tokens, Authorization: Policies and Gates, Core Security Settings, CORS and API Exposure, CSRF Protection, Dependency Security, Encrypted Attributes, File Upload Safety (+13 more)
 
-### Community 358 - "OtpInput"
-Cohesion: 0.10
-Nodes (9): Invocation Contract, Research Rules, Return Contract, Shell Discipline, System Prompt, {closure#8}(), OtpInput, static (+1 more)
+### Community 358 - "Closure"
+Cohesion: 0.09
+Nodes (11): {closure#4}(), {closure#22}(), {closure#21}(), {closure#14}(), {closure#15}(), static, TemplateCard, Closure (+3 more)
 
-### Community 359 - "Auto-Discovery of Default Role Permissions"
-Cohesion: 0.10
-Nodes (20): Agent Dispatch Summary, Auto-Discovery of Default Role Permissions, Concrete Deliverables, Context, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy (+12 more)
+### Community 359 - "BasePermissionsPage"
+Cohesion: 0.07
+Nodes (8): ManagerPermissionsPage, ReceptionistPermissionsPage, {closure#1}(), {closure#1}(), self, RolePermissionsStatsWidget, BasePermissionsPage, {closure#5}()
 
-### Community 360 - "Context Fetch Skill"
-Cohesion: 0.10
-Nodes (18): Anti-Patterns, ❌ Broad Searches, Context Efficiency Metrics, Context Fetch Skill, Inputs, Integration with GSD, ❌ Loading Everything First, Outputs (+10 more)
+### Community 360 - "addEventListener"
+Cohesion: 0.13
+Nodes (17): Ac(), Cm(), fromHTTP(), he(), It(), kl(), km(), Lc() (+9 more)
 
 ### Community 361 - "Laravel Security Best Practices"
 Cohesion: 0.09
-Nodes (22): Authentication and Tokens, Authorization: Policies and Gates, Core Security Settings, CORS and API Exposure, CSRF Protection, Dependency Security, Encrypted Attributes, File Upload Safety (+14 more)
+Nodes (21): Authentication and Tokens, Authorization: Policies and Gates, Core Security Settings, CORS and API Exposure, CSRF Protection, Dependency Security, Encrypted Attributes, File Upload Safety (+13 more)
 
 ### Community 362 - "Laravel Security Best Practices"
 Cohesion: 0.09
-Nodes (22): Authentication and Tokens, Authorization: Policies and Gates, Core Security Settings, CORS and API Exposure, CSRF Protection, Dependency Security, Encrypted Attributes, File Upload Safety (+14 more)
+Nodes (21): Authentication and Tokens, Authorization: Policies and Gates, Core Security Settings, CORS and API Exposure, CSRF Protection, Dependency Security, Encrypted Attributes, File Upload Safety (+13 more)
 
 ### Community 364 - "Design System"
 Cohesion: 0.09
@@ -5060,13 +5070,13 @@ Nodes (22): Best Practices, Chart.js Integration, Command, Component Spec Patter
 Cohesion: 0.09
 Nodes (22): @apply Directive, Best Practices, Color Customization, Complete Tailwind Config, Configuration Examples, Content Configuration, Custom Color Palette, Custom Font Sizes (+14 more)
 
-### Community 366 - "PulseDashboard.php"
-Cohesion: 0.08
-Nodes (16): {closure#1}(), ReportErrorAction, {closure#4}(), PulseDashboard, Dotswan\FilamentLaravelPulse\Widgets\PulseCache, Dotswan\FilamentLaravelPulse\Widgets\PulseExceptions, Dotswan\FilamentLaravelPulse\Widgets\PulseQueues, Dotswan\FilamentLaravelPulse\Widgets\PulseServers (+8 more)
+### Community 366 - "Page"
+Cohesion: 0.11
+Nodes (18): BasePage, Attendances, BasePermissionsPage, Cluster, Dashboard, EditGymProfile, EditProfile, EditTenantProfile (+10 more)
 
 ### Community 367 - "Z"
-Cohesion: 0.19
-Nodes (23): f(), A1(), b0(), b2(), BM(), d0(), f2(), H() (+15 more)
+Cohesion: 0.18
+Nodes (24): f(), A1(), b0(), b2(), BM(), d0(), f2(), H() (+16 more)
 
 ### Community 368 - "Biometric Consent System — FluxFitness"
 Cohesion: 0.09
@@ -5076,21 +5086,25 @@ Nodes (22): Biometric Consent System — FluxFitness, Commit Strategy, Concrete 
 Cohesion: 0.09
 Nodes (22): Acceptance Criteria, Blog Share Functionality Implementation Plan, Clipboard API, Concrete Deliverables, Context, Core Objective, Current State, Definition of Done (+14 more)
 
+### Community 370 - "getMinMax"
+Cohesion: 0.08
+Nodes (32): afterAutoSkip(), Bi(), buildLookupTable(), determineDataLimits(), endOf(), Fi(), getAllParsedValues(), getDataTimestamps() (+24 more)
+
 ### Community 371 - "Fix phone_number_sid Storage Issue"
 Cohesion: 0.09
 Nodes (22): Agent Dispatch Summary, Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Execution Strategy, Final Checklist (+14 more)
 
 ### Community 372 - ".agents/skills/design-system/scripts/generate-slide.py"
-Cohesion: 0.07
-Nodes (41): _e(), generate_chart_slide(), generate_cta_slide(), generate_deck(), generate_metrics_slide(), generate_problem_slide(), generate_solution_slide(), generate_testimonial_slide() (+33 more)
+Cohesion: 0.13
+Nodes (21): _e(), generate_chart_slide(), generate_cta_slide(), generate_deck(), generate_metrics_slide(), generate_problem_slide(), generate_solution_slide(), generate_testimonial_slide() (+13 more)
 
 ### Community 373 - "Back-of-the-Envelope Estimation"
 Cohesion: 0.09
 Nodes (22): Availability Nines, Back-of-the-Envelope Estimation, Bandwidth Estimation, Common Estimation Mistakes, Design Implications, Estimation Quick Reference, Formula, Formula (+14 more)
 
 ### Community 374 - "ManageUserRoleCommand"
-Cohesion: 0.22
-Nodes (4): ManageUserRoleCommand, SyncWabaStatusCommand, TestPdfGeneration, Command
+Cohesion: 0.26
+Nodes (3): ManageUserRoleCommand, TestPdfGeneration, Command
 
 ### Community 375 - "GSD Runbook"
 Cohesion: 0.07
@@ -5100,29 +5114,25 @@ Nodes (28): 3-Strike Rule, Build Verification, Checklist Templates, "Commit fail
 Cohesion: 0.08
 Nodes (24): Architecture Patterns, Backend, Business, Code Style, Communication, CRM Features, Domain Context, External Dependencies (+16 more)
 
-### Community 377 - "Illuminate\Support\Facades\Date"
-Cohesion: 0.03
-Nodes (47): BiometricProviderRegistry, HostResolverInterface, AdmsEventResult, self, BiometricReceiptExecutionResult, self, CheckInResult, self (+39 more)
+### Community 377 - "BiometricDevice"
+Cohesion: 0.01
+Nodes (95): BiometricProviderRegistry, HostResolverInterface, AdmsEventResult, self, BiometricReceiptExecutionResult, self, CheckInResult, self (+87 more)
 
 ### Community 378 - "AdminPanelProvider.php"
-Cohesion: 0.12
-Nodes (26): ApplyTenantScopes, AdminPanelProvider, StaffPanelProvider, SuperAdminPanelProvider, Filafly\FilamentPhosphorIcons\PhosphorIcons, Filament\Http\Middleware\Authenticate, Filament\Http\Middleware\AuthenticateSession, Filament\Http\Middleware\DisableBladeIconComponents (+18 more)
-
-### Community 379 - "ExchangeRateService"
-Cohesion: 0.13
-Nodes (4): {closure#1}(), {closure#2}(), ExchangeRateService, BadMethodCallException
-
-### Community 380 - "Page"
 Cohesion: 0.11
-Nodes (18): BasePage, Attendances, BasePermissionsPage, Cluster, Dashboard, EditGymProfile, EditProfile, EditTenantProfile (+10 more)
+Nodes (27): AdminPanelProvider, StaffPanelProvider, SuperAdminPanelProvider, Filafly\FilamentPhosphorIcons\PhosphorIcons, Filament\Http\Middleware\Authenticate, Filament\Http\Middleware\AuthenticateSession, Filament\Http\Middleware\DisableBladeIconComponents, Filament\Http\Middleware\DispatchServingFilamentEvent (+19 more)
 
-### Community 382 - "Meta WhatsApp Template Status Webhook"
-Cohesion: 0.08
-Nodes (23): Agent Dispatch Summary, Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy (+15 more)
+### Community 380 - "getDatasetMeta"
+Cohesion: 0.10
+Nodes (29): afterDatasetsUpdate(), At(), generateLabels(), getDatasetMeta(), getDataVisibility(), _getLegendItemAt(), getMaxBorderWidth(), getStyle() (+21 more)
 
-### Community 383 - "WhatsAppProviderTypeEnum"
-Cohesion: 0.05
-Nodes (16): static, TemplatePlaceholder, static, TemplateVariable, {closure#2}(), self, TemplateCategoryEnum, WhatsAppProviderTypeEnum (+8 more)
+### Community 382 - "TrainerReports.php"
+Cohesion: 0.07
+Nodes (5): {closure#2}(), {closure#3}(), TrainerReports, TrainerClientChart, TrainerUtilizationWidget
+
+### Community 383 - "PulseDashboard.php"
+Cohesion: 0.11
+Nodes (12): {closure#4}(), PulseDashboard, Dotswan\FilamentLaravelPulse\Widgets\PulseCache, Dotswan\FilamentLaravelPulse\Widgets\PulseExceptions, Dotswan\FilamentLaravelPulse\Widgets\PulseQueues, Dotswan\FilamentLaravelPulse\Widgets\PulseServers, Dotswan\FilamentLaravelPulse\Widgets\PulseSlowOutGoingRequests, Dotswan\FilamentLaravelPulse\Widgets\PulseSlowQueries (+4 more)
 
 ### Community 384 - "_setCountry"
 Cohesion: 0.15
@@ -5133,8 +5143,8 @@ Cohesion: 0.09
 Nodes (21): Concrete Deliverables, Context, Core Objective, Definition of Done, Execution Strategy, Final Checklist, Final Verification Wave, Interview Summary (+13 more)
 
 ### Community 386 - "TwilioWhatsAppProvider Composition Refactoring"
-Cohesion: 0.09
-Nodes (21): Commit Strategy, Context, Dependency Matrix, Execution Strategy, Final Checklist, Final Verification Wave, Interface Reference, Metis Review (+13 more)
+Cohesion: 0.07
+Nodes (27): Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy, Final Checklist (+19 more)
 
 ### Community 387 - "WhatsApp Sandbox Test Message for Broadcast Page"
 Cohesion: 0.09
@@ -5164,9 +5174,9 @@ Nodes (20): 1. Architecture & Structure (CRITICAL), 2. Eloquent & Database (CRIT
 Cohesion: 0.07
 Nodes (27): 3-Strike Rule, Binary Search / Divide and Conquer, CHECKPOINT REACHED, Cognitive Biases to Avoid, Comment Out Everything, Core Philosophy, DEBUG.md Structure, Debugging Techniques (+19 more)
 
-### Community 398 - "ScheduledReport"
-Cohesion: 0.11
-Nodes (13): {closure#3}(), ScheduledReportJob, ScheduledReport, 2) Data Stores, 3) Secrets and Credentials Handling, 4) Reliability and Failure Behavior, 5) Observability for Integrations, 6) Evidence (+5 more)
+### Community 398 - "qm"
+Cohesion: 0.13
+Nodes (22): bt(), em(), eras(), extract(), hl(), Jm(), Kr(), meridiems() (+14 more)
 
 ### Community 399 - "Quick Reference"
 Cohesion: 0.10
@@ -5180,17 +5190,21 @@ Nodes (20): 1. Architecture & Structure (CRITICAL), 2. Eloquent & Database (CRIT
 Cohesion: 0.17
 Nodes (9): Added, Added, Added, Added, Changelog, [v1.0.0] - 2025-05-18, [v1.1.0] - 2025-09-15, [v1.2.0] - 2025-12-30 (+1 more)
 
-### Community 403 - "Illuminate\Queue\SerializesModels"
-Cohesion: 0.04
-Nodes (32): AdmsAccessDenied, DoorControllerUnreachable, EmbeddedSignupCompleted, ImportCompleted, LeadCreated, MemberCheckedOut, PaymentCompleted, AttendanceStatsUpdated (+24 more)
+### Community 403 - "ProcessMetaTemplateWebhook"
+Cohesion: 0.03
+Nodes (61): ProcessMetaTemplateWebhook, ProcessTwilioTemplateWebhook, Integration Map, Overview, Services, TemplateFieldMapper, Web & API Controllers, WhatsApp Services, Controllers & Commands (+53 more)
 
-### Community 405 - "CmsPage"
-Cohesion: 0.15
-Nodes (7): GenerateSitemap, CmsPage, CmsPageObserver, Spatie\Sitemap\Contracts\Sitemapable, Spatie\Sitemap\Sitemap, Spatie\Sitemap\SitemapIndex, Spatie\Sitemap\Tags\Url
+### Community 404 - "LeadConversionChart"
+Cohesion: 0.12
+Nodes (3): LeadConversionChart, LeadFunnelChart, LeadSourceChart
 
-### Community 406 - "Component"
+### Community 405 - "ResolvesExportImportPermission"
+Cohesion: 0.19
+Nodes (6): ExportBulkAction, {closure#1}(), {closure#2}(), static, ResolvesExportImportPermission, Filament\Tables\Actions\ExportBulkAction
+
+### Community 406 - "SummaryStatCard"
 Cohesion: 0.10
-Nodes (19): BiometricTemplatesRelationManager, BlogDetail, BlogListing, CmsPageController, Component, DatabaseNotifications, FollowUpsRelationManager, GlobalSearch (+11 more)
+Nodes (4): HasColorPalette, static, SummaryStatCard, SummaryStatCardTest
 
 ### Community 407 - "{Reviewer Name} Review"
 Cohesion: 0.10
@@ -5212,13 +5226,13 @@ Nodes (20): Concrete Deliverables, Context, Core Objective, Definition of Done, 
 Cohesion: 0.18
 Nodes (10): Requirement: Create new subscription for user, Requirement: Delete subscription, Requirement: Edit existing subscription, Requirement: View user subscriptions in relation manager, Scenario: Super admin creates a new subscription for a user, Scenario: Super admin deletes a subscription, Scenario: Super admin edits an existing subscription, Scenario: Super admin views user subscriptions (+2 more)
 
-### Community 412 - "TemplatePicker"
-Cohesion: 0.12
-Nodes (5): {closure#9}(), static, TemplatePicker, TemplatePickerTest, TemplatePickerTest
+### Community 412 - "Notification"
+Cohesion: 0.02
+Nodes (53): {closure#1}(), DeleteOldLeads, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), PendingLeadNotificationCommand, LeadStatus (+45 more)
 
-### Community 413 - "Twilio Phone Number Cost Surcharge"
-Cohesion: 0.09
-Nodes (22): Agent Dispatch Summary, Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Execution Strategy, Final Checklist (+14 more)
+### Community 413 - "WhatsAppPackage"
+Cohesion: 0.07
+Nodes (18): {closure#1}(), ListWhatsAppUsageLogs, WhatsAppUsageLogResource, WhatsAppPackage, WhatsAppPackageObserver, WhatsAppMessagePackagesSeeder, Columns, Indexes (+10 more)
 
 ### Community 414 - "Routing by Task Type"
 Cohesion: 0.10
@@ -5244,13 +5258,13 @@ Nodes (8): Semantic quality contracts for the core UI/UX datasets., read_rows(),
 Cohesion: 0.15
 Nodes (8): ambiguous_python_import_3d541d786778, ambiguous_python_import_6ba353a16cb0, Semantic quality contracts for the core UI/UX datasets., read_rows(), TestAccessibilityGuidance, TestChartsTypographyAndIcons, TestCurrentReactGuidance, TestSemanticColors
 
-### Community 421 - "MemberGrowthChart"
-Cohesion: 0.10
-Nodes (4): MemberDemographicsChart, MemberGrowthChart, MemberPlanDistributionChart, MemberStatusChart
+### Community 421 - "Exception"
+Cohesion: 0.01
+Nodes (86): ErrorCategory, LeadSource, ExpenseReportExport, ReportErrorAction, AttendanceReports, {closure#1}(), {closure#2}(), {closure#1}() (+78 more)
 
-### Community 422 - "BaseChartWidget"
-Cohesion: 0.10
-Nodes (20): AttendanceHeatmapChart, AttendanceTrendChart, BaseChartWidget, ExpenseCategoryChart, ExpenseMonthlyTrendChart, ExpensePaymentMethodChart, GymRevenueChart, LeadConversionChart (+12 more)
+### Community 422 - "Ge"
+Cohesion: 0.60
+Nodes (5): Ge(), h(), v(), X(), Z()
 
 ### Community 424 - "Routing by Task Type"
 Cohesion: 0.10
@@ -5273,16 +5287,16 @@ Cohesion: 0.17
 Nodes (10): Architecture, Common Gotchas, Development Commands, Development Patterns, Environment Variables, Key Configuration, Production Deployment, Project Overview (+2 more)
 
 ### Community 429 - "AppServiceProvider.php"
-Cohesion: 0.05
-Nodes (22): LogUserLogin, UpdateSpatiePermissionCacheOnTenantSwitch, UserLoginLog, FilamentChannel, TeamPermissionRegistrar, {closure#3}(), {closure#4}(), {closure#5}() (+14 more)
+Cohesion: 0.10
+Nodes (18): LogUserLogin, UpdateSpatiePermissionCacheOnTenantSwitch, FilamentChannel, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#6}() (+10 more)
 
 ### Community 430 - "Forgot Password Page - Stitch Design Update"
 Cohesion: 0.10
 Nodes (19): Color Schema Differences, Concrete Deliverables, Context, Core Objective, Definition of Done, Design Sources, Final Checklist, Final Verification Wave (+11 more)
 
-### Community 431 - "TwilioWhatsAppService"
-Cohesion: 0.09
-Nodes (10): TestSystemWhatsApp, TwilioWhatsAppTest, WhatsAppServiceInterface, {closure#2}(), TwilioWhatsAppService, Context, Interview Summary, Metis Review (+2 more)
+### Community 431 - "Filament\Actions\Imports\Models\Import"
+Cohesion: 0.17
+Nodes (4): ImportPolicy, AuthServiceProvider, Filament\Actions\Imports\Models\Import, Illuminate\Foundation\Support\Providers\AuthServiceProvider
 
 ### Community 432 - "Asset Organization Guide"
 Cohesion: 0.11
@@ -5325,20 +5339,20 @@ Cohesion: 0.11
 Nodes (18): 1. Wordmark (Logotype), 2. Lettermark (Monogram), 3. Pictorial Mark (Brand Mark), 4. Abstract Mark, 5. Mascot, 6. Emblem, 7. Combination Mark, Aesthetic Styles (+10 more)
 
 ### Community 442 - "csv"
-Cohesion: 0.06
-Nodes (29): Canonical regression contracts for resilient UI text layouts., read_rows(), TestTextLayoutDataContracts, TestTextLayoutRetrieval, ambiguous_python_import_43cf61001453, ambiguous_python_import_b32743ad9392, csv, generate_css_for_background() (+21 more)
+Cohesion: 0.04
+Nodes (35): generate_css_for_background(), get_background_image(), get_curated_images(), get_overlay_css(), get_pexels_search_url(), load_backgrounds_config(), load_brand_colors(), main() (+27 more)
 
-### Community 443 - "toString"
-Cohesion: 0.12
-Nodes (19): box(), canBeConsolidatedWith(), canBeGroupedWith(), compositionControllerDidRender(), fromUCS2String(), getDirection(), getTargetDOMRange(), hasSameAttributesAsPiece() (+11 more)
+### Community 443 - "notifyEditorElement"
+Cohesion: 0.08
+Nodes (28): actionIsExternal(), canBeConsolidatedWith(), canBeGroupedWith(), canInvokeAction(), compositionControllerDidBlur(), compositionControllerDidRender(), compositionControllerDidSyncDocumentView(), compositionDidAddAttachment() (+20 more)
 
 ### Community 444 - "preload"
-Cohesion: 0.12
-Nodes (19): attachmentForFile(), attributesForFile(), didChangeAttributes(), getContentType(), getHeight(), getHref(), getPreviewURL(), getType() (+11 more)
+Cohesion: 0.10
+Nodes (22): attachmentForFile(), attributesForFile(), didChangeAttributes(), getContentType(), getHeight(), getHref(), getPreviewURL(), getType() (+14 more)
 
-### Community 445 - "p1"
-Cohesion: 0.17
-Nodes (19): bz(), F0(), fz(), I(), J(), L0(), l2(), m1() (+11 more)
+### Community 445 - "J"
+Cohesion: 0.18
+Nodes (13): bz(), c0(), ep(), fz(), J(), l2(), m1(), MM() (+5 more)
 
 ### Community 446 - "Gym Management System — Feature Overview & Catalog"
 Cohesion: 0.13
@@ -5356,17 +5370,17 @@ Nodes (17): Apparel (Polo/T-Shirt), Base Prompt Structure, Business Card, CIP Mo
 Cohesion: 0.11
 Nodes (17): Accent, Applying Semantic Tokens, Background & Foreground, Border & Ring, Color Semantics, Dark Mode Overrides, Destructive, Interactive States (+9 more)
 
-### Community 451 - "BaseEmployeeExporter.php"
-Cohesion: 0.11
-Nodes (5): MembershipPlanExporter, TrainerExporter, Filament\Actions\ExportAction, Filament\Actions\Exports\ExportColumn, Filament\Actions\Exports\Exporter
+### Community 450 - "ParserHelper"
+Cohesion: 0.02
+Nodes (58): GenerateSitemap, NotificationType, EditGymProfile, {closure#18}(), {closure#19}(), {closure#17}(), {closure#18}(), {closure#1}() (+50 more)
 
 ### Community 452 - "BiometricSample"
 Cohesion: 0.04
-Nodes (32): BiometricProvider, BiometricSample, self, TemplateRef, VerificationResult, AzureFaceProvider, BioIDProvider, CustomApiProvider (+24 more)
+Nodes (25): BiometricProvider, BiometricSample, self, TemplateRef, VerificationResult, AzureFaceProvider, BioIDProvider, CustomApiProvider (+17 more)
 
 ### Community 453 - "GEMINI.md"
-Cohesion: 0.06
-Nodes (33): Application Structure & Architecture, Artisan, Available Search Syntax, Comments, Constructors, Conventions, Database, Documentation Files (+25 more)
+Cohesion: 0.11
+Nodes (17): Comments, Constructors, Database, Enums, Flux UI Free, Laravel 12, Laravel 12 Structure, Laravel Pint Code Formatter (+9 more)
 
 ### Community 454 - "Widget"
 Cohesion: 0.11
@@ -5384,9 +5398,9 @@ Nodes (17): Apparel (Polo/T-Shirt), Base Prompt Structure, Business Card, CIP Mo
 Cohesion: 0.11
 Nodes (17): Accent, Applying Semantic Tokens, Background & Foreground, Border & Ring, Color Semantics, Dark Mode Overrides, Destructive, Interactive States (+9 more)
 
-### Community 458 - "Filament Permission Auto-Discovery"
-Cohesion: 0.11
-Nodes (17): Agent Dispatch Summary, Concrete Deliverables, Definition of Done, Dependency Matrix, Execution Strategy, Filament Permission Auto-Discovery, Final Checklist, Final Verification Wave (+9 more)
+### Community 458 - "generate_icon"
+Cohesion: 0.19
+Nodes (13): apply_color(), apply_viewbox_size(), extract_svgs(), generate_batch(), generate_icon(), generate_sizes(), main(), Extract SVG code blocks from model response (+5 more)
 
 ### Community 463 - "Verification Process"
 Cohesion: 0.08
@@ -5397,7 +5411,7 @@ Cohesion: 0.11
 Nodes (17): Context, Core Objective, Definition of Done, Execution Strategy, Final Checklist, Final Verification Wave, Metis Review, Must NOT Have (Guardrails) (+9 more)
 
 ### Community 465 - "Plan: Check-Out QR Code Implementation"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (20): {closure#3}(), Concrete Deliverables, Context, Core Objective, Current Implementation, Definition of Done, Execution Strategy, Final Checklist (+12 more)
 
 ### Community 466 - "Design"
@@ -5440,17 +5454,9 @@ Nodes (16): Action Configuration Methods, Action Groups, Behavior, Bulk Action S
 Cohesion: 0.12
 Nodes (8): Enable Strict Mode Settings, #[DataProvider] for Multiple Scenarios, Readable Test Names as Specifications, Singletons for Stateless Services, HTTP Controller Smoke Tests, Database Transactions for Test Cleanup, PSR-4 File and Namespace Conventions, Explicit Visibility and Type Hints
 
-### Community 476 - "WhatsApp Embedded Signup Fix Plan"
-Cohesion: 0.10
-Nodes (20): Commit Strategy, Concrete Deliverables, Core Objective, Definition of Done, Execution Strategy, Final Checklist, Final Verification Wave, Must Have (+12 more)
-
 ### Community 477 - "UserRoleAssignmentSeeder"
 Cohesion: 0.09
-Nodes (22): UserRoleAssignmentSeeder, callCreateDemoUsers(), callDisplayFinalSummary(), callEnsureRolesExist(), callGetAvailableGyms(), {closure#1}(), {closure#2}(), {closure#3}() (+14 more)
-
-### Community 478 - "BaseChartWidget"
-Cohesion: 0.02
-Nodes (33): HasFilamentPermissions, GymHealthScoreWidget, MemberProgressChart, BudgetOverviewWidget, {closure#1}(), CRMStatsWidget, DashboardMemberAttendance, {closure#1}() (+25 more)
+Nodes (21): UserRoleAssignmentSeeder, callCreateDemoUsers(), callDisplayFinalSummary(), callEnsureRolesExist(), callGetAvailableGyms(), {closure#1}(), {closure#2}(), {closure#3}() (+13 more)
 
 ### Community 479 - "Filament v5 — Actions"
 Cohesion: 0.12
@@ -5488,21 +5494,25 @@ Nodes (16): CLI Dependencies, File Content Requirements, File Specifications, fi
 Cohesion: 0.09
 Nodes (22): OCR Review Workflow, Phase 1 Checkpoint, Phase 1: Context Discovery (Including Requirements), Phase 3: Tech Lead Analysis, Phase 4 Checkpoint — MANDATORY VALIDATION, Phase 4: Run Reviewers, Phase 5: Aggregate Findings, Phase 6 Checkpoint (+14 more)
 
-### Community 489 - ".opencode/skills/design/scripts/icon/generate.py"
-Cohesion: 0.18
-Nodes (16): apply_color(), apply_viewbox_size(), extract_svgs(), generate_batch(), generate_icon(), generate_sizes(), load_env(), main() (+8 more)
+### Community 489 - "parse"
+Cohesion: 0.15
+Nodes (13): createHiddenContainer(), elementIsForbidden(), elementIsntSerializable(), elementIsRemovable(), getHTML(), indexOf(), normalizeListElementNesting(), parse() (+5 more)
 
 ### Community 490 - "WhatsApp Setup Page Refactor Plan"
-Cohesion: 0.10
-Nodes (20): Commit Strategy, Concrete Deliverables, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy, Final Checklist, Final Verification Wave (+12 more)
+Cohesion: 0.08
+Nodes (25): Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy, Final Checklist (+17 more)
 
-### Community 491 - "D"
-Cohesion: 0.07
-Nodes (44): addElements(), bindEvents(), bindUserEvents(), buildOrUpdateElements(), buildOrUpdateScales(), _checkEventBindings(), cl(), configure() (+36 more)
+### Community 491 - "C"
+Cohesion: 0.09
+Nodes (40): add(), buildTicks(), C(), Co(), _computeLabelSizes(), cr(), diff(), Et() (+32 more)
 
 ### Community 492 - "E0"
-Cohesion: 0.18
-Nodes (17): A(), Ab(), bb(), E0(), eb(), EM(), fb(), lb() (+9 more)
+Cohesion: 0.15
+Nodes (20): A(), Ab(), bb(), E0(), eb(), EM(), F(), fb() (+12 more)
+
+### Community 493 - "OtpInput"
+Cohesion: 0.10
+Nodes (9): Invocation Contract, Research Rules, Return Contract, Shell Discipline, System Prompt, {closure#8}(), OtpInput, static (+1 more)
 
 ### Community 494 - "appendBlockForElement"
 Cohesion: 0.18
@@ -5532,17 +5542,17 @@ Nodes (15): DatePicker / DateTimePicker, Dependency Injection in Callbacks, Fila
 Cohesion: 0.12
 Nodes (15): Accessing Owner Record, Basic Structure, BelongsToMany (Attach/Detach), CheckboxList with Relationships, Choosing the Right Tool, Conditionally Showing, Customizing Eloquent Query, Filament v5 — Managing Relationships (+7 more)
 
-### Community 501 - "generate_cip_set"
-Cohesion: 0.24
-Nodes (11): build_cip_prompt(), check_logo_required(), generate_cip_set(), generate_with_nano_banana(), load_logo_image(), main(), Generate image using Gemini Nano Banana (native image generation) Supports two…, Generate a complete CIP set for a brand Args: brand_name: Brand name to… (+3 more)
+### Community 501 - "Architecture Design"
+Cohesion: 0.15
+Nodes (12): 1. Enhanced HasFilamentPermissions Interface, 2. BaseResource Abstract Class, 3. BasePage Abstract Class, 4. BaseWidget Abstract Class, 5. Service Updates, 6. Seeder/Command Updates, Architecture Design, Draft: Permission Auto-Discovery for Default Roles (+4 more)
 
 ### Community 502 - "/plan Workflow"
 Cohesion: 0.09
 Nodes (22): 10. Offer Next Steps, 1. Validate Environment (Planning Lock), 2. Parse and Normalize Arguments, 3. Validate Phase, 4. Ensure Phase Directory, 6. Create Plans, 6a. Gather Context, 6b. Decompose into Tasks (+14 more)
 
-### Community 504 - "copyUsingObjectMap"
-Cohesion: 0.13
-Nodes (20): cacheViewForObject(), copyUsingObjectMap(), copyUsingObjectsFromDocument(), createDocumentFragmentForSync(), didSync(), findViewForObject(), garbageCollectCachedViews(), getAllChildViews() (+12 more)
+### Community 503 - "RevenueReportExport.php"
+Cohesion: 0.18
+Nodes (3): RevenueReportExport, {closure#18}(), Maatwebsite\Excel\Concerns\Exportable
 
 ### Community 505 - "Crypt"
 Cohesion: 0.12
@@ -5560,9 +5570,9 @@ Nodes (15): DatePicker / DateTimePicker, Dependency Injection in Callbacks, Fila
 Cohesion: 0.12
 Nodes (15): Accessing Owner Record, Basic Structure, BelongsToMany (Attach/Detach), CheckboxList with Relationships, Choosing the Right Tool, Conditionally Showing, Customizing Eloquent Query, Filament v5 — Managing Relationships (+7 more)
 
-### Community 511 - "Permissions Auto-Discovery Refactor"
-Cohesion: 0.10
-Nodes (20): Agent Dispatch Summary, Context, Core Objective, Definition of Done, Execution Strategy, Existing Infrastructure, Final Checklist, Final Verification Wave (MANDATORY — after ALL implementation tasks) (+12 more)
+### Community 511 - ".badge"
+Cohesion: 0.23
+Nodes (11): Available Components, Flux UI Component Library (Free Edition), Available Components, Flux UI Component Library (Free Edition), Usage Examples, Usage Examples, Available Components, Flux UI Component Library (Free Edition) (+3 more)
 
 ### Community 512 - "Form Field Components"
 Cohesion: 0.12
@@ -5584,17 +5594,13 @@ Nodes (15): 22 Art Direction Styles, Banner Sizes & Art Direction Styles Referen
 Cohesion: 0.12
 Nodes (15): 22 Art Direction Styles, Banner Sizes & Art Direction Styles Reference, Complete Banner Sizes, CTA Rules, Design Principles, Pinterest Research Queries, Print, Print Specs (+7 more)
 
-### Community 517 - "Hd"
-Cohesion: 0.12
-Nodes (18): Dd(), fl(), Hd(), Hf(), id(), interpolate(), Na(), od() (+10 more)
+### Community 517 - "getRangeOfAttachment"
+Cohesion: 0.17
+Nodes (12): compositionControllerDidRequestDeselectingAttachment(), compositionDidStartEditingAttachment(), didClickAttachment(), findAttachmentForElement(), getAttachmentAndPositionById(), getAttachmentById(), getAttachmentPieceForAttachment(), getAttachmentPieces() (+4 more)
 
 ### Community 518 - "Multi-Tenant Biometric Authentication System for FluxFitness"
 Cohesion: 0.06
 Nodes (31): Commit Strategy, Concrete Deliverables, Context, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy, Final Checklist (+23 more)
-
-### Community 519 - "whatsapp_usage_logs"
-Cohesion: 0.29
-Nodes (6): Indexes, Key Helper Methods, Migration History, Relationships, Usage Log Status Flow, whatsapp_usage_logs
 
 ### Community 520 - "app/package.json"
 Cohesion: 0.25
@@ -5632,10 +5638,6 @@ Nodes (14): Basic Usage, Common Patterns, Common Pitfalls, CSS-First Configurati
 Cohesion: 0.04
 Nodes (45): Application Structure & Architecture, Artisan, Available Components, Available Search Syntax, Comments, Common Patterns, Constructors, Conventions (+37 more)
 
-### Community 531 - "ExpenseResource.php"
-Cohesion: 0.03
-Nodes (17): {closure#1}(), self, RecurringFrequency, {closure#4}(), ExpenseResource, CreateExpense, ListExpenses, {closure#13}() (+9 more)
-
 ### Community 532 - "Categories"
 Cohesion: 0.13
 Nodes (14): 1. Architecture & Structure (Critical), 2. Eloquent & Database (Critical), 3. Controllers & Routing (High), 4. Validation & Requests (High), 5. Security (High), 6. Performance (Medium), 7. API Design (Medium), 8. Testing (Low-Medium) (+6 more)
@@ -5648,17 +5650,17 @@ Nodes (14): Best Practices, Dispatching Jobs, Failed Jobs, Horizon Setup, Job Ba
 Cohesion: 0.13
 Nodes (14): API Resource, Code Templates, Constraints, Core Workflow, Eloquent Model, Feature Test (Pest), Knowledge Reference, Laravel Specialist (+6 more)
 
-### Community 535 - "WhatsAppPhoneNumber"
-Cohesion: 0.04
-Nodes (35): WhatsAppPhoneNumber, TwilioService, Indexes, Key Helper Methods, Migration History, Relationships, SID Types, whatsapp_phone_numbers (+27 more)
+### Community 535 - "WhatsApp Setup Step 3 — Phone Number Source Selection"
+Cohesion: 0.10
+Nodes (20): TODOs, Commit Strategy, Concrete Deliverables, Context, Core Objective, Execution Strategy, Final Checklist, Final Verification Wave (+12 more)
 
 ### Community 536 - "Biometric Consent System"
 Cohesion: 0.17
 Nodes (12): API / Endpoints, Architecture, Biometric Consent System, Business Rules & Edge Cases, Data Flow, Design Patterns Used, Enums & Constants, GDPR Compliance (+4 more)
 
 ### Community 537 - "WhatsAppAccountVerificationStatusEnum"
-Cohesion: 0.06
-Nodes (17): self, WhatsAppAccountVerificationStatusEnum, HasFormInitialization, HasSetupState, Admin Panel Pages & Resources, Overview, Resource Comparison, SuperAdmin Panel Resources (+9 more)
+Cohesion: 0.08
+Nodes (7): self, WhatsAppAccountVerificationStatusEnum, HasSetupState, SetupWizardSchema, WhatsAppSetup Page (Setup Wizard), SchemasTest, WhatsAppAccountVerificationStatusEnumTest
 
 ### Community 538 - "composer.json"
 Cohesion: 0.13
@@ -5781,20 +5783,20 @@ Cohesion: 0.13
 Nodes (14): Basic Usage, Common Patterns, Common Pitfalls, CSS-First Configuration, Dark Mode, Documentation, Flexbox Layout, Grid Layout (+6 more)
 
 ### Community 572 - "color-picker.js"
-Cohesion: 0.14
-Nodes (3): style(), update(), [x]()
+Cohesion: 0.13
+Nodes (4): [g](), style(), update(), [x]()
 
 ### Community 573 - "GSD Plan Checker Agent"
 Cohesion: 0.10
 Nodes (20): Checking Process, Dimension 1: Requirement Coverage, Dimension 2: Task Completeness, Dimension 3: Dependency Correctness, Dimension 4: Key Links Planned, Dimension 5: Scope Sanity, Dimension 6: Verification Derivation, GSD Plan Checker Agent (+12 more)
 
-### Community 574 - "getDatasetMeta"
-Cohesion: 0.11
-Nodes (28): afterDatasetsUpdate(), At(), generateLabels(), getDatasetMeta(), getDataVisibility(), _getLegendItemAt(), getMaxBorderWidth(), getStyle() (+20 more)
+### Community 574 - "RevenueReports"
+Cohesion: 0.08
+Nodes (4): RevenueReports, PaymentMethodChart, RevenueByPlanChart, RevenueTrendChart
 
-### Community 575 - "qm"
-Cohesion: 0.09
-Nodes (29): bt(), _d(), dl(), em(), eras(), extract(), hl(), It() (+21 more)
+### Community 575 - "fn"
+Cohesion: 0.17
+Nodes (25): Cr(), da(), ei(), fa(), Fi(), fn(), S(), t() (+17 more)
 
 ### Community 576 - "S"
 Cohesion: 0.29
@@ -5804,9 +5806,9 @@ Nodes (12): $a(), Be(), de(), E(), ga(), Le(), ma(), Ne() (+4 more)
 Cohesion: 0.23
 Nodes (14): _bindDropdownListeners(), _closeDropdown(), destroy(), _filterCountries(), _handleEnterKey(), _handleUpDownKey(), _highlightListItem(), _initDropdownListeners() (+6 more)
 
-### Community 578 - "TeamsPermission"
-Cohesion: 0.10
-Nodes (19): TeamsPermission, Agent Dispatch Summary, Context, Dependency Matrix, Execution Strategy, Final Checklist, Final Verification Wave (MANDATORY — after ALL implementation tasks), Interview Summary (+11 more)
+### Community 578 - "Staff Panel — Mirror Admin Resources with Policy-Based Permission Gating"
+Cohesion: 0.13
+Nodes (14): Agent Dispatch Summary, Dependency Matrix, Execution Strategy, Final Checklist, Final Verification Wave (MANDATORY — after ALL implementation tasks), Parallel Execution Waves, QA Policy, Staff Panel — Mirror Admin Resources with Policy-Based Permission Gating (+6 more)
 
 ### Community 579 - "Banner Design - Multi-Format Creative Banner System"
 Cohesion: 0.14
@@ -5872,9 +5874,13 @@ Nodes (13): ColorColumn, Column Types, Editable Columns, Filament v5 — Tables,
 Cohesion: 0.14
 Nodes (13): Authorization, Blade Template, Component Patterns, Events, Form Component, Form Template, Listen to Browser Events, Livewire Components (+5 more)
 
-### Community 596 - "MeasurementsRelationManager.php"
-Cohesion: 0.08
-Nodes (10): {closure#4}(), {closure#5}(), MeasurementsRelationManager, {closure#2}(), BmiHelper, {closure#1}(), {closure#2}(), MemberMeasurement (+2 more)
+### Community 595 - "Ae"
+Cohesion: 0.13
+Nodes (10): Ae(), bh(), ch(), ge(), _h(), kc(), lh(), ls() (+2 more)
+
+### Community 596 - "MemberMeasurement"
+Cohesion: 0.13
+Nodes (8): {closure#4}(), {closure#5}(), {closure#2}(), BmiHelper, {closure#1}(), {closure#2}(), MemberMeasurement, MemberMeasurementObserver
 
 ### Community 597 - "Token Optimization Guide"
 Cohesion: 0.10
@@ -5898,7 +5904,7 @@ Nodes (13): Authorization, Blade Template, Component Patterns, Events, Form Comp
 
 ### Community 602 - "QR Code Attendance"
 Cohesion: 0.11
-Nodes (19): API / Endpoints, Architecture, Business Rules & Edge Cases, Classes & Services Involved, Compliance & Data Privacy, Data Flow, Database Writes, Design Patterns Used (+11 more)
+Nodes (18): API / Endpoints, Architecture, Business Rules & Edge Cases, Compliance & Data Privacy, Data Flow, Database Writes, Design Patterns Used, Enums & Constants (+10 more)
 
 ### Community 603 - "Filament v5 — Resources"
 Cohesion: 0.14
@@ -5956,9 +5962,9 @@ Nodes (13): Animation Tokens, Base Layer, Button Example, Component Classes, CSS
 Cohesion: 0.14
 Nodes (13): Card Styles, Component Variants, CSS Structures, Feature Grid (3 columns), Layout Decision Flow, Layout Patterns, Layout Selection by Use Case, Metric Styles (+5 more)
 
-### Community 617 - "CrossTenantTest"
-Cohesion: 0.14
-Nodes (9): Date: 2026-06-03, Staff Panel Permission Gating - Final Test Results, T10: CrossTenantTest (5 tests), T9: ResourceAccessTest (16 tests), Tests Passing:, Tests Passing:, CrossTenantTest, self (+1 more)
+### Community 617 - "ResourceAccessTest"
+Cohesion: 0.20
+Nodes (6): Date: 2026-06-03, Staff Panel Permission Gating - Final Test Results, T10: CrossTenantTest (5 tests), T9: ResourceAccessTest (16 tests), Tests Passing:, ResourceAccessTest
 
 ### Community 618 - "Add Meta Keywords Field to CMS Pages"
 Cohesion: 0.14
@@ -6004,6 +6010,10 @@ Nodes (12): API Resources, API Routes, API Versioning, Controllers, CORS Configu
 Cohesion: 0.15
 Nodes (13): 1. Principles & Patterns (CRITICAL), 2. Coding Standards (CRITICAL), 3. Test Attributes (HIGH), 4. Data Management (HIGH), 5. Test Documentation (MEDIUM), 6. Mocking (MEDIUM), 7. Integration Testing (MEDIUM), 8. Configuration (LOW-MEDIUM) (+5 more)
 
+### Community 634 - ".agents/skills/ui-ux-pro-max/scripts/tests/test_core.py"
+Cohesion: 0.04
+Nodes (11): Stdlib-only regression tests for core.py / design_system.py (unittest, not…, TestBm25CoreBehavior, TestDiagnosticsContracts, TestDomainDetection, TestPersistence, TestReasoningMatch, TestSearchDomains, TestTokenizer (+3 more)
+
 ### Community 636 - "Good Example"
 Cohesion: 0.15
 Nodes (12): API Resource Controller, Bad Example, Benefits, Generate Resource Controller, Good Example, Nested Resources, Partial Resource Routes, Resource Controller (+4 more)
@@ -6020,13 +6030,17 @@ Nodes (12): API Resources, API Routes, API Versioning, Controllers, CORS Configu
 Cohesion: 0.15
 Nodes (13): 1. Principles & Patterns (CRITICAL), 2. Coding Standards (CRITICAL), 3. Test Attributes (HIGH), 4. Data Management (HIGH), 5. Test Documentation (MEDIUM), 6. Mocking (MEDIUM), 7. Integration Testing (MEDIUM), 8. Configuration (LOW-MEDIUM) (+5 more)
 
-### Community 640 - "Livewire 3"
-Cohesion: 0.12
-Nodes (16): Alpine, Key Changes From Livewire 2, Lifecycle Hooks, Livewire 3, New Directives, Alpine, Key Changes From Livewire 2, Lifecycle Hooks (+8 more)
+### Community 640 - "setSelectedRange"
+Cohesion: 0.13
+Nodes (22): ArrowLeft(), ArrowRight(), dragend(), editAttachment(), expandSelectionAroundCommonAttribute(), expandSelectionForEditing(), expandSelectionInDirection(), getAttachmentAtRange() (+14 more)
 
-### Community 641 - ".count"
-Cohesion: 0.12
-Nodes (6): BiometricPropagationResult, ValidatePhoneNumberSidsCommand, {closure#11}(), {closure#1}(), {closure#2}(), ChartToImageService
+### Community 641 - "Tailwind CSS"
+Cohesion: 0.20
+Nodes (10): Artisan, Example Tests, Filament, Filament's Core Features, graphify, Open Code Review Instructions, Relationships, Tailwind CSS (+2 more)
+
+### Community 642 - "Core Sections (Required)"
+Cohesion: 0.20
+Nodes (8): 2) Technical Debt, 3) Security Concerns, 4) Performance and Scaling Concerns, 5) Fragile/High-Churn Areas, 6) `[ASK USER]` Questions, 7) Evidence, Codebase Concerns, Core Sections (Required)
 
 ### Community 644 - "Good Example"
 Cohesion: 0.15
@@ -6100,6 +6114,10 @@ Nodes (19): API Resource, Code Templates, code:php (<?php), code:php (<?php), co
 Cohesion: 0.18
 Nodes (13): $type, $value, border, padding, shadow, border, component, card (+5 more)
 
+### Community 663 - "Complete Tech Stack & Exact Versions"
+Cohesion: 0.20
+Nodes (10): Authentication & Permissions, Backend Framework & Core, Complete Tech Stack & Exact Versions, Data Processing & Export, Development & Quality Tools, Filament Ecosystem, Frontend Build & Styling, Payment Gateways (+2 more)
+
 ### Community 664 - "Draft: WhatsAppProviderInterface Refactor - Interface Segregation"
 Cohesion: 0.33
 Nodes (5): Draft: WhatsAppProviderInterface Refactor - Interface Segregation, Files to Modify/Create, Modified Files:, New Interface Files:, Technical Decisions Needed
@@ -6108,9 +6126,9 @@ Nodes (5): Draft: WhatsAppProviderInterface Refactor - Interface Segregation, Fi
 Cohesion: 0.15
 Nodes (13): Contributing, Deployment, Development & Quality Tools, 🐳 Docker Setup (Recommended), 📚 Documentation & Reference Guides, Fresh Database Setup (Development), Gym Management System with SAAS + CRM, License (+5 more)
 
-### Community 666 - "Files to Modify"
-Cohesion: 0.15
-Nodes (12): 1. Migration (NEW), 2. Model (`app/Models/GymMember.php`), 3. Filament Resource (`app/Filament/Admin/Resources/GymMemberResource.php`), 4. Import (`app/Imports/GymMemberImport.php`), 5. Import (`app/Imports/GymMembersImport.php`), 6. Factory (`database/factories/GymMemberFactory.php`), 7. Tests, Draft: GymMember - Phone Not Nullable/Unique, Email Nullable (+4 more)
+### Community 666 - ".session"
+Cohesion: 0.04
+Nodes (27): {closure#1}(), {closure#13}(), {closure#15}(), {closure#10}(), {closure#7}(), VerifyEmailController, EmbeddedSignupController, ManualConnectRequest (+19 more)
 
 ### Community 667 - "Draft: QR Code Attendance System"
 Cohesion: 0.15
@@ -6164,9 +6182,9 @@ Nodes (12): 4.1: Create Detailed Refactoring Plan, 4.2: Address 9-Dimension Issu
 Cohesion: 0.17
 Nodes (11): API Testing, Authentication Testing, Best Practices, Database Testing, Factories, Feature Tests, Mocking, Pest PHP (+3 more)
 
-### Community 682 - "TestWebStackFreshness"
-Cohesion: 0.14
-Nodes (5): ambiguous_python_import_37baa9fa7d1d, ambiguous_python_import_dcce1d606e06, Freshness and generation-isolation contracts for web stack guidance., _rows(), TestWebStackFreshness
+### Community 682 - "Illuminate\Http\Request"
+Cohesion: 0.02
+Nodes (72): BiometricReceiptService, AdmsController, BiometricCheckInController, BiometricDeviceController, BiometricOfflineSyncController, BiometricWebhookController, FacebookLeadController, HikvisionAdmsController (+64 more)
 
 ### Community 684 - "Flux UI Development"
 Cohesion: 0.17
@@ -6184,10 +6202,6 @@ Nodes (12): 4.1: Create Detailed Refactoring Plan, 4.2: Address 9-Dimension Issu
 Cohesion: 0.17
 Nodes (11): API Testing, Authentication Testing, Best Practices, Database Testing, Factories, Feature Tests, Mocking, Pest PHP (+3 more)
 
-### Community 688 - "Migration Timeline"
-Cohesion: 0.17
-Nodes (12): ADR-007: WhatsApp Database Migration History, Context, Migration Timeline, Phase 1: Initial Schema (October 2025), Phase 2: Full Schema Rebuild (February 2026), Phase 3: Incremental Improvements (February–March 2026), Phase 4: Provider Abstraction (April 2026), Phase 5: WABA & Verification Enhancements (May 2026) (+4 more)
-
 ### Community 689 - "Flux UI Development"
 Cohesion: 0.17
 Nodes (11): Available Components (Free Edition), Basic Usage, Common Patterns, Common Pitfalls, Documentation, Flux UI Development, Form Fields, Icons (+3 more)
@@ -6204,9 +6218,9 @@ Nodes (12): 4.1: Create Detailed Refactoring Plan, 4.2: Address 9-Dimension Issu
 Cohesion: 0.17
 Nodes (11): API Testing, Authentication Testing, Best Practices, Database Testing, Factories, Feature Tests, Mocking, Pest PHP (+3 more)
 
-### Community 693 - "BaseStatsOverviewWidget"
-Cohesion: 0.17
-Nodes (12): ActiveAndExpireSubscriptionStats, BaseAttendanceStats, BaseStatsOverviewWidget, CollectionStatsWidget, CRMStatsWidget, DashboardMemberAttendance, ExpenseStatsWidget, LoginActivityStatsWidget (+4 more)
+### Community 693 - "PurchaseCredits"
+Cohesion: 0.08
+Nodes (5): {closure#2}(), PurchaseCredits, Key Helper Methods, Purchase Flow, TODOs
 
 ### Community 694 - "Map Architect Persona"
 Cohesion: 0.17
@@ -6276,10 +6290,6 @@ Nodes (10): Define in Resource, Entry Types, Filament v5 — Infolists (Read-Onl
 Cohesion: 0.18
 Nodes (10): Goal, Guardrails, Inputs, laravel-filament, Output Contract, Step 0: Read the v5 namespace contract, Step 1: Load only the relevant admin references, Step 2: Implement with the core Filament guardrails (+2 more)
 
-### Community 712 - "Summary: WhatsApp Template DTO Refactoring — Security Review"
-Cohesion: 0.12
-Nodes (12): Fixes Applied (6 total — all verified on disk), Git Diff Summary, Goal, Key Corrections (Retracted Findings), Remaining (Deliberately Skipped — Low Impact / Out of Scope), Summary: WhatsApp Template DTO Refactoring — Security Review, Verification (all passed), F1-F3 Final Verification (Run Now) (+4 more)
-
 ### Community 713 - "Laravel Code Review Skill (Comprehensive)"
 Cohesion: 0.18
 Nodes (10): 14. Agent Self-Correction Protocol, 8.1 Query Optimization, 8.2 Caching Strategies, 8.3 Indexing Strategy, 8. Performance Patterns, AGENT FINAL INSTRUCTION, AGENT FINAL INSTRUCTION (Updated), Laravel Code Review Skill (Comprehensive) (+2 more)
@@ -6292,9 +6302,9 @@ Nodes (10): Define in Resource, Entry Types, Filament v5 — Infolists (Read-Onl
 Cohesion: 0.18
 Nodes (10): Goal, Guardrails, Inputs, laravel-filament, Output Contract, Step 0: Read the v5 namespace contract, Step 1: Load only the relevant admin references, Step 2: Implement with the core Filament guardrails (+2 more)
 
-### Community 716 - "_notify"
-Cohesion: 0.14
-Nodes (18): active(), _animateOptions(), cancel(), _createAnimations(), _createDescriptors(), _descriptors(), ed(), nd() (+10 more)
+### Community 716 - "ADR-0002: Biometric Enrollment and Device Reconciliation Architecture"
+Cohesion: 0.15
+Nodes (12): ADR-0002: Biometric Enrollment and Device Reconciliation Architecture, Alternatives Considered, Blind Cron Re-Syncing All Active Members Daily, Consequences, Context, Database Change-Data-Capture (CDC) / Triggers for Lateral Sync, Direct Synchronous Polling / Blocking WebSockets During Enrollment, Implementation Notes (+4 more)
 
 ### Community 717 - "Token Budget Skill"
 Cohesion: 0.11
@@ -6304,13 +6314,13 @@ Nodes (18): 1. Progressive Loading, 2. Just-In-Time Loading, 3. Search Before Lo
 Cohesion: 0.25
 Nodes (5): Dashboard, Dashboard, Dashboard, Filament\Pages\Dashboard, Filament\Pages\Dashboard\Concerns\HasFiltersForm
 
-### Community 719 - "Do Things the Laravel Way"
+### Community 719 - "LeadReportExport.php"
 Cohesion: 0.18
-Nodes (11): APIs & Eloquent Resources, Authentication & Authorization, Configuration, Controllers & Validation, Database, Do Things the Laravel Way, Model Creation, Queues (+3 more)
+Nodes (3): LeadReportExport, {closure#7}(), Maatwebsite\Excel\Concerns\FromQuery
 
-### Community 720 - "`door_events` — Field Reference"
-Cohesion: 0.18
-Nodes (9): `door_events` — Field Reference, Event Types, Field Reference, Indexes, Migration History, Notes, Purpose, Trigger Sources (+1 more)
+### Community 720 - "PHPUnit\Framework\TestCase"
+Cohesion: 0.31
+Nodes (3): PHPUnit\Framework\TestCase, ExampleTest, PaymentCurrencyFormattingTest
 
 ### Community 721 - "scripts"
 Cohesion: 0.18
@@ -6328,13 +6338,13 @@ Nodes (10): Define in Resource, Entry Types, Filament v5 — Infolists (Read-Onl
 Cohesion: 0.18
 Nodes (10): Goal, Guardrails, Inputs, laravel-filament, Output Contract, Step 0: Read the v5 namespace contract, Step 1: Load only the relevant admin references, Step 2: Implement with the core Filament guardrails (+2 more)
 
-### Community 725 - "Do Things the Laravel Way"
-Cohesion: 0.18
-Nodes (11): APIs & Eloquent Resources, Authentication & Authorization, Configuration, Controllers & Validation, Database, Do Things the Laravel Way, Model Creation, Queues (+3 more)
+### Community 725 - "Draft: Permissions Auto-Discover Refactor"
+Cohesion: 0.20
+Nodes (9): Current Issues, Decisions Made (from interview), Decisions Made (round 2), Draft: Permissions Auto-Discover Refactor, Open Questions, Panel Structure, Requirements (confirmed), Research Findings (+1 more)
 
-### Community 726 - "Do Things the Laravel Way"
-Cohesion: 0.18
-Nodes (11): APIs & Eloquent Resources, Authentication & Authorization, Configuration, Controllers & Validation, Database, Do Things the Laravel Way, Model Creation, Queues (+3 more)
+### Community 726 - "Laravel Boost Guidelines"
+Cohesion: 0.22
+Nodes (9): Application Structure & Architecture, Conventions, Documentation Files, Foundational Context, Frontend Bundling, Laravel Boost Guidelines, Replies, Skills Activation (+1 more)
 
 ### Community 727 - "Laravel Code Review Skill (Comprehensive)"
 Cohesion: 0.18
@@ -6380,10 +6390,6 @@ Nodes (8): args, fs, minimal, MINIMAL_TOKENS, path, projectRoot, tokensPath, wra
 Cohesion: 0.18
 Nodes (10): Available Components (Free Edition), Basic Usage, Common Patterns, Common Pitfalls, Documentation, Flux UI Development, Form Fields, Modals (+2 more)
 
-### Community 738 - "WhatsApp EmbeddedSignup Flow Refactoring Plan"
-Cohesion: 0.11
-Nodes (17): Commit Strategy, Context, Dependency Matrix, Execution Strategy, Final Checklist, Final Verification Wave, Interview Summary, Metis Review (+9 more)
-
 ### Community 739 - "ADDED Requirements"
 Cohesion: 0.18
 Nodes (10): ADDED Requirements, Requirement: Create new subscription for user, Requirement: Delete subscription, Requirement: Edit existing subscription, Requirement: View user subscriptions in relation manager, Scenario: Super admin creates a new subscription for a user, Scenario: Super admin deletes a subscription, Scenario: Super admin edits an existing subscription (+2 more)
@@ -6392,13 +6398,13 @@ Nodes (10): ADDED Requirements, Requirement: Create new subscription for user, R
 Cohesion: 0.11
 Nodes (17): 1. Load Verification Context, 2. Extract Must-Haves, 3. Verify Each Must-Have, 3a. Determine Verification Method, 3b. Execute Verification, 3c. Record Evidence, 4. Create Verification Report, 5. Handle Results (+9 more)
 
-### Community 741 - ".filled"
-Cohesion: 0.02
-Nodes (63): {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#2}(), {closure#6}(), {closure#7}(), {closure#8}() (+55 more)
+### Community 741 - "TwilioWhatsAppService"
+Cohesion: 0.07
+Nodes (16): WhatsAppServiceInterface, {closure#2}(), TwilioWhatsAppService, ADR-005: WhatsApp Provider Abstraction, Alternatives Considered, Consequences, Context, Negative / Trade-offs (+8 more)
 
 ### Community 742 - ".phone"
-Cohesion: 0.07
-Nodes (32): GymMemberFactory, Field Reference, 2. File Access Restrictions, 3. Project-Specific Guidelines, 4. AI Behavior, 5. Version Control, 6. Team Collaboration, 7. Rule Verification (+24 more)
+Cohesion: 0.09
+Nodes (25): GymMemberFactory, Field Reference, 3. Project-Specific Guidelines, Concrete Deliverables, Context, Core Objective, Definition of Done, Execution Strategy (+17 more)
 
 ### Community 743 - "Analysis Domains"
 Cohesion: 0.11
@@ -6508,13 +6514,13 @@ Nodes (9): Advanced Queries, Custom Casts, Eloquent ORM, Model Events, Model Pat
 Cohesion: 0.20
 Nodes (9): 1. Principles & Patterns (principle), 2. Coding Standards (standard), 3. Test Attributes (attr), 4. Data Management (data), 5. Test Documentation (doc), 6. Mocking (mock), 7. Integration Testing (integration), 8. Configuration (config) (+1 more)
 
-### Community 772 - "Complete Tech Stack & Exact Versions"
-Cohesion: 0.20
-Nodes (10): Authentication & Permissions, Backend Framework & Core, Complete Tech Stack & Exact Versions, Data Processing & Export, Development & Quality Tools, Filament Ecosystem, Frontend Build & Styling, Payment Gateways (+2 more)
+### Community 772 - "Permissions Auto-Discovery Refactor"
+Cohesion: 0.10
+Nodes (20): Agent Dispatch Summary, Context, Core Objective, Definition of Done, Execution Strategy, Existing Infrastructure, Final Checklist, Final Verification Wave (MANDATORY — after ALL implementation tasks) (+12 more)
 
-### Community 773 - "`gyms` — Field Reference"
-Cohesion: 0.20
-Nodes (9): Field Reference, `gyms` — Field Reference, Indexes, Migration History, Purpose, Relationships, Usage by Feature, Required Database Tables (+1 more)
+### Community 773 - "Maatwebsite\Excel\Concerns\WithHeadings"
+Cohesion: 0.31
+Nodes (4): MembersExport, Maatwebsite\Excel\Concerns\FromCollection, Maatwebsite\Excel\Concerns\WithHeadings, Maatwebsite\Excel\Concerns\WithMapping
 
 ### Community 774 - ".cursor/mcp.json"
 Cohesion: 0.24
@@ -6536,9 +6542,9 @@ Nodes (10): 5.1 Null Safety, 5.2 Type Safety, 5.3 Array Access Safety, 5.4 Divis
 Cohesion: 0.20
 Nodes (9): Advanced Queries, Custom Casts, Eloquent ORM, Model Events, Model Patterns, Performance Tips, Query Optimization, Query Scopes (+1 more)
 
-### Community 780 - "Laravel Boost Guidelines"
-Cohesion: 0.22
-Nodes (9): Application Structure & Architecture, Conventions, Documentation Files, Foundational Context, Frontend Bundling, Laravel Boost Guidelines, Replies, Skills Activation (+1 more)
+### Community 780 - "Files to Modify"
+Cohesion: 0.15
+Nodes (12): 1. Migration (NEW), 2. Model (`app/Models/GymMember.php`), 3. Filament Resource (`app/Filament/Admin/Resources/GymMemberResource.php`), 4. Import (`app/Imports/GymMemberImport.php`), 5. Import (`app/Imports/GymMembersImport.php`), 6. Factory (`database/factories/GymMemberFactory.php`), 7. Tests, Draft: GymMember - Phone Not Nullable/Unique, Email Nullable (+4 more)
 
 ### Community 781 - "Sections"
 Cohesion: 0.20
@@ -6556,13 +6562,13 @@ Nodes (18): Budget Thresholds, Commit Conventions, Compression Protocol, Context
 Cohesion: 0.12
 Nodes (16): Anti-Patterns, Automatic Compression Points, Compression Format Templates, Compression Strategies, Compression Triggers, Context Compressor Skill, Decompression Protocol, Diff Template (+8 more)
 
-### Community 785 - "Complete Tech Stack & Exact Versions"
-Cohesion: 0.20
-Nodes (10): Authentication & Permissions, Backend Framework & Core, Complete Tech Stack & Exact Versions, Data Processing & Export, Development & Quality Tools, Filament Ecosystem, Frontend Build & Styling, Payment Gateways (+2 more)
+### Community 785 - "SendBiometricConsentNotificationJob"
+Cohesion: 0.05
+Nodes (29): FanOutBiometricConsentRequestsJob, SendBiometricConsentNotificationJob, Context, Objective, Plan 3.1: Filament Action UI & Dynamic Modal Schema, Success Criteria, Tasks, {closure#1}() (+21 more)
 
-### Community 786 - "Draft: WhatsAppProviderInterface Refactor - Interface Segregation"
-Cohesion: 0.12
-Nodes (16): Benefits, Draft: WhatsAppProviderInterface Refactor - Interface Segregation, Files to Modify/Create, IN:, Interface Segregation Solution, Methods in MetaWhatsAppProvider that return "not supported" errors:, Methods in TwilioWhatsAppProvider that return "not supported" errors:, Modified Files: (+8 more)
+### Community 786 - "TrainerReportExport"
+Cohesion: 0.25
+Nodes (3): TrainerReportExport, {closure#6}(), Illuminate\Contracts\Support\Responsable
 
 ### Community 787 - "10. Laravel-Specific Deep Patterns"
 Cohesion: 0.20
@@ -6588,9 +6594,9 @@ Nodes (9): 1. Principles & Patterns (principle), 2. Coding Standards (standard),
 Cohesion: 0.20
 Nodes (9): Basic Usage, Class-Based Components, Common Pitfalls, Documentation, Functional Components, Testing, Verification, Volt Development (+1 more)
 
-### Community 793 - "Complete Tech Stack & Exact Versions"
-Cohesion: 0.20
-Nodes (10): Authentication & Permissions, Backend Framework & Core, Complete Tech Stack & Exact Versions, Data Processing & Export, Development & Quality Tools, Filament Ecosystem, Frontend Build & Styling, Payment Gateways (+2 more)
+### Community 793 - "Tailwind CSS"
+Cohesion: 0.22
+Nodes (9): Artisan, Example Tests, Filament, Filament's Core Features, Open Code Review Instructions, Relationships, Tailwind CSS, Testing (+1 more)
 
 ### Community 794 - "commands/map.md"
 Cohesion: 0.15
@@ -6728,13 +6734,13 @@ Nodes (6): Test ShadcnInstaller class., Test adding all components without confi
 Cohesion: 0.20
 Nodes (9): Basic Usage, Class-Based Components, Common Pitfalls, Documentation, Functional Components, Testing, Verification, Volt Development (+1 more)
 
-### Community 828 - "date-time-picker.js"
-Cohesion: 0.24
-Nodes (8): e(), i(), l(), Ni(), o(), t(), u(), zi()
+### Community 828 - "TestWebStackFreshness"
+Cohesion: 0.05
+Nodes (16): Freshness and migration contracts for native, desktop, and 3D stacks., _rows(), TestNativeDesktopStackFreshness, ambiguous_python_import_37baa9fa7d1d, ambiguous_python_import_454de6233029, ambiguous_python_import_7062e52d0ec8, ambiguous_python_import_7e5cdc0c8be6, ambiguous_python_import_834e7ed4a53a (+8 more)
 
-### Community 829 - ".discoverFilamentPermissions"
-Cohesion: 0.13
-Nodes (13): 1. Enhanced HasFilamentPermissions Interface, 2. BaseResource Abstract Class, 3. BasePage Abstract Class, 4. BaseWidget Abstract Class, 5. Service Updates, 6. Seeder/Command Updates, Architecture Design, Draft: Permission Auto-Discovery for Default Roles (+5 more)
+### Community 829 - "BaseAttendanceStats"
+Cohesion: 0.16
+Nodes (3): MemberAttendanceStats, DashboardMemberAttendance, BaseAttendanceStats
 
 ### Community 830 - "rector.php"
 Cohesion: 0.20
@@ -6785,8 +6791,8 @@ Cohesion: 0.25
 Nodes (7): parametrize, Reduce a generated TS/JS config to a bare assignable object so it can be handed…, Regression guard for the missing-comma bug between the ``theme`` block and…, The property preceding ``plugins`` must end with a comma (pure-Python check, so…, The emitted config parses as valid JS via ``node --check``., _strip_to_object(), TestGeneratedConfigIsValidJs
 
 ### Community 844 - "TestTailwindConfigGenerator"
-Cohesion: 0.06
-Nodes (17): Test adding colors multiple times., Test adding full color palette., Test TailwindConfigGenerator class., Test that adding same plugin twice doesn't duplicate., Test plugin recommendations., Test generating TypeScript configuration., Test generating JavaScript configuration., Test generating config with custom colors. (+9 more)
+Cohesion: 0.22
+Nodes (5): Test TailwindConfigGenerator class., Test plugin recommendations., Test default output path for JavaScript., Test default content paths for Next.js., TestTailwindConfigGenerator
 
 ### Community 845 - "Sections"
 Cohesion: 0.22
@@ -6804,9 +6810,9 @@ Nodes (8): Custom Navigation Items (in Panel), Filament v5 — Panels, Navigatio
 Cohesion: 0.22
 Nodes (8): Acknowledgments, Contributing, Creating a New Rule, File Naming Convention, Impact Levels, PHPUnit Best Practices, Rule File Structure, Structure
 
-### Community 849 - "WhatsAppProviderInterface Refactor - Interface Segregation"
-Cohesion: 0.12
-Nodes (15): Agent Dispatch Summary, Commit Strategy, Dependency Matrix, Execution Strategy, Final Checklist, Final Verification Wave, Parallel Execution Waves, QA Policy (+7 more)
+### Community 849 - "BaseImporter"
+Cohesion: 0.18
+Nodes (3): BaseImporter, Maatwebsite\Excel\Concerns\Importable, Maatwebsite\Excel\Concerns\WithBatchInserts
 
 ### Community 850 - "whatsapp_broadcast_recipients"
 Cohesion: 0.25
@@ -6836,41 +6842,33 @@ Nodes (8): Acknowledgments, Contributing, Creating a New Rule, File Naming Conve
 Cohesion: 0.24
 Nodes (11): build_cip_prompt(), check_logo_required(), generate_cip_set(), generate_with_nano_banana(), load_logo_image(), main(), Generate image using Gemini Nano Banana (native image generation) Supports two…, Generate a complete CIP set for a brand Args: brand_name: Brand name to… (+3 more)
 
-### Community 857 - "LeadConversionChart"
-Cohesion: 0.12
-Nodes (3): LeadConversionChart, LeadFunnelChart, LeadSourceChart
-
-### Community 858 - "`biometric_devices` — Field Reference"
-Cohesion: 0.22
-Nodes (9): ADMS Protocol Fields (added by migration 2026_09_23_133154), `biometric_devices` — Field Reference, Field Reference, Indexes, Migration History, Notes, Purpose, Purpose & Door Fields (added by migration 2026_03_28_000001) (+1 more)
-
-### Community 859 - "`attendances` — Field Reference"
+### Community 859 - "Do Things the Laravel Way"
 Cohesion: 0.18
-Nodes (9): `attendances` — Field Reference, Biometric Fields (added by migration 2026_03_23_120003), Door Fields (added by migration 2026_03_28_000002), Field Reference, Indexes, Key Methods / Scopes, Migration History, Notes (+1 more)
+Nodes (11): APIs & Eloquent Resources, Authentication & Authorization, Configuration, Controllers & Validation, Database, Do Things the Laravel Way, Model Creation, Queues (+3 more)
 
-### Community 860 - "Core Sections (Required)"
-Cohesion: 0.22
-Nodes (8): 1) Top Risks (Prioritized), 2) Technical Debt, 4) Performance and Scaling Concerns, 5) Fragile/High-Churn Areas, 6) `[ASK USER]` Questions, 7) Evidence, Codebase Concerns, Core Sections (Required)
+### Community 860 - ".implode"
+Cohesion: 0.12
+Nodes (15): PermissionCategory, {closure#3}(), {closure#3}(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}() (+7 more)
 
-### Community 861 - "Core Sections (Required)"
-Cohesion: 0.22
-Nodes (8): 1) Naming Rules, 2) Formatting and Linting, 3) Import and Module Conventions, 4) Error and Logging Conventions, 5) Testing Conventions, 6) Evidence, Coding Conventions, Core Sections (Required)
+### Community 861 - "Filament Permission Auto-Discovery"
+Cohesion: 0.10
+Nodes (19): Agent Dispatch Summary, Concrete Deliverables, Core Objective, Definition of Done, Dependency Matrix, Execution Strategy, Filament Permission Auto-Discovery, Final Checklist (+11 more)
 
 ### Community 862 - "Core Sections (Required)"
-Cohesion: 0.22
-Nodes (8): 1) Test Stack and Commands, 2) Test Layout, 3) Test Scope Matrix, 4) Mocking and Isolation Strategy, 5) Coverage and Quality Signals, 6) Evidence, Core Sections (Required), Testing Patterns
+Cohesion: 0.25
+Nodes (7): 1) Test Stack and Commands, 2) Test Layout, 4) Mocking and Isolation Strategy, 5) Coverage and Quality Signals, 6) Evidence, Core Sections (Required), Testing Patterns
 
-### Community 863 - "PaymentMethodChart"
-Cohesion: 0.12
-Nodes (3): PaymentMethodChart, RevenueByPlanChart, RevenueTrendChart
+### Community 863 - "generate_cip_set"
+Cohesion: 0.24
+Nodes (11): build_cip_prompt(), check_logo_required(), generate_cip_set(), generate_with_nano_banana(), load_logo_image(), main(), Generate image using Gemini Nano Banana (native image generation) Supports two…, Generate a complete CIP set for a brand Args: brand_name: Brand name to… (+3 more)
 
-### Community 864 - "ResolvesExportImportPermission"
-Cohesion: 0.19
-Nodes (6): ExportBulkAction, {closure#1}(), {closure#2}(), static, ResolvesExportImportPermission, Filament\Tables\Actions\ExportBulkAction
+### Community 864 - ".opencode/skills/design-system/scripts/search-slides.py"
+Cohesion: 0.32
+Nodes (7): ambiguous_python_import_a9ef785f5cb3, format_context(), format_result(), main(), Format a single search result for display, Slide Search CLI - Search slide design databases for strategies, layouts, copy,…, Format contextual recommendations for display.
 
-### Community 865 - "Agent Guidelines for Gym Management App"
+### Community 865 - "Complete Tech Stack & Exact Versions"
 Cohesion: 0.20
-Nodes (9): Agent Guidelines for Gym Management App, ✅ ALWAYS use one of these for test-database operations, Build/Lint/Test Commands, Code Style Guidelines, Defense-in-depth: existing safety mechanisms, Framework Rules, Mental model, ❌ NEVER run these against the main database during a testing workflow (+1 more)
+Nodes (10): Authentication & Permissions, Backend Framework & Core, Complete Tech Stack & Exact Versions, Data Processing & Export, Development & Quality Tools, Filament Ecosystem, Frontend Build & Styling, Payment Gateways (+2 more)
 
 ### Community 866 - "Sections"
 Cohesion: 0.22
@@ -6888,9 +6886,9 @@ Nodes (8): Custom Navigation Items (in Panel), Filament v5 — Panels, Navigatio
 Cohesion: 0.22
 Nodes (8): Acknowledgments, Contributing, Creating a New Rule, File Naming Convention, Impact Levels, PHPUnit Best Practices, Rule File Structure, Structure
 
-### Community 870 - "Translation Rules"
-Cohesion: 0.22
-Nodes (8): Absolute Don'ts, Content Rules (NON-NEGOTIABLE), Output Format, Severity Labels, Steps, Translation Rules, Voice & Tone (Google code review guidelines), Writing Style -- Sound Like a Human
+### Community 870 - "Illuminate\Support\Collection"
+Cohesion: 0.04
+Nodes (21): {closure#1}(), SeedSampleDataCommand, {closure#1}(), {closure#1}(), {closure#1}(), {closure#2}(), {closure#58}(), {closure#2}() (+13 more)
 
 ### Community 871 - "patch"
 Cohesion: 0.22
@@ -6904,6 +6902,10 @@ Nodes (7): parametrize, Reduce a generated TS/JS config to a bare assignable obj
 Cohesion: 0.22
 Nodes (5): Test TailwindConfigGenerator class., Test plugin recommendations., Test default output path for JavaScript., Test default content paths for Next.js., TestTailwindConfigGenerator
 
+### Community 874 - "BaseStatsOverviewWidget"
+Cohesion: 0.17
+Nodes (12): ActiveAndExpireSubscriptionStats, BaseAttendanceStats, BaseStatsOverviewWidget, CollectionStatsWidget, CRMStatsWidget, DashboardMemberAttendance, ExpenseStatsWidget, LoginActivityStatsWidget (+4 more)
+
 ### Community 875 - "Design for Subscription View Action"
 Cohesion: 0.22
 Nodes (8): Architecture, Design for Subscription View Action, Form Fields for Super-Admin View, Implementation Approach, Metadata & Audit Section, Related Information Section, Subscription Details Section, Trade-offs
@@ -6911,6 +6913,10 @@ Nodes (8): Architecture, Design for Subscription View Action, Form Fields for Su
 ### Community 876 - "_getFullNumber"
 Cohesion: 0.25
 Nodes (9): _formatNumberAsYouType(), getExtension(), _getFullNumber(), getNumberType(), getValidationError(), isValidNumber(), isValidNumberPrecise(), _utilsIsPossibleNumber() (+1 more)
+
+### Community 877 - "CrossTenantTest"
+Cohesion: 0.40
+Nodes (3): Tests Passing:, CrossTenantTest, self
 
 ### Community 878 - "Core Sections (Required)"
 Cohesion: 0.25
@@ -6931,6 +6937,10 @@ Nodes (7): Custom Filter, Filament v5 — Table Filters, Filter Layout, Namespac
 ### Community 883 - "5.1: Execution Protocol"
 Cohesion: 0.25
 Nodes (8): 5.1: Execution Protocol, 5.2: Failure Recovery Protocol, 5.3: Commit Checkpoints, Execute Step, PHASE 5: Execute Refactoring (DETERMINISTIC EXECUTION), Post-Step Verification (MANDATORY), Pre-Step, Step Completion
+
+### Community 884 - "/research-phase Workflow"
+Cohesion: 0.08
+Nodes (21): 7. Verify Phase Goal, 0. Delegate the Mapping, 5. Handle Research, 0. Delegate the Research, 1. Load Phase Context, 2. Identify Research Questions, 3. Conduct Research, 4. Generate RESEARCH.md (+13 more)
 
 ### Community 885 - "Flux UI Development"
 Cohesion: 0.12
@@ -6968,10 +6978,6 @@ Nodes (8): Back-of-the-Envelope Estimates, Common Mistakes in Step 1, Deliverabl
 Cohesion: 0.25
 Nodes (8): Alerting Best Practices, Dashboard Design, Key Metrics to Track, Monitoring and Alerting, The Four Golden Signals (Google SRE), The RED Method (for request-driven services), The Three Pillars of Observability, The USE Method (for resources)
 
-### Community 894 - "BlogCategoryEnum"
-Cohesion: 0.24
-Nodes (5): BlogCategoryEnum, {closure#1}(), {closure#2}(), self, {closure#2}()
-
 ### Community 896 - "chrome-devtools"
 Cohesion: 0.67
 Nodes (3): args, command, chrome-devtools
@@ -6990,7 +6996,7 @@ Nodes (8): 5.1: Execution Protocol, 5.2: Failure Recovery Protocol, 5.3: Commit 
 
 ### Community 900 - ".relationship"
 Cohesion: 0.09
-Nodes (22): static, Artisan, Example Tests, Filament, Filament's Core Features, Artisan, Filament, Filament's Core Features (+14 more)
+Nodes (22): static, Artisan, Filament, Filament's Core Features, Relationships, Artisan, Example Tests, Filament (+14 more)
 
 ### Community 901 - "Sprint {N} — {Sprint Name}"
 Cohesion: 0.13
@@ -7020,21 +7026,17 @@ Nodes (8): 5.1: Execution Protocol, 5.2: Failure Recovery Protocol, 5.3: Commit 
 Cohesion: 0.17
 Nodes (12): 1. Dual-Channel Protocol Coexistence, 2. Auto-Checkout Detection, 4. Three-Layer Expired Member Grace Period, ADR-004: Biometric ADMS Push Protocol and Hardware Lifecycle Management, Alternatives Considered, Consequences, Context, Decision (+4 more)
 
-### Community 908 - "Core Sections (Required)"
-Cohesion: 0.25
-Nodes (7): 1) Top-Level Map, 2) Entry Points, 3) Module Boundaries, 4) Naming and Organization Rules, 5) Evidence, Codebase Structure, Core Sections (Required)
-
-### Community 909 - "BaseAttendanceResource"
+### Community 908 - "`attendances` — Field Reference"
 Cohesion: 0.17
-Nodes (4): BaseAttendanceResource, Context, Gap Analysis (Self-Consultation), Original Request
+Nodes (10): `attendances` — Field Reference, Biometric Fields (added by migration 2026_03_23_120003), Door Fields (added by migration 2026_03_28_000002), Field Reference, Indexes, Key Methods / Scopes, Migration History, Notes (+2 more)
+
+### Community 909 - "he"
+Cohesion: 0.10
+Nodes (11): fa, he(), il, ka(), li(), na(), tl(), Tn() (+3 more)
 
 ### Community 910 - ".github/skills/laravel-best-practices/rules/arch-service-classes.md"
 Cohesion: 0.25
 Nodes (7): Bad Example, Benefits, Good Example, Service Class Guidelines, Service Classes for Business Logic, When to Create a Service, Why It Matters
-
-### Community 911 - "/research-phase Workflow"
-Cohesion: 0.08
-Nodes (21): 7. Verify Phase Goal, 0. Delegate the Mapping, 5. Handle Research, 0. Delegate the Research, 1. Load Phase Context, 2. Identify Research Questions, 3. Conduct Research, 4. Generate RESEARCH.md (+13 more)
 
 ### Community 912 - "Filament v5 — Table Filters"
 Cohesion: 0.25
@@ -7044,9 +7046,9 @@ Nodes (7): Custom Filter, Filament v5 — Table Filters, Filter Layout, Namespac
 Cohesion: 0.25
 Nodes (8): 5.1: Execution Protocol, 5.2: Failure Recovery Protocol, 5.3: Commit Checkpoints, Execute Step, PHASE 5: Execute Refactoring (DETERMINISTIC EXECUTION), Post-Step Verification (MANDATORY), Pre-Step, Step Completion
 
-### Community 915 - "Components"
-Cohesion: 0.17
-Nodes (11): 1. Multi-Tenant Administration Panels (Filament v3), 3. Biometric Attendance & Access Control Engine, 4. WhatsApp Automation & Marketing Suite, 5. Membership Lifecycle & Smart Freeze Engine, 6. Billing, Invoicing & SaaS Subscriptions, 7. Dynamic Role-Based Access Control (RBAC), Architecture, Components (+3 more)
+### Community 915 - "`gyms` — Field Reference"
+Cohesion: 0.20
+Nodes (9): Field Reference, `gyms` — Field Reference, Indexes, Migration History, Purpose, Relationships, Usage by Feature, Required Database Tables (+1 more)
 
 ### Community 916 - "Context Health Monitor"
 Cohesion: 0.14
@@ -7056,17 +7058,17 @@ Nodes (13): Auto-Save Protocol, Behavior Rules, Context Health Monitor, Integrat
 Cohesion: 0.25
 Nodes (7): 1. Resolve Inputs, 2. Parse and Catalog Feedback Items, 3. Gather Implementation Context, 4. Corroborate and Validate Each Feedback Item, 5. Address Feedback, 6. Report and Verify, Steps
 
-### Community 919 - "t"
-Cohesion: 0.16
-Nodes (13): di(), e(), g(), Ht(), i(), Ie(), Me(), Re() (+5 more)
+### Community 919 - "Interface Methods"
+Cohesion: 0.25
+Nodes (7): `deleteTemplate(TemplateRef $ref): bool`, `enroll(GymMember $gymMember, BiometricSample $sample): TemplateRef`, `getLivenessScore(BiometricSample $sample): float`, `getSupportedTypes(): array`, Interface Methods, `isAvailable(): bool`, `verify(BiometricSample $sample, TemplateRef $ref): VerificationResult`
 
-### Community 920 - "WhatsAppBillingService"
-Cohesion: 0.04
-Nodes (28): {closure#2}(), PurchaseCredits, RazorpayWebhookController, NotificationService, RazorpayService, WhatsAppBillingService, Billing, Broadcast System (+20 more)
+### Community 920 - "Gym Management Software with CRM Rules for Kilo Code AI Agent"
+Cohesion: 0.25
+Nodes (7): 2. File Access Restrictions, 4. AI Behavior, 5. Version Control, 6. Team Collaboration, 7. Rule Verification, 8. Additional Guidelines from `gemini.md`, Gym Management Software with CRM Rules for Kilo Code AI Agent
 
-### Community 921 - "serializeSelectionToDataTransfer"
-Cohesion: 0.16
-Nodes (14): canSetCurrentTextAttribute(), cut(), didClickAttachment(), dragstart(), findAttachmentForElement(), getAttachmentAndPositionById(), getAttachmentById(), getAttachmentPieces() (+6 more)
+### Community 921 - "ValidEmailDomain"
+Cohesion: 0.13
+Nodes (7): ValidEmailDomain, ValidPhone, Illuminate\Contracts\Translation\Translator, Illuminate\Contracts\Validation\ValidationRule, Illuminate\Translation\PotentiallyTranslatedString, {closure#1}(), ValidEmailDomainTest
 
 ### Community 922 - "Slides Reference"
 Cohesion: 0.29
@@ -7108,6 +7110,10 @@ Nodes (6): Chart Widget, Filament v5 — Widgets, Register Widgets on Dashboard,
 Cohesion: 0.29
 Nodes (6): Animation Classes, Background Images, Base Structure, Chart.js Integration, CSS Variables Reference, HTML Slide Template
 
+### Community 932 - "AGENTS.md"
+Cohesion: 0.29
+Nodes (6): Flux UI Free, Laravel Pint Code Formatter, Livewire Volt, PHPUnit, Running Tests, Test Enforcement
+
 ### Community 933 - "Good Example"
 Cohesion: 0.29
 Nodes (7): After Validation Hook, Clean Controller, Conditional Validation, Create Form Request, Form Request Class, Good Example, Update Request with Different Rules
@@ -7136,9 +7142,13 @@ Nodes (6): Chart Widget, Filament v5 — Widgets, Register Widgets on Dashboard,
 Cohesion: 0.29
 Nodes (6): ambiguous_python_import_b8f150191492, format_output(), generate_design_brief(), Format results for Claude consumption (token-optimized), Logo Design Search - CLI for searching logo design guidelines Usage: python…, Generate a comprehensive logo design brief based on query
 
-### Community 940 - "WhatsAppBroadcastIntegrationTest.php"
-Cohesion: 0.09
-Nodes (29): Illuminate\Contracts\Bus\Dispatcher, Illuminate\Contracts\Bus\QueueingDispatcher, Illuminate\Database\Eloquent\Factories\Sequence, Illuminate\Support\Facades\Facade, Illuminate\Support\Testing\Fakes\PendingBatchFake, {closure#1}(), {closure#10}(), {closure#11}() (+21 more)
+### Community 940 - "gsd-planner.md"
+Cohesion: 0.29
+Nodes (5): Invocation Contract, Planning Rules, Return Contract, Self-Check Before Returning, System Prompt
+
+### Community 941 - "BlogCategoryEnum"
+Cohesion: 0.36
+Nodes (4): BlogCategoryEnum, {closure#1}(), {closure#2}(), self
 
 ### Community 942 - "config"
 Cohesion: 0.29
@@ -7172,9 +7182,9 @@ Nodes (6): Chart Widget, Filament v5 — Widgets, Register Widgets on Dashboard,
 Cohesion: 0.15
 Nodes (11): AdmsDeviceCommandFactory, static, `adms_device_commands` — Field Reference, Command String Formats, Enums, Field Reference, Indexes, Migration History (+3 more)
 
-### Community 950 - ".generate_config_string"
-Cohesion: 0.20
-Nodes (6): Generate configuration file content. Returns: Configuration file as string, Generate TypeScript configuration., Generate JavaScript configuration., Format plugins array for config. Validates each plugin name against a strict…, Add indentation to JSON string., Write configuration to file. Returns: Tuple of (success, message)
+### Community 950 - "Core Sections (Required)"
+Cohesion: 0.08
+Nodes (21): 1) Runtime Summary, 2) Production Frameworks and Dependencies, 3) Development Toolchain, 4) Key Commands, 5) Environment and Config, 6) Evidence, Core Sections (Required), Technology Stack (+13 more)
 
 ### Community 951 - "Good Example"
 Cohesion: 0.29
@@ -7204,9 +7214,13 @@ Nodes (3): closeModal, error-report-modal, submitReport
 Cohesion: 0.29
 Nodes (6): Chart Widget, Filament v5 — Widgets, Register Widgets on Dashboard, Register Widgets on Resource Pages, Stats Overview Widget, Widget Column Span
 
-### Community 958 - "Country"
-Cohesion: 0.02
-Nodes (37): CityResource, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#6}(), {closure#7}(), {closure#9}() (+29 more)
+### Community 958 - "Do Things the Laravel Way"
+Cohesion: 0.18
+Nodes (11): APIs & Eloquent Resources, Authentication & Authorization, Configuration, Controllers & Validation, Database, Do Things the Laravel Way, Model Creation, Queues (+3 more)
+
+### Community 959 - "ADR-002: Door Access Attendance Integrity"
+Cohesion: 0.25
+Nodes (8): ADR-002: Door Access Attendance Integrity, Alternatives Considered, Consequences, Context, Negative / Trade-offs, Positive, Related Decisions, Status
 
 ### Community 960 - "/new-project Workflow"
 Cohesion: 0.15
@@ -7237,8 +7251,12 @@ Cohesion: 0.29
 Nodes (6): Current Architecture Discovery, Draft: WhatsApp Per-Tenant Provider Selection, Open Questions, Requirements (Confirmed), Scope Boundaries, Technical Decisions
 
 ### Community 967 - "FilamentColor"
-Cohesion: 0.21
+Cohesion: 0.20
 Nodes (5): {closure#1}(), {closure#2}(), FilamentColor, self, {closure#2}()
+
+### Community 968 - "Laravel Boost"
+Cohesion: 0.29
+Nodes (7): Artisan, Available Search Syntax, Laravel Boost, Reading Browser Logs With the `browser-logs` Tool, Searching Documentation (Critically Important), Tinker / Debugging, URLs
 
 ### Community 970 - "Create Architectural Decision Record"
 Cohesion: 0.33
@@ -7288,6 +7306,10 @@ Nodes (6): Algorithms, Design Decisions, Handling Exceeded Limits, Key Component
 Cohesion: 0.33
 Nodes (6): General Tips, Step 1 Tips, Step 2 Tips, Step 3 Tips, Step 4 Tips, Tips for Each Step
 
+### Community 982 - "Livewire 3"
+Cohesion: 0.12
+Nodes (16): Alpine, Key Changes From Livewire 2, Lifecycle Hooks, Livewire 3, New Directives, Alpine, Key Changes From Livewire 2, Lifecycle Hooks (+8 more)
+
 ### Community 984 - ".ai/skills/laravel-best-practices/rules/controller-api-resources.md"
 Cohesion: 0.33
 Nodes (5): API Resources for Response Transformation, Bad Example, Good Example, JSON:API Resources (Laravel 13+), Why
@@ -7316,13 +7338,13 @@ Nodes (5): Filament v5 — Namespace & Import Map, Namespace Decision Tree, The 
 Cohesion: 0.17
 Nodes (11): 1. SPEC.md (Finalized), 2. ROADMAP.md (Phase Entry), 3. PLAN 1.1 (Wave 1), 4. Wave 1 Execution, 5. Wave 1 State Snapshot, 6. PLAN 1.2 (Wave 2), 7. Wave 2 Execution & Snapshot, 8. Verification (+3 more)
 
+### Community 991 - ".opencode/skills/ui-ux-pro-max/scripts/reasoning_contract.py"
+Cohesion: 0.32
+Nodes (7): apply_decision_rules(), _object_without_duplicates(), parse_decision_rules(), Return deterministic mutations and an audit trail; never execute data., Closed, non-executable grammar for design-system decision rules., Parse the canonical condition -> action-array representation., _validate_action()
+
 ### Community 992 - "Session: YYYY-MM-DD HH:MM"
 Cohesion: 0.17
 Nodes (11): Accomplished, Accomplished, Blockers Encountered, Handoff Notes, JOURNAL.md — Session Log, Objective, Objective, Session: YYYY-MM-DD HH:MM (+3 more)
-
-### Community 993 - "ExcelImportAction"
-Cohesion: 0.13
-Nodes (11): ExcelImportAction, static, Context, Interview Summary, Original Request, Architecture, Background Jobs, Core Domain Models (+3 more)
 
 ### Community 994 - "log-viewer.php"
 Cohesion: 0.33
@@ -7384,9 +7406,9 @@ Nodes (5): Filament v5 — Namespace & Import Map, Namespace Decision Tree, The 
 Cohesion: 0.33
 Nodes (6): Create Page, Edit Page, List Page, Testing Actions, Testing Resources, Testing Schema Components
 
-### Community 1011 - "r"
-Cohesion: 0.17
-Nodes (12): Be(), ei(), ii(), le(), ni(), oi(), r(), ri() (+4 more)
+### Community 1011 - ".agents/skills/design-system/scripts/tests/test_validate_tokens.py"
+Cohesion: 0.28
+Nodes (8): CompletedProcess, Path, Regression tests for validate-tokens.cjs. The validator used to skip any line…, A hardcoded hex on the same line as a var() token is still a violation., A line that references only tokens produces no false positives., _run(), test_flags_hardcoded_hex_sharing_line_with_token(), test_token_only_line_reports_no_violation()
 
 ### Community 1013 - "validate-all.sh script"
 Cohesion: 0.17
@@ -7420,6 +7442,14 @@ Nodes (5): Available Commands, Key Files, Open Code Review - Agent Instructions,
 Cohesion: 0.33
 Nodes (5): References (Knowledge Base), Routing, Slides, Subcommands, When to Use
 
+### Community 1022 - "2025_07_07_131430_create_pulse_tables.php"
+Cohesion: 0.29
+Nodes (6): {closure#1}(), {closure#2}(), {closure#3}(), down(), up(), Laravel\Pulse\Support\PulseMigration
+
+### Community 1023 - "PHP"
+Cohesion: 0.33
+Nodes (6): Comments, Constructors, Enums, PHP, PHPDoc Blocks, Type Declarations
+
 ### Community 1024 - "Draft: Blog Management System Implementation"
 Cohesion: 0.33
 Nodes (5): Draft: Blog Management System Implementation, Open Questions, Requirements (Confirmed), Scope Boundaries, Technical Decisions
@@ -7428,25 +7458,17 @@ Nodes (5): Draft: Blog Management System Implementation, Open Questions, Require
 Cohesion: 0.33
 Nodes (5): Draft: Fix phone_number_sid Storage Issue, Problem Identified, Requirements, Scope, Technical Approach
 
-### Community 1027 - "2026_01_18_125022_replace_is_active_with_status_in_users_table.php"
-Cohesion: 0.33
-Nodes (5): {closure#1}(), {closure#2}(), {closure#3}(), down(), up()
+### Community 1026 - "/sprint Workflow"
+Cohesion: 0.18
+Nodes (10): 2a. Action: New Sprint, 2b. Action: Status, Commit, Create Sprint File, Gather Sprint Information, Related, /sprint Workflow, Templates (+2 more)
 
 ### Community 1028 - "/complete-milestone Workflow"
 Cohesion: 0.18
 Nodes (10): 1. Verify All Phases Complete, 2. Run Final Verification, 3. Generate Milestone Summary, 4. Archive Current State, 5. Reset for Next Milestone, 5c. Refresh Architecture, 5d. Update Requirements, 6. Commit and Tag (+2 more)
 
-### Community 1029 - "/sprint Workflow"
-Cohesion: 0.18
-Nodes (10): 2a. Action: New Sprint, 2b. Action: Status, Commit, Create Sprint File, Gather Sprint Information, Related, /sprint Workflow, Templates (+2 more)
-
-### Community 1030 - "2025_10_06_111031_remove_unique_key_from_gym_settings.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
-
-### Community 1031 - "Draft: WhatsApp EmbeddedSignup Flow Refactoring"
-Cohesion: 0.18
-Nodes (10): Current Flow (WhatsAppSetup.php lines 1355-1386), Current State, Draft: WhatsApp EmbeddedSignup Flow Refactoring, EmbeddedSignupService Issues, Files Involved, Goal, Open Questions, Requirements (to gather) (+2 more)
+### Community 1030 - ".clearTemplateRefCache"
+Cohesion: 0.47
+Nodes (3): {closure#3}(), {closure#4}(), self
 
 ### Community 1032 - "Brand Guidelines Template"
 Cohesion: 0.40
@@ -7583,6 +7605,10 @@ Nodes (5): Approaches, Design Decisions, Requirements, Snowflake ID Structure (R
 ### Community 1066 - "Autoscaling"
 Cohesion: 0.40
 Nodes (5): Autoscaling, Common Autoscaling Mistakes, Scaling Configuration, Scaling Strategies, What to Scale On
+
+### Community 1067 - "2026_01_18_125022_replace_is_active_with_status_in_users_table.php"
+Cohesion: 0.33
+Nodes (5): {closure#1}(), {closure#2}(), {closure#3}(), down(), up()
 
 ### Community 1069 - ".ai/skills/laravel-best-practices/rules/arch-action-classes.md"
 Cohesion: 0.40
@@ -7802,7 +7828,7 @@ Nodes (4): Bad Example, Chunking for Large Datasets, Good Example, Why
 
 ### Community 1127 - "GymMember"
 Cohesion: 0.01
-Nodes (136): BirthdayNotificationCommand, {closure#1}(), {closure#1}(), {closure#2}(), CheckMembershipExpiry, {closure#1}(), {closure#4}(), {closure#1}() (+128 more)
+Nodes (133): {closure#1}(), SendMembershipExpiryAlerts, BiometricConsentGiven, BiometricConsentRevoked, {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}() (+125 more)
 
 ### Community 1128 - ".cursor/skills/laravel-best-practices/rules/eloquent-eager-loading.md"
 Cohesion: 0.40
@@ -7860,17 +7886,13 @@ Nodes (5): 4.1 API Endpoint Idempotency, 4.2 Queue Job Idempotency, 4.3 Webhook 
 Cohesion: 0.40
 Nodes (5): 7.1 SQL Injection Prevention, 7.2 XSS Prevention, 7.3 Authorization, 7.4 Rate Limiting, 7. Security Patterns
 
-### Community 1142 - "2025_10_15_152346_add_user_id_to_payments_table.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
-
 ### Community 1143 - "2025_04_15_155640_add_order_column_to_plan_features_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1144 - ".updateOrCreate"
-Cohesion: 0.27
-Nodes (8): Dimension Integration in 6-Phase Protocol, The 9 Refactor Dimensions, Dimension Integration in 6-Phase Protocol, The 9 Refactor Dimensions, Dimension Integration in 6-Phase Protocol, The 9 Refactor Dimensions, Dimension Integration in 6-Phase Protocol, The 9 Refactor Dimensions
+### Community 1144 - "t"
+Cohesion: 0.16
+Nodes (13): di(), e(), g(), Ht(), i(), Ie(), Me(), Re() (+5 more)
 
 ### Community 1145 - "2025_04_20_092731_remove_billing_cycle_from_membership_plans.php"
 Cohesion: 0.40
@@ -7896,17 +7918,13 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1151 - "BM25"
-Cohesion: 0.22
-Nodes (6): BM25, BM25 ranking algorithm for text search, Lowercase, normalize synonyms, split, remove punctuation, filter stopwords, Build BM25 index from documents, Score all documents against query, All indexed terms, for suggestion/typo-recovery purposes.
+### Community 1151 - "Context Fetch Skill"
+Cohesion: 0.11
+Nodes (17): Anti-Patterns, ❌ Broad Searches, Context Efficiency Metrics, Context Fetch Skill, Inputs, Integration with GSD, ❌ Loading Everything First, Outputs (+9 more)
 
 ### Community 1152 - "2025_05_18_155122_add_status_index_in_cities.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
-
-### Community 1153 - "CRITICAL: Required Artifacts (Must Create In Order)"
-Cohesion: 0.22
-Nodes (8): Checkpoint Rules, CRITICAL: Required Artifacts (Must Create In Order), Session State Check (Phase 0), State Management Commands, Step 1: Check for existing session, Step 2: If session exists, verify state, Step 3: Determine action, Why This Matters
 
 ### Community 1154 - "2025_05_27_172841_add_membership_start_end_date_in_member_payments.php"
 Cohesion: 0.40
@@ -7924,13 +7942,9 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1158 - "2025_07_01_170527_add_files_column_in_feedback.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
-
-### Community 1161 - "ADR-006: WhatsApp Broadcast Architecture"
-Cohesion: 0.24
-Nodes (6): ADR-006: WhatsApp Broadcast Architecture, Alternatives Considered, Context, Flow Diagram, Related Decisions, Status
+### Community 1161 - "Key Schema Decisions"
+Cohesion: 0.07
+Nodes (28): ADR-006: WhatsApp Broadcast Architecture, Alternatives Considered, Context, Flow Diagram, Related Decisions, Status, ADR-007: WhatsApp Database Migration History, Context (+20 more)
 
 ### Community 1162 - "2025_07_16_071634_add_category_in_error_reports.php"
 Cohesion: 0.40
@@ -7952,49 +7966,45 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1167 - "Atomic state API (preferred)"
-Cohesion: 0.20
-Nodes (10): Atomic state API (preferred), `ocr state advance` — Update phase at each boundary, `ocr state begin` — Create or resume a session, `ocr state complete-map` — Sync structured map metrics, `ocr state complete-round` — Sync structured round metrics, `ocr state finish` — Close the session (invariant-checked), `ocr state show` — Read current session state, `ocr state sync` — Rebuild from filesystem (+2 more)
-
-### Community 1168 - "2025_12_15_134259_add_invoice_columns_to_payments_table.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+### Community 1167 - "STATE.md — Project State"
+Cohesion: 0.33
+Nodes (5): Current Position, Key Metrics & Status, Next Steps, Recent Progress, STATE.md — Project State
 
 ### Community 1169 - "2025_09_10_090854_add_source_id_and_raw_data_in_leads.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1170 - "2025_06_29_125701_remove_owner_id_from_gyms_table.php"
+### Community 1171 - "2025_04_20_154701_add_new_gym_membership_plan_id_in_gym_members.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1171 - "Key Schema Decisions"
-Cohesion: 0.20
-Nodes (10): Key Schema Decisions, Why `batch_id` was added late, Why `billing_mode` was introduced, Why Broadcast Refund Columns were added, Why `language` was added to `whatsapp_templates`, Why `phone_number_sid` was made nullable, Why `phone_number_surcharge` is on `whatsapp_credit_transactions`, Why `provider_type` was added (+2 more)
+### Community 1172 - "Filament\Actions\Exports\Models\Export"
+Cohesion: 0.12
+Nodes (6): BaseEmployeeExporter, ManagerExporter, ReceptionistExporter, ExportPolicy, {closure#1}(), Filament\Actions\Exports\Models\Export
 
-### Community 1173 - "2025_09_05_055423_add_tags_and_next_action_to_leads_table.php"
+### Community 1173 - "2025_05_03_160718_add_batch_uuid_column_to_activity_log_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1174 - "._base_config"
-Cohesion: 0.22
-Nodes (6): Any, Path, Initialize generator. Args: typescript: If True, generate .ts config, else .js…, Determine default output path., Create base configuration structure., Get default content paths for framework.
+### Community 1174 - "TemplatePreview"
+Cohesion: 0.21
+Nodes (3): static, TemplatePreview, TemplatePreviewTest
 
 ### Community 1175 - "Phase {N} Summary"
 Cohesion: 0.18
 Nodes (10): Commits, Deliverables, Lessons Learned, Next Steps, Objective, Phase {N} Summary, Plan {N}.1: {Plan Name}, Plan {N}.2: {Plan Name} (+2 more)
 
-### Community 1176 - "Subscription"
-Cohesion: 0.03
-Nodes (32): SendSubscriptionExpiryAlerts, {closure#1}(), {closure#1}(), Subscription, PlanExpiryNotification, SubscriptionExpired, TrialEndingNotification, SubscriptionObserver (+24 more)
+### Community 1176 - "Atomic state API (preferred)"
+Cohesion: 0.20
+Nodes (10): Atomic state API (preferred), `ocr state advance` — Update phase at each boundary, `ocr state begin` — Create or resume a session, `ocr state complete-map` — Sync structured map metrics, `ocr state complete-round` — Sync structured round metrics, `ocr state finish` — Close the session (invariant-checked), `ocr state show` — Read current session state, `ocr state sync` — Rebuild from filesystem (+2 more)
 
 ### Community 1177 - "2026_02_12_133628_create_whatsapp_templates_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1178 - "TODOs"
-Cohesion: 0.19
-Nodes (5): SyncPermissionsCommand, RolesAndPermissionsSeeder, Interview Summary, TODOs, TODOs
+### Community 1178 - "`biometric_devices` — Field Reference"
+Cohesion: 0.22
+Nodes (9): ADMS Protocol Fields (added by migration 2026_09_23_133154), `biometric_devices` — Field Reference, Field Reference, Indexes, Migration History, Notes, Purpose, Purpose & Door Fields (added by migration 2026_03_28_000001) (+1 more)
 
 ### Community 1179 - "2025_12_30_162911_add_latest_payment_at_to_gym_members_table.php"
 Cohesion: 0.40
@@ -8020,21 +8030,21 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1185 - "BM25"
-Cohesion: 0.22
-Nodes (6): BM25, BM25 ranking algorithm for text search, Lowercase, normalize synonyms, split, remove punctuation, filter stopwords, Build BM25 index from documents, Score all documents against query, All indexed terms, for suggestion/typo-recovery purposes.
-
-### Community 1186 - "2026_02_25_064553_add_deleted_at_to_whatsapp_templates_table.php"
+### Community 1185 - "2025_07_01_170527_add_files_column_in_feedback.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1187 - "ValidEmailDomain.php"
-Cohesion: 0.28
-Nodes (4): ValidPhone, Illuminate\Contracts\Validation\ValidationRule, Illuminate\Translation\PotentiallyTranslatedString, {closure#1}()
+### Community 1186 - "2025_09_05_055423_add_tags_and_next_action_to_leads_table.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1188 - "2025_07_07_131430_create_pulse_tables.php"
-Cohesion: 0.29
-Nodes (6): {closure#1}(), {closure#2}(), {closure#3}(), down(), up(), Laravel\Pulse\Support\PulseMigration
+### Community 1187 - "CRITICAL: Required Artifacts (Must Create In Order)"
+Cohesion: 0.22
+Nodes (8): Checkpoint Rules, CRITICAL: Required Artifacts (Must Create In Order), Session State Check (Phase 0), State Management Commands, Step 1: Check for existing session, Step 2: If session exists, verify state, Step 3: Determine action, Why This Matters
+
+### Community 1188 - "2025_10_10_144622_remove_subscription_fields_from_gyms_table.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
 ### Community 1189 - "2026_04_06_191114_add_seo_columns_to_blogs_table.php"
 Cohesion: 0.40
@@ -8048,9 +8058,13 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1192 - "Phase 0: Session State Verification (ALWAYS DO FIRST)"
-Cohesion: 0.29
-Nodes (7): Phase 0: Session State Verification (ALWAYS DO FIRST), Step 1: Check for existing session, Step 2: If `--fresh` flag provided, Step 3: If session exists, verify state matches files, Step 3b: Round Resolution Algorithm, Step 4: Determine resume point, Step 5: Report to user
+### Community 1192 - "2025_10_15_152346_add_user_id_to_payments_table.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+
+### Community 1193 - "2025_11_24_122015_add_profile_photo_in_users.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
 ### Community 1194 - "2026_03_31_175200_add_unique_constraint_to_whatsapp_templates_table.php"
 Cohesion: 0.40
@@ -8080,7 +8094,7 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.20
 Nodes (9): 1. Capture Current State, 2. Add Journal Entry, 3. Commit State, 4. Display Handoff, Auto-Save Protocol, Minimum Auto-Save Content, /pause Workflow, Proactive Auto-Save (Session Limit Protection) (+1 more)
 
-### Community 1201 - "2026_05_10_000000_add_waba_status_synced_at_to_whatsapp_accounts_table.php"
+### Community 1201 - "2025_12_15_134259_add_invoice_columns_to_payments_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
@@ -8088,9 +8102,9 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.20
 Nodes (9): 1. Validate Phase Exists, 2. Check Phase Status, 3. Check for Dependencies, 4. Confirm Removal, 5. Remove Phase, 6. Update STATE.md, 7. Commit, 8. Display Result (+1 more)
 
-### Community 1203 - "Tailwind CSS"
-Cohesion: 0.22
-Nodes (9): Artisan, Example Tests, Filament, Filament's Core Features, Open Code Review Instructions, Relationships, Tailwind CSS, Testing (+1 more)
+### Community 1203 - "2026_02_25_064553_add_deleted_at_to_whatsapp_templates_table.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
 ### Community 1204 - "2026_05_28_165130_add_batch_id_to_whatsapp_broadcasts.php"
 Cohesion: 0.40
@@ -8100,13 +8114,17 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1206 - "2026_06_30_000001_update_pt_salary_per_member_to_percentage.php"
+### Community 1206 - "2026_04_09_135605_add_verify_service_sid_to_whatsapp_accounts_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
 ### Community 1207 - "2026_07_02_164437_add_unique_member_per_gym_to_gym_members_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+
+### Community 1208 - "date-time-picker.js"
+Cohesion: 0.22
+Nodes (9): e(), i(), l(), Ni(), o(), t(), u(), zi() (+1 more)
 
 ### Community 1209 - "/web-search Workflow"
 Cohesion: 0.20
@@ -8116,13 +8134,13 @@ Nodes (9): 1. Formulate Query, 2. Execute Search, 3. Analyze Results, 4. Summari
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1211 - "Tailwind CSS"
-Cohesion: 0.20
-Nodes (10): Artisan, Example Tests, Filament, Filament's Core Features, graphify, Open Code Review Instructions, Relationships, Tailwind CSS (+2 more)
-
-### Community 1213 - "2026_08_18_000001_add_whatsapp_marketing_snapshot_to_gym_members_table.php"
+### Community 1211 - "2026_05_10_000000_add_waba_status_synced_at_to_whatsapp_accounts_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+
+### Community 1213 - "WhatsAppUsageLogStatusEnum"
+Cohesion: 0.18
+Nodes (8): WhatsAppUsageLogStatusEnum, Columns, Indexes, Key Helper Methods, Migration History, Relationships, Usage Log Status Flow, whatsapp_usage_logs
 
 ### Community 1214 - "2026_09_02_000001_add_refund_columns_to_whatsapp_broadcasts_table.php"
 Cohesion: 0.40
@@ -8136,13 +8154,9 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.20
 Nodes (9): Common Operations, Cross-Platform Commands Reference, Environment Detection, /execute — Discover Plans, Git Operations (Same on Both), /map — Analyze Codebase, /plan — Check SPEC Status, /verify — Search TODOs (+1 more)
 
-### Community 1217 - "AGENTS.md"
+### Community 1217 - "2c. Action: Close"
 Cohesion: 0.29
-Nodes (6): Flux UI Free, Laravel Pint Code Formatter, Livewire Volt, PHPUnit, Running Tests, Test Enforcement
-
-### Community 1218 - "2026_09_23_133154_add_adms_columns_to_biometric_devices_table.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+Nodes (7): 2c. Action: Close, Archive Sprint, Commit, Display Result, Generate Retrospective, Update STATE.md, Verify Sprint Complete
 
 ### Community 1219 - "Scenario: Building a Simple Todo API"
 Cohesion: 0.20
@@ -8150,7 +8164,11 @@ Nodes (9): GSD Workflow Example, Quick Commands Reference, Scenario: Building a 
 
 ### Community 1220 - "📑 Table of Contents"
 Cohesion: 0.40
-Nodes (5): 1. Features & Workflows (`docs/biometric/feature/`), 2. Architecture Decision Records (`docs/biometric/architecture/`), 3. Database Schema & Field References (`docs/biometric/database/`), Biometric System Documentation, 📑 Table of Contents
+Nodes (5): 1. Features & Workflows (`docs/biometric/feature/`), 2. Architecture Decision Records (`docs/biometric/architecture/` & `docs/adr/`), 3. Database Schema & Field References (`docs/biometric/database/`), Biometric System Documentation, 📑 Table of Contents
+
+### Community 1221 - ".filled"
+Cohesion: 0.03
+Nodes (58): BiometricProvidersEnum, BiometricDeviceResource, {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#15}(), {closure#17}() (+50 more)
 
 ### Community 1222 - "/add-phase Workflow"
 Cohesion: 0.22
@@ -8296,6 +8314,10 @@ Nodes (5): Banner Design (Built-in), Banner: Design Rules, Banner: Quick Size Re
 Cohesion: 0.40
 Nodes (5): Icon Design (Built-in), Icon: Generate Batch Variations, Icon: Generate Single Icon, Icon: Multi-size Export, Icon: Top Styles
 
+### Community 1258 - "2026_05_11_175525_drop_waba_mode_from_whatsapp_accounts_table.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+
 ### Community 1259 - "ADDED Requirements"
 Cohesion: 0.40
 Nodes (4): ADDED Requirements, Scenario: User views subscription details, Scenario: View action is available alongside edit and delete, Subscription View Capability
@@ -8308,9 +8330,9 @@ Nodes (4): Add Subscription Relation Management, Impact, What Changes, Why
 Cohesion: 0.22
 Nodes (8): 1. Check Current Version, 2. Fetch Latest from GitHub, 3. Compare Versions, 4. Show Changes, 5. Apply Updates, 6. Cleanup, 7. Confirm, /update Workflow
 
-### Community 1263 - "Filament\Forms\Components\Component"
-Cohesion: 0.39
-Nodes (3): HorizontalCarousel, static, Filament\Forms\Components\Component
+### Community 1263 - "2026_05_22_220537_add_last_number_cost_charged_at_to_whatsapp_phone_numbers.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
 ### Community 1264 - "2026_02_21_121438_change_twilio_auth_token_type_to_text_in_whatsapp_accounts.php"
 Cohesion: 0.40
@@ -8320,9 +8342,17 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.50
 Nodes (4): Logo Design (Built-in), Logo: Generate Design Brief, Logo: Generate with AI, Logo: Search Styles/Colors/Industries
 
-### Community 1269 - "2026_01_31_180001_consolidate_expense_categories_to_system_defaults.php"
-Cohesion: 0.39
-Nodes (6): {closure#1}(), deleteDuplicateGymCategories(), getDefaultCategories(), migrateBudgetsToSystemCategories(), migrateExpensesToSystemCategories(), up()
+### Community 1266 - "2026_07_14_120000_add_razorpay_order_id_to_checkout_sessions.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+
+### Community 1267 - "2026_09_23_133154_add_adms_columns_to_biometric_devices_table.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+
+### Community 1269 - "2026_10_07_000000_index_deleted_at_on_biometric_templates_table.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
 ### Community 1270 - "pulse.php"
 Cohesion: 0.50
@@ -8336,15 +8366,15 @@ Nodes (3): GuzzleHttp\RequestOptions, Spatie\Sitemap\Crawler\Profile, Spatie\Sit
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
-### Community 1273 - "PHP"
-Cohesion: 0.33
-Nodes (6): Comments, Constructors, Enums, PHP, PHPDoc Blocks, Type Declarations
+### Community 1273 - "Laravel 12"
+Cohesion: 0.50
+Nodes (4): Database, Laravel 12, Laravel 12 Structure, Models
 
-### Community 1275 - "Illuminate\Console\Command"
-Cohesion: 0.05
-Nodes (17): BiometricConsentRequiredException, ArchiveInactiveGymMembersCommand, AutoCheckoutAttendance, CheckBiometricDeviceHealthCommand, CheckMissingMembersByPhone, CleanDeletedGymOwnersCommand, CleanInvalidExportsCommand, ReconcileSubscriptionsCommand (+9 more)
+### Community 1275 - "2025_04_27_045858_create_notifications_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
 
-### Community 1276 - "2025_04_27_045858_create_notifications_table.php"
+### Community 1276 - "2025_05_05_122544_create_countries_table.php"
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
@@ -8352,21 +8382,17 @@ Nodes (3): {closure#1}(), down(), up()
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
-### Community 1278 - "2025_05_05_122544_create_countries_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
+### Community 1278 - "r"
+Cohesion: 0.17
+Nodes (12): Be(), ei(), ii(), le(), ni(), oi(), r(), ri() (+4 more)
 
-### Community 1279 - "ADR-005: WhatsApp Provider Abstraction"
-Cohesion: 0.25
-Nodes (8): ADR-005: WhatsApp Provider Abstraction, Alternatives Considered, Consequences, Context, Negative / Trade-offs, Positive, Related Decisions, Status
+### Community 1279 - "DashboardCacheService"
+Cohesion: 0.08
+Nodes (6): ExpenseStatsWidget, GymRevenueChart, ActiveAndExpireSubscriptionStats, CollectionStatsWidget, AttendanceObserver, DashboardCacheService
 
-### Community 1280 - "_run"
+### Community 1280 - "Phase 0: Session State Verification (ALWAYS DO FIRST)"
 Cohesion: 0.29
-Nodes (7): CompletedProcess, Path, A hardcoded hex on the same line as a var() token is still a violation., A line that references only tokens produces no false positives., _run(), test_flags_hardcoded_hex_sharing_line_with_token(), test_token_only_line_reports_no_violation()
-
-### Community 1281 - "whatsapp_credit_transactions"
-Cohesion: 0.29
-Nodes (5): Columns, Indexes, Migration History, Transaction Types, whatsapp_credit_transactions
+Nodes (7): Phase 0: Session State Verification (ALWAYS DO FIRST), Step 1: Check for existing session, Step 2: If `--fresh` flag provided, Step 3: If session exists, verify state matches files, Step 3b: Round Resolution Algorithm, Step 4: Determine resume point, Step 5: Report to user
 
 ### Community 1282 - "Architecture"
 Cohesion: 0.22
@@ -8380,10 +8406,6 @@ Nodes (13): 1. Principles & Patterns (CRITICAL), 2. Coding Standards (CRITICAL),
 Cohesion: 0.14
 Nodes (13): 1. Principles & Patterns (CRITICAL), 2. Coding Standards (CRITICAL), 3. Test Attributes (HIGH), 4. Data Management (HIGH), 5. Test Documentation (MEDIUM), 6. Mocking (MEDIUM), 7. Integration Testing (MEDIUM), 8. Configuration (LOW-MEDIUM) (+5 more)
 
-### Community 1285 - "e"
-Cohesion: 0.33
-Nodes (6): ep(), I1(), e(), qp(), V2(), xz()
-
 ### Community 1286 - "Quick Reference"
 Cohesion: 0.14
 Nodes (13): 1. Principles & Patterns (CRITICAL), 2. Coding Standards (CRITICAL), 3. Test Attributes (HIGH), 4. Data Management (HIGH), 5. Test Documentation (MEDIUM), 6. Mocking (MEDIUM), 7. Integration Testing (MEDIUM), 8. Configuration (LOW-MEDIUM) (+5 more)
@@ -8392,37 +8414,33 @@ Nodes (13): 1. Principles & Patterns (CRITICAL), 2. Coding Standards (CRITICAL),
 Cohesion: 0.14
 Nodes (13): 1. Principles & Patterns (CRITICAL), 2. Coding Standards (CRITICAL), 3. Test Attributes (HIGH), 4. Data Management (HIGH), 5. Test Documentation (MEDIUM), 6. Mocking (MEDIUM), 7. Integration Testing (MEDIUM), 8. Configuration (LOW-MEDIUM) (+5 more)
 
-### Community 1288 - "Work Objectives"
-Cohesion: 0.33
-Nodes (6): Concrete Deliverables, Core Objective, Definition of Done, Must Have, Must NOT Have (Guardrails), Work Objectives
+### Community 1288 - "PHASE 6: Final Verification (REGRESSION CHECK)"
+Cohesion: 0.25
+Nodes (8): 6.1: Full Test Suite, 6.2: Static Analysis, 6.3: Lint Check, 6.4: Architecture Validation (Laravel-Boost), 6.5: Final Diagnostics, 6.6: 9-Dimension Final Review + Extraction Validation, 6.7: Generate Summary, PHASE 6: Final Verification (REGRESSION CHECK)
 
 ### Community 1289 - "2025_09_04_143457_create_follow_ups_table.php"
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
-### Community 1290 - "2025_09_04_144049_create_lead_conversions_table.php"
+### Community 1290 - "2025_06_02_154642_create_failed_import_rows_table.php"
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
-### Community 1291 - "2025_09_11_000004_create_social_media_webhook_logs_table.php"
+### Community 1291 - "2025_07_04_081612_create_attendances_table.php"
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
-### Community 1292 - "Fe"
-Cohesion: 0.22
-Nodes (9): Ce(), Dt(), Fe(), He(), ir(), Mt(), nr(), rt() (+1 more)
+### Community 1292 - "Plan 4.2: Feature Tests for WhatsApp Dual-Gate Visibility Matrix & Delivery QA"
+Cohesion: 0.29
+Nodes (6): Context, Must-Haves, Objective, Plan 4.2: Feature Tests for WhatsApp Dual-Gate Visibility Matrix & Delivery QA, Success Criteria, Tasks
 
 ### Community 1293 - "2025_06_02_154641_create_exports_table.php"
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
-### Community 1295 - "2025_07_19_144625_create_permission_settings_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
-
-### Community 1296 - "2026_01_05_134105_create_cms_pages_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
+### Community 1294 - "Plan 5.1: Biometric Device Availability Gate & Welcome Mail Integration"
+Cohesion: 0.29
+Nodes (6): Context, Must-Haves, Objective, Plan 5.1: Biometric Device Availability Gate & Welcome Mail Integration, Success Criteria, Tasks
 
 ### Community 1297 - "2026_01_07_150103_create_member_measurements_table.php"
 Cohesion: 0.50
@@ -8432,13 +8450,13 @@ Nodes (3): {closure#1}(), down(), up()
 Cohesion: 0.22
 Nodes (9): 💼 CRM (Customer Relationship Management), Features, 💪 Gym Management, 📊 Member Management, 🏢 Multi-Tenant SAAS Platform, 📈 Reporting, Analytics & Expenses, ⏰ Smart Attendance & Access Control, 👥 User Management (+1 more)
 
-### Community 1299 - "2026_01_29_170002_create_expenses_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
+### Community 1299 - "Do Things the Laravel Way"
+Cohesion: 0.18
+Nodes (11): APIs & Eloquent Resources, Authentication & Authorization, Configuration, Controllers & Validation, Database, Do Things the Laravel Way, Model Creation, Queues (+3 more)
 
-### Community 1300 - "2025_04_20_154701_add_new_gym_membership_plan_id_in_gym_members.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+### Community 1300 - "Do Things the Laravel Way"
+Cohesion: 0.18
+Nodes (11): APIs & Eloquent Resources, Authentication & Authorization, Configuration, Controllers & Validation, Database, Do Things the Laravel Way, Model Creation, Queues (+3 more)
 
 ### Community 1301 - "2025_09_10_072058_create_tenant_social_configs_table.php"
 Cohesion: 0.50
@@ -8448,13 +8466,13 @@ Nodes (3): {closure#1}(), down(), up()
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1303 - "2026_02_03_141007_create_scheduled_reports_table.php"
+### Community 1303 - "2025_07_19_144625_create_permission_settings_table.php"
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
-### Community 1304 - "2025_09_15_122027_create_notification_logs_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
+### Community 1304 - "Agent Guidelines for Gym Management App"
+Cohesion: 0.20
+Nodes (9): Agent Guidelines for Gym Management App, ✅ ALWAYS use one of these for test-database operations, Build/Lint/Test Commands, Code Style Guidelines, Defense-in-depth: existing safety mechanisms, Framework Rules, Mental model, ❌ NEVER run these against the main database during a testing workflow (+1 more)
 
 ### Community 1305 - "/audit-milestone Workflow"
 Cohesion: 0.25
@@ -8480,25 +8498,25 @@ Nodes (7): 1. Check for Existing Installation, 2. Clone from GitHub, 3. Copy Fil
 Cohesion: 0.25
 Nodes (7): 1. Load Saved State, 2. Display Context, 3. Load Recent Journal, 4. Check for Conflicts, 5. Update State, 6. Suggest Action, /resume Workflow
 
-### Community 1311 - ".agents/skills/design-system/scripts/search-slides.py"
-Cohesion: 0.32
-Nodes (7): format_context(), format_result(), main(), Format a single search result for display, Slide Search CLI - Search slide design databases for strategies, layouts, copy,…, Format contextual recommendations for display., ambiguous_python_import_3eead89f1935
+### Community 1311 - "2025_09_15_122027_create_notification_logs_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
 
-### Community 1312 - "2025_05_03_160718_add_batch_uuid_column_to_activity_log_table.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+### Community 1312 - "Complete Tech Stack & Exact Versions"
+Cohesion: 0.20
+Nodes (10): Authentication & Permissions, Backend Framework & Core, Complete Tech Stack & Exact Versions, Data Processing & Export, Development & Quality Tools, Filament Ecosystem, Frontend Build & Styling, Payment Gateways (+2 more)
 
-### Community 1313 - "_row_identities"
-Cohesion: 0.25
-Nodes (8): _exact_row_identity(), Suggest complete public identities so a retry can bypass score thresholds., Return non-empty public identities from ordinary and alias fields., Resolve an explicit style identity without opening generic variant ranking., Return one row whose stable public identity exactly matches the query., _row_identities(), _style_identity(), _suggest_identities()
+### Community 1313 - "2026_01_05_134105_create_cms_pages_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
 
 ### Community 1314 - "2025_05_27_152112_add_payment_status_in_gym_members.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
 ### Community 1315 - "ADR-004: QR Code Attendance Architecture"
-Cohesion: 0.22
-Nodes (9): ADR-004: QR Code Attendance Architecture, Alternatives Considered, Consequences, Context, Decision, Negative / Trade-offs, Positive, Related Decisions (+1 more)
+Cohesion: 0.25
+Nodes (8): ADR-004: QR Code Attendance Architecture, Alternatives Considered, Consequences, Context, Negative / Trade-offs, Positive, Related Decisions, Status
 
 ### Community 1316 - "GSD Quick Reference Card"
 Cohesion: 0.25
@@ -8508,21 +8526,25 @@ Nodes (7): All Commands, Core Rules, GSD Quick Reference Card, Key Files, Priori
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
+### Community 1318 - "2026_01_29_170001_create_expense_categories_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
 ### Community 1319 - "2026_03_23_120003_add_biometric_columns_to_attendances_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1320 - "copilot-instructions.md"
-Cohesion: 0.29
-Nodes (6): Flux UI Free, Laravel Pint Code Formatter, Livewire Volt, PHPUnit, Running Tests, Test Enforcement
+### Community 1320 - "Laravel Boost Guidelines"
+Cohesion: 0.22
+Nodes (9): Application Structure & Architecture, Conventions, Documentation Files, Foundational Context, Frontend Bundling, Laravel Boost Guidelines, Replies, Skills Activation (+1 more)
 
 ### Community 1321 - "2025_06_14_170825_add_slug_to_gyms_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1322 - "_row_identities"
-Cohesion: 0.25
-Nodes (8): _exact_row_identity(), Suggest complete public identities so a retry can bypass score thresholds., Return non-empty public identities from ordinary and alias fields., Resolve an explicit style identity without opening generic variant ranking., Return one row whose stable public identity exactly matches the query., _row_identities(), _style_identity(), _suggest_identities()
+### Community 1322 - "Fe"
+Cohesion: 0.22
+Nodes (9): Ce(), Dt(), Fe(), He(), ir(), Mt(), nr(), rt() (+1 more)
 
 ### Community 1323 - "2026_03_27_120000_add_offline_id_to_attendances_table.php"
 Cohesion: 0.40
@@ -8532,6 +8554,22 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.50
 Nodes (4): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -m graphify save-result), For /graphify explain
 
+### Community 1326 - "2026_02_03_141007_create_scheduled_reports_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
+### Community 1332 - ".throttle"
+Cohesion: 0.40
+Nodes (4): Rate Limiting, Rate Limiting, Rate Limiting, Rate Limiting
+
+### Community 1333 - "2026_02_12_133317_create_whatsapp_accounts_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
+### Community 1334 - "2026_02_20_094509_create_waba_migrations_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
 ### Community 1336 - "2025_10_10_080355_add_plan_id_to_gyms_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
@@ -8540,9 +8578,9 @@ Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1338 - "2026_05_22_220537_add_last_number_cost_charged_at_to_whatsapp_phone_numbers.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+### Community 1338 - "2026_03_23_120002_create_biometric_consents_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
 
 ### Community 1340 - "firecrawl-mcp"
 Cohesion: 0.67
@@ -8556,45 +8594,53 @@ Nodes (3): args, command, laravel-boost
 Cohesion: 0.29
 Nodes (6): 1. Load Phase Plans, 2. Extract Assumptions, 3. Categorize Assumptions, 4. Display Assumptions, 5. Offer Validation, /list-phase-assumptions Workflow
 
-### Community 1344 - "2c. Action: Close"
-Cohesion: 0.29
-Nodes (7): 2c. Action: Close, Archive Sprint, Commit, Display Result, Generate Retrospective, Update STATE.md, Verify Sprint Complete
+### Community 1344 - "Filament\Forms\Components\Component"
+Cohesion: 0.39
+Nodes (3): HorizontalCarousel, static, Filament\Forms\Components\Component
 
 ### Community 1345 - "2026_07_30_152445_add_billing_mode_to_whatsapp_accounts_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1346 - "gsd-planner.md"
+### Community 1346 - "2026_07_13_130102_create_checkout_sessions_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
+### Community 1347 - "Livewire v3 Component Patterns"
+Cohesion: 0.50
+Nodes (4): Livewire v3 Component Patterns, Model Relationships Pattern, Traditional Livewire Component, Volt Single-File Component (Preferred)
+
+### Community 1348 - "Phase 4: Comprehensive Positive & Negative Test Suite & QA"
 Cohesion: 0.40
-Nodes (4): Planning Rules, Return Contract, Self-Check Before Returning, System Prompt
-
-### Community 1347 - "Laravel Boost"
-Cohesion: 0.29
-Nodes (7): Artisan, Available Search Syntax, Laravel Boost, Reading Browser Logs With the `browser-logs` Tool, Searching Documentation (Critically Important), Tinker / Debugging, URLs
-
-### Community 1348 - "Laravel Boost"
-Cohesion: 0.29
-Nodes (7): Artisan, Available Search Syntax, Laravel Boost, Reading Browser Logs With the `browser-logs` Tool, Searching Documentation (Critically Important), Tinker / Debugging, URLs
-
-### Community 1351 - "PHP"
-Cohesion: 0.33
-Nodes (6): Comments, Constructors, Enums, PHP, PHPDoc Blocks, Type Declarations
+Nodes (4): Empirical Evidence, Phase 4: Comprehensive Positive & Negative Test Suite & QA, Phase 4 Verification, Verdict: PASS
 
 ### Community 1352 - "2026_08_15_193000_add_archived_and_marketing_fields_to_gym_members_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 1353 - "2025_11_24_122015_add_profile_photo_in_users.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+### Community 1353 - "Advanced Testing Strategies"
+Cohesion: 0.67
+Nodes (3): Advanced Testing Strategies, Filament Resource Testing, Integration Testing
 
 ### Community 1355 - "For /graphify query"
 Cohesion: 0.67
 Nodes (3): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), For /graphify query
 
+### Community 1356 - "Core Sections (Required)"
+Cohesion: 0.25
+Nodes (7): 2) Formatting and Linting, 3) Import and Module Conventions, 4) Error and Logging Conventions, 5) Testing Conventions, 6) Evidence, Coding Conventions, Core Sections (Required)
+
+### Community 1357 - "Common Business Logic Patterns"
+Cohesion: 0.67
+Nodes (3): Common Business Logic Patterns, Member Check-in System, Training Session Management
+
 ### Community 1359 - "2025_11_28_093304_add_auto_reply_enabled_in_tenant_social_configs_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+
+### Community 1360 - "Testing Patterns & Requirements"
+Cohesion: 0.67
+Nodes (3): Feature Testing (Preferred Approach), Testing Patterns & Requirements, Volt Component Testing
 
 ### Community 1361 - "2025_12_10_065600_add_razorpay_signature_to_payments_table.php"
 Cohesion: 0.40
@@ -8607,6 +8653,10 @@ Nodes (5): 1. Parse Arguments, 2. Ensure TODO.md Exists, 3. Add Todo Item, 4. Co
 ### Community 1363 - "/progress Workflow"
 Cohesion: 0.33
 Nodes (5): 1. Load Current State, 2. Calculate Progress, 3. Display Status, 4. Suggest Action, /progress Workflow
+
+### Community 1366 - "Subscription & Payment System Redesign — Work Plan"
+Cohesion: 0.14
+Nodes (12): 1. Goal & Scope, 2. Target Architecture, 3.1 `checkout_sessions` (new) — fixes G9, 3.2 `plan_prices` (new) — fixes G12, 3.3 `payments.provisioned_at` (new nullable timestamp) — fixes G3, 3.4 `config/subscriptions.php` (new), 3. Data Model Changes, 5. Verification & Rollout (+4 more)
 
 ### Community 1367 - "/whats-new Workflow"
 Cohesion: 0.33
@@ -8716,29 +8766,9 @@ Nodes (12): Bad Example, code:php (// Manual cleanup in random places), code:php
 Cohesion: 0.15
 Nodes (12): Basic Usage, Class-Based Components, code:php (@@volt), code:php (use Livewire\Volt\Component;), code:php (use Livewire\Volt\Volt;), Common Pitfalls, Documentation, Functional Components (+4 more)
 
-### Community 1453 - "Work Objectives"
-Cohesion: 0.33
-Nodes (6): Concrete Deliverables, Core Objective, Definition of Done, Must Have, Must NOT Have, Work Objectives
-
-### Community 1454 - "Work Objectives"
-Cohesion: 0.33
-Nodes (6): Concrete Deliverables, Core Objective, Definition of Done, Must Have, Must NOT Have (Guardrails), Work Objectives
-
-### Community 1458 - "Work Objectives"
-Cohesion: 0.33
-Nodes (6): Concrete Deliverables, Core Objective, Definition of Done, Must Have, Must NOT Have, Work Objectives
-
-### Community 1463 - "Development Workflow & Commands"
-Cohesion: 0.40
-Nodes (5): Code Quality & Testing Workflow, Daily Development Commands, Database Management, Development Workflow & Commands, Filament Resource Generation
-
-### Community 1466 - "Code Reviewer Mode"
-Cohesion: 0.40
-Nodes (4): Analysis Focus, Code Reviewer Mode, Communication Style, Important Guidelines
-
-### Community 1468 - "Laravel 12"
-Cohesion: 0.50
-Nodes (4): Database, Laravel 12, Laravel 12 Structure, Models
+### Community 1471 - "Laravel Boost"
+Cohesion: 0.29
+Nodes (7): Artisan, Available Search Syntax, Laravel Boost, Reading Browser Logs With the `browser-logs` Tool, Searching Documentation (Critically Important), Tinker / Debugging, URLs
 
 ### Community 1476 - "[v1.5.0] - 2026-05-29"
 Cohesion: 0.67
@@ -8888,6 +8918,10 @@ Nodes (11): Acknowledgments, code:markdown (---), code:block2, code:block3, Cont
 Cohesion: 0.33
 Nodes (5): Invocation Contract, Return Contract, Shell Discipline, System Prompt, Verification Rules
 
+### Community 1732 - "Plan 5.1 Summary: Biometric Device Availability Gate & Welcome Mail Integration"
+Cohesion: 0.40
+Nodes (4): Changes Made, Objective Achieved, Plan 5.1 Summary: Biometric Device Availability Gate & Welcome Mail Integration, Verification
+
 ### Community 1740 - "Part B - Semantic extraction (parallel subagents)"
 Cohesion: 0.40
 Nodes (5): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), Part B - Semantic extraction (parallel subagents)
@@ -8895,14 +8929,6 @@ Nodes (5): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(c
 ### Community 1741 - "For /graphify path"
 Cohesion: 0.50
 Nodes (4): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(cat graphify-out/.graphify_python) -m graphify save-result), For /graphify path
-
-### Community 1742 - ".clearTemplateRefCache"
-Cohesion: 0.47
-Nodes (3): {closure#3}(), {closure#4}(), self
-
-### Community 1745 - ".implode"
-Cohesion: 0.05
-Nodes (27): AfterImport, {closure#1}(), {closure#2}(), {closure#4}(), {closure#6}(), {closure#8}(), BaseExcelImport, BaseImporter (+19 more)
 
 ### Community 1746 - "2026_03_04_110000_add_logged_out_at_to_user_login_logs_table.php"
 Cohesion: 0.40
@@ -9010,15 +9036,11 @@ Nodes (10): Available Components (Free Edition), Basic Usage, Common Patterns, C
 
 ### Community 1845 - ".parent"
 Cohesion: 0.02
-Nodes (33): {closure#22}(), {closure#1}(), CreateUser, Permission, Role, up(), {closure#1}(), SuperAdminSeeder (+25 more)
+Nodes (33): {closure#1}(), CreateUser, Permission, Role, TeamPermissionRegistrar, {closure#5}(), up(), {closure#1}() (+25 more)
 
 ### Community 2039 - "Context Template"
 Cohesion: 0.33
 Nodes (5): Context Template, File Template, Guidelines, How to Use, When to Create
-
-### Community 2040 - "formatDateTimeFromString"
-Cohesion: 0.06
-Nodes (38): TL;DR Quick Checklist, _a(), ae(), Ao(), co(), eg(), En(), expandFormat() (+30 more)
 
 ### Community 2043 - "Debug Template"
 Cohesion: 0.33
@@ -9032,35 +9054,19 @@ Nodes (5): Integration with STATE.md, Minimal Snapshot (Debug Session), State Sn
 Cohesion: 0.33
 Nodes (5): Add to .env.local, File Template, Guidelines, Test the connection, User Setup Template
 
-### Community 2051 - "2026_04_09_135605_add_verify_service_sid_to_whatsapp_accounts_table.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+### Community 2051 - "Core Sections (Required)"
+Cohesion: 0.33
+Nodes (5): 1) Top-Level Map, 2) Entry Points, 5) Evidence, Codebase Structure, Core Sections (Required)
 
 ### Community 2053 - "/check-todos Workflow"
 Cohesion: 0.40
 Nodes (4): 1. Load TODO.md, 2. Parse and Filter, 3. Display, /check-todos Workflow
-
-### Community 2055 - "2025_06_02_154642_create_failed_import_rows_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
-
-### Community 2056 - "2026_05_11_175525_drop_waba_mode_from_whatsapp_accounts_table.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
 ### Community 2061 - "2026_03_23_120001_create_biometric_templates_table.php"
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
 ### Community 2064 - "2026_07_06_203337_add_discount_fields_to_member_payments_table.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
-
-### Community 2066 - "2025_09_06_140419_add_membership_id_and_updated_by_in_leads.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
-
-### Community 2072 - "2025_10_10_144622_remove_subscription_fields_from_gyms_table.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
@@ -9196,10 +9202,6 @@ Nodes (9): 1. Principles & Patterns (principle), 2. Coding Standards (standard),
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 2123 - "2026_07_14_120000_add_razorpay_order_id_to_checkout_sessions.php"
-Cohesion: 0.40
-Nodes (4): {closure#1}(), {closure#2}(), down(), up()
-
 ### Community 2125 - "Volt Development"
 Cohesion: 0.20
 Nodes (9): Basic Usage, Class-Based Components, Common Pitfalls, Documentation, Functional Components, Testing, Verification, Volt Development (+1 more)
@@ -9240,9 +9242,17 @@ Nodes (4): File Template, Guidelines, Roadmap Template, Status Icons
 Cohesion: 0.40
 Nodes (4): File Template, Resume Protocol, State Template, Update Rules
 
-### Community 2163 - "2026_07_13_130102_create_checkout_sessions_table.php"
+### Community 2166 - "Phase 5 Verification: Welcome Email Biometric Attendance Notice & Consent Link"
 Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
+Nodes (3): Phase 5 Verification: Welcome Email Biometric Attendance Notice & Consent Link, Verdict: PASS, Verification Commands & Outputs
+
+### Community 2177 - "DECISIONS.md — Architectural Decision Log"
+Cohesion: 0.40
+Nodes (4): ADR-001: Modal Channel Selection UX, ADR-003: WhatsApp Delivery Strategy (Template with Text Fallback), ADR-004: Dual-Gated WhatsApp Action Availability & Comprehensive Test Matrix, DECISIONS.md — Architectural Decision Log
+
+### Community 2178 - "TODO.md — Project Todo List"
+Cohesion: 0.33
+Nodes (5): Phase 1: Notification & Delivery Engine, Phase 2: Dual-Gate WhatsApp & Template Availability Service, Phase 3: Filament Action UI & Dynamic Modal Schema, Phase 4: Comprehensive Positive & Negative Test Suite & QA, TODO.md — Project Todo List
 
 ### Community 2179 - "TODO.md — Pending Items"
 Cohesion: 0.40
@@ -9256,41 +9266,37 @@ Nodes (4): Quick Report (Minimal), Template, Token Report Template, When to Crea
 Cohesion: 0.40
 Nodes (4): File Template, Test Case Guidelines, UAT Template, Usage Guidelines
 
+### Community 2208 - "Phase 2: Gather Change Context"
+Cohesion: 0.67
+Nodes (3): Phase 2 Checkpoint, Phase 2: Gather Change Context, Steps
+
+### Community 2209 - "2025_06_29_125701_remove_owner_id_from_gyms_table.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
+
 ### Community 2210 - "setup_search.sh script"
 Cohesion: 0.70
 Nodes (4): check_fd(), check_ripgrep(), setup_search.sh script, suggest_install()
 
-### Community 2214 - "2026_10_07_000000_index_deleted_at_on_biometric_templates_table.php"
+### Community 2213 - "2025_09_06_140419_add_membership_id_and_updated_by_in_leads.php"
 Cohesion: 0.40
 Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 2223 - "2025_06_02_154640_create_imports_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
+### Community 2214 - "2025_10_06_111031_remove_unique_key_from_gym_settings.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 2224 - "2025_07_04_081612_create_attendances_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
+### Community 2227 - "2026_06_30_000001_update_pt_salary_per_member_to_percentage.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 2227 - "Laravel 12"
-Cohesion: 0.50
-Nodes (4): Database, Laravel 12, Laravel 12 Structure, Models
+### Community 2228 - "2026_08_18_000001_add_whatsapp_marketing_snapshot_to_gym_members_table.php"
+Cohesion: 0.40
+Nodes (4): {closure#1}(), {closure#2}(), down(), up()
 
-### Community 2228 - "Phase 2: Gather Change Context"
-Cohesion: 0.67
-Nodes (3): Phase 2 Checkpoint, Phase 2: Gather Change Context, Steps
-
-### Community 2229 - "2025_10_02_082101_create_whatsapp_templates_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
-
-### Community 2233 - "2025_10_07_130412_create_whatsapp_message_packages_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
-
-### Community 2236 - "2026_02_12_133317_create_whatsapp_accounts_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
+### Community 2235 - "Development Workflow & Commands"
+Cohesion: 0.40
+Nodes (5): Code Quality & Testing Workflow, Daily Development Commands, Database Management, Development Workflow & Commands, Filament Resource Generation
 
 ### Community 2238 - "2026_07_13_130020_create_plan_prices_table.php"
 Cohesion: 0.50
@@ -9304,6 +9310,10 @@ Nodes (3): Decisions, DECISIONS.md — Architecture Decision Records, Template
 Cohesion: 0.50
 Nodes (3): PLAN.md Template, Task Types, Wave Assignment
 
+### Community 2252 - "TeamsPermission"
+Cohesion: 0.32
+Nodes (6): TeamsPermission, Context, Interview Summary, Must NOT Have (Guardrails), Original Request, Risks & Gaps Addressed
+
 ### Community 2265 - "Requirements Template"
 Cohesion: 0.50
 Nodes (3): File Template, Guidelines, Requirements Template
@@ -9316,10 +9326,6 @@ Nodes (3): File Template, Guidelines, Summary Template
 Cohesion: 0.50
 Nodes (4): Added, Changed, Fixed, [v1.7.0] - 2026-09-08
 
-### Community 2282 - "2026_01_29_170001_create_expense_categories_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
-
 ### Community 2284 - "2026_02_12_133639_create_whatsapp_broadcast_recipients_table.php"
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
@@ -9328,19 +9334,7 @@ Nodes (3): {closure#1}(), down(), up()
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
-### Community 2299 - "2026_02_20_094509_create_waba_migrations_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
-
 ### Community 2311 - "2026_03_23_120000_create_biometric_devices_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
-
-### Community 2312 - "2026_03_23_120002_create_biometric_consents_table.php"
-Cohesion: 0.50
-Nodes (3): {closure#1}(), down(), up()
-
-### Community 2318 - "2026_07_01_180709_create_member_payment_transactions_table.php"
 Cohesion: 0.50
 Nodes (3): {closure#1}(), down(), up()
 
@@ -9460,9 +9454,9 @@ Nodes (3): args, command, chrome-devtools
 Cohesion: 0.50
 Nodes (3): sessionID, sources, updatedAt
 
-### Community 2500 - "Laravel Boost Guidelines"
-Cohesion: 0.22
-Nodes (9): Application Structure & Architecture, Conventions, Documentation Files, Foundational Context, Frontend Bundling, Laravel Boost Guidelines, Replies, Skills Activation (+1 more)
+### Community 2500 - "copilot-instructions.md"
+Cohesion: 0.05
+Nodes (36): Analysis Focus, Code Reviewer Mode, Communication Style, Important Guidelines, Application Structure & Architecture, Artisan, Available Search Syntax, Comments (+28 more)
 
 ### Community 2513 - "profile-controller.blade.php"
 Cohesion: 0.22
@@ -9489,8 +9483,8 @@ Cohesion: 0.25
 Nodes (7): Bad Example, code:php (<?php), code:php (<?php), code:php (<?php), Good Example, Rule Title Here, Why It Matters
 
 ### Community 2820 - "TailwindConfigGenerator"
-Cohesion: 0.10
-Nodes (12): main(), Add custom font families. Args: fonts: Dict of font_type: [font_names] e.g.,…, Add custom spacing values. Args: spacing: Dict of name: value e.g., {'18':…, Add custom breakpoints. Args: breakpoints: Dict of name: width e.g., {'3xl':…, Add plugin requirements. Args: plugins: List of plugin names e.g.,…, Get plugin recommendations based on configuration. Returns: List of recommended…, Tailwind CSS Configuration Generator Generate tailwind.config.js/ts with custom…, Generate Tailwind CSS configuration files. (+4 more)
+Cohesion: 0.06
+Nodes (23): main(), Any, Path, Add custom font families. Args: fonts: Dict of font_type: [font_names] e.g.,…, Add custom spacing values. Args: spacing: Dict of name: value e.g., {'18':…, Add custom breakpoints. Args: breakpoints: Dict of name: width e.g., {'3xl':…, Add plugin requirements. Args: plugins: List of plugin names e.g.,…, Get plugin recommendations based on configuration. Returns: List of recommended… (+15 more)
 
 ### Community 2873 - "app/.agents/skills/laravel-best-practices/rules/controller-resource-methods.md"
 Cohesion: 0.29
@@ -9539,14 +9533,6 @@ Nodes (6): Bad Example, Chunking for Large Datasets, code:php (// Loading all re
 ### Community 2896 - "app/.github/skills/laravel-best-practices/rules/validation-form-requests.md"
 Cohesion: 0.29
 Nodes (6): Bad Example, code:php (// Validation cluttering the controller), code:php (// Dedicated Form Request class), Form Request Validation, Good Example, Why
-
-### Community 3311 - "Do Things the Laravel Way"
-Cohesion: 0.18
-Nodes (11): APIs & Eloquent Resources, Authentication & Authorization, Configuration, Controllers & Validation, Database, Do Things the Laravel Way, Model Creation, Queues (+3 more)
-
-### Community 3319 - "BasePolicy"
-Cohesion: 0.03
-Nodes (35): AdmsDeviceCommandPolicy, AttendancesPolicy, BasePolicy, BiometricDevicePolicy, CityPolicy, CountryPolicy, GymMemberAttendancePolicy, GymMemberPolicy (+27 more)
 
 ### Community 3357 - "WhatsAppProviderInterface - Implementation Complete"
 Cohesion: 0.29
@@ -9768,13 +9754,85 @@ Nodes (4): code:php (<?php), code:php (<?php), code:json ({), PSR-4 File and Nam
 Cohesion: 0.40
 Nodes (3): $set(, loadMore, $set(
 
+### Community 3820 - "2025_06_02_154640_create_imports_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
+### Community 3822 - "2025_09_04_144049_create_lead_conversions_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
+### Community 3823 - "2025_09_11_000004_create_social_media_webhook_logs_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
+### Community 3833 - "2025_10_02_082101_create_whatsapp_templates_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
+### Community 3836 - "2025_10_07_130412_create_whatsapp_message_packages_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
+### Community 3874 - "2026_01_29_170002_create_expenses_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
+### Community 3878 - "2026_07_01_180709_create_member_payment_transactions_table.php"
+Cohesion: 0.50
+Nodes (3): {closure#1}(), down(), up()
+
+### Community 3881 - "Core PHP 8.2+ Development Patterns"
+Cohesion: 0.50
+Nodes (4): Constructor Property Promotion (Mandatory), Core PHP 8.2+ Development Patterns, Model Patterns with Casts Method, Type Declarations (Required)
+
 ### Community 3884 - "app/resources/views/livewire/auth/verify-email.blade.php"
 Cohesion: 0.40
 Nodes (3): logout, logout, sendVerification
 
+### Community 3885 - "Docker Development Environment"
+Cohesion: 0.50
+Nodes (4): Development Workflow Commands, Docker Development Environment, Environment Variables for Docker, Service Architecture
+
+### Community 3886 - "Tailwind CSS v4 Conventions"
+Cohesion: 0.50
+Nodes (4): Important v4 Changes, Opacity Slash Notation (v4), Spacing with Gap Utilities, Tailwind CSS v4 Conventions
+
 ### Community 3905 - "Bad Example"
 Cohesion: 0.50
 Nodes (4): code:php (// No protection - allows any field to be mass assigned), code:php (// Using $request->all() with fillable), code:php (// Overly permissive fillable), Bad Example
+
+### Community 3908 - "Advanced Database Patterns"
+Cohesion: 0.67
+Nodes (3): Advanced Database Patterns, Factory Definitions, Migration Best Practices
+
+### Community 3909 - "Advanced Filament Patterns"
+Cohesion: 0.67
+Nodes (3): Advanced Filament Patterns, Custom Actions, Custom Widgets
+
+### Community 3910 - "Security Best Practices"
+Cohesion: 0.67
+Nodes (3): API Authentication with Sanctum, Input Sanitization & Validation, Security Best Practices
+
+### Community 3911 - "Artisan Commands for Gym Management"
+Cohesion: 0.67
+Nodes (3): Artisan Commands for Gym Management, Command Implementation Example, Custom Artisan Commands
+
+### Community 3912 - "Authorization & Security Patterns"
+Cohesion: 0.67
+Nodes (3): Authorization & Security Patterns, Gate Definitions, Policy Implementation
+
+### Community 3913 - "Job Queue Patterns"
+Cohesion: 0.67
+Nodes (3): Background Processing, Job Queue Patterns, Scheduled Commands
+
+### Community 3917 - "Export & Import Functionality"
+Cohesion: 0.67
+Nodes (3): Excel Export Implementation, Export & Import Functionality, Import with Validation
+
+### Community 3918 - "Filament v3 Integration Patterns"
+Cohesion: 0.67
+Nodes (3): Filament v3 Integration Patterns, Panel Configuration, Resource Structure
 
 ### Community 3936 - "Bad Example"
 Cohesion: 0.50
@@ -10288,10 +10346,6 @@ Nodes (3): code:php (<?php), code:php (<?php), Rule Title Here
 Cohesion: 0.50
 Nodes (3): resetCallback, selectPlan({{ $plan->id }}), startFreeTrial
 
-### Community 4207 - ".section"
-Cohesion: 0.03
-Nodes (35): WhatsAppSetup, PaymentForm, ProcessTwilioAccountAction, StartSetupAction, {closure#1}(), {closure#2}(), HasSetupSchemas, ActiveSchema (+27 more)
-
 ### Community 4215 - "Good Example"
 Cohesion: 0.67
 Nodes (3): code:block8 (app/), code:php (// Domain service provider for registering domain bindings), Good Example
@@ -10330,22 +10384,22 @@ Nodes (3): code:bash ($(cat graphify-out/.graphify_python) -c "), code:bash ($(c
 
 ### Community 4956 - "Gym"
 Cohesion: 0.01
-Nodes (137): {closure#2}(), {closure#3}(), {closure#8}(), {closure#9}(), DefaultRole, EditGymMember, RegisterWabaPhoneAction, {closure#2}() (+129 more)
+Nodes (142): {closure#2}(), {closure#3}(), {closure#8}(), {closure#9}(), GenerateSuperAdminTokenCommand, {closure#1}(), AdmsCommandStatusEnum, BiometricDevicePurpose (+134 more)
 
 ## Knowledge Gaps
-- **12705 isolated node(s):** `fs`, `path`, `fs`, `path`, `fs` (+12700 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 18277 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **2893 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **12742 isolated node(s):** `fs`, `path`, `fs`, `path`, `fs` (+12737 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 18366 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **2903 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Changed` connect `Plan` to `.now`, `Illuminate\Database\Eloquent\Builder`, `Illuminate\Contracts\Queue\ShouldQueue`, `Payment`, `n`, `MemberPayment`, `Auth`, `.section`, `stat/chart.js`, `WhatsAppAccountVerificationStatusEnum`, `Gym`, `Country`?**
-  _High betweenness centrality (0.098) - this node is a cross-community bridge._
-- **Why does `Gym` connect `Gym` to `.now`, `Illuminate\Contracts\Queue\ShouldQueue`, `.deleteAction`, `Filament\Forms\Form`, `whatsapp_usage_logs`, `MemberPayment`, `Auth`, `ExpenseResource.php`, `MetaContext`, `Log`, `Illuminate\Http\Request`, `Queue`, `Exception`, `RegisterGym.php`, `.config`, `TodaysBirthdaysWidgetTest`, `Notification`, `RateLimiter`, `WhatsAppSetupTest.php`, `PermissionSetting`, `Illuminate\Support\Collection`, `MetaApiClient`, `Payment`, `ImportWhatsAppTemplatesJob`, `ParserHelper`, `Http`, `WhatsAppBroadcastValidationTest`, `WhatsAppMessageCredit`, `Illuminate\Database\Migrations\Migration`, `BiometricDevice`, `QR Code Attendance`, `WhatsAppAccount`, `WhatsAppSanitizer`, `SendBroadcastJob`, `GymMember`, `CrossTenantTest`, `WhatsAppAccountStatusEnum`, `WhatsAppTemplateStatusEnum`, `.section`, `WhatsAppTemplateResource`, `WhatsAppBroadcast`, `FollowUpsRelationManager`, `Illuminate\Database\Eloquent\Builder`, `Filament\Tables\Table`, `ProfileTest`, `WhatsAppBroadcastStatusEnum`, `HasTenantAccess`, `TODOs`, `ValidEmailDomain.php`, `ExpenseMonthlyTrendChart.php`, `BaseTableWidget`, `TwilioAccountManager`, `Bus`, `TwilioWhatsAppProvider`, `WhatsAppProviderFactory`, `.filled`, `.phone`, `WhatsappDashboard`, `ProcessTwilioTemplateWebhook`, `BasePolicy`, `Plan`, `Illuminate\Console\Command`, `WhatsAppTemplate`, ``gyms` — Field Reference`, `WhatsAppBillingModeEnum`, `Broadcast.php`, `Illuminate\Database\Eloquent\Factories\Factory`, `RequestDemo`, `.parent`, `MetaTemplateService`, `WhatsAppAccountBillingModeTest`, `HasReportFilters.php`, `Illuminate\Foundation\Queue\Queueable`, `ManageUserRoleCommand`, `Illuminate\Support\Facades\Date`, `AdminPanelProvider.php`, `ReportPdfGenerator`, `WhatsAppBillingService`, `WhatsAppBroadcastIntegrationTest.php`, `ExpenseCategoryFactory.php`, `AppServiceProvider.php`, `TwilioWhatsAppService`, `UpdateBillingModeActionTest`, `AdmsDeviceCommandResendTest`, `RegisterGymTest`, `Plan: Check-Out QR Code Implementation`, `UserRoleAssignmentSeeder`, `RevenueReports`?**
-  _High betweenness centrality (0.064) - this node is a cross-community bridge._
-- **Why does `hi()` connect `n` to `.now`, `markdown-editor.js`, `file-upload.js`, `constructor`, `rich-editor.js`, `Plan`?**
-  _High betweenness centrality (0.062) - this node is a cross-community bridge._
+- **Why does `Changed` connect `.now` to `Illuminate\Database\Eloquent\Builder`, `ValidEmailDomain`, `MemberPayment`, `n`, `MemberReports.php`, `Payment`, `gsd-planner.md`, `e`, `RequestContact`, `WhatsAppAccountVerificationStatusEnum`, `.session`, `Gym`?**
+  _High betweenness centrality (0.104) - this node is a cross-community bridge._
+- **Why does `Gym` connect `Gym` to `.now`, `NotificationChannelResolver`, `MemberPayment`, `RegisterGymTest`, `Illuminate\Support\Facades\Log`, `Payment`, `Auth`, `MetaContext`, `WhatsApp Setup Step 3 — Phone Number Source Selection`, `WhatsAppMessageCredit`, `BasePolicy`, `.config`, `Queue`, `Log`, `RateLimiter`, `ExpenseStatus`, `Subscription`, `LoginActivity.php`, `WhatsAppCreditTransaction`, `GymMemberImport`, `Filament\Tables\Table`, `ImportWhatsAppTemplatesJob`, `Http`, `Illuminate\Database\Migrations\Migration`, `RequestContact`, `BiometricTemplate`, `WhatsAppAccount`, `WhatsAppPhoneNumber`, `SendBroadcastJob`, `WhatsAppProviderFactory`, `GymMember`, `WhatsAppAccountStatusEnum`, `WhatsAppBroadcast`, `FollowUpsRelationManager.php`, `TwilioTemplateWebhookTest`, `Illuminate\Database\Eloquent\Builder`, `Filament\Forms\Form`, `WhatsAppBroadcastStatusEnum`, `ExpenseCategoryFactory.php`, `BaseImporter.php`, `.session`, `ExpenseFactory`, `MemberReports.php`, `Illuminate\Http\Request`, `WhatsAppTemplateResource`, `PurchaseCredits`, `WhatsAppSetupTest.php`, `WhatsAppUsageLogStatusEnum`, `BackfillBiometricConsentNotificationSettingMigrationTest`, `.filled`, `TwilioWhatsAppProvider`, `TwilioWhatsAppService`, `.phone`, `WhatsappDashboard`, `WhatsAppTemplate`, `WhatsAppBillingModeEnum`, `Illuminate\Database\Eloquent\Factories\Factory`, `WhatsAppBroadcastValidationTest`, `SendBiometricConsentNotificationJob`, `ShareableReportLink`, `WARP.md`, `RolesAndPermissionsService`, `.parent`, `WhatsAppAccountBillingModeTest`, `QRAttendance`, `.count`, `TodaysBirthdaysWidgetTest`, `Illuminate\Support\Collection`, `CrossTenantTest`, `ManageUserRoleCommand`, `BiometricDevice`, `AdminPanelProvider.php`, `WhatsAppTemplateWebhookTest`, `TrainerReports.php`, `BillingModeStepTest`, ``gyms` — Field Reference`, `ProcessMetaTemplateWebhook`, `Notification`, `Exception`, `ParserHelper`, `SendBiometricConsentNotificationJobTest`, `Plan: Check-Out QR Code Implementation`, `UserRoleAssignmentSeeder`, `ImportTenantWhatsAppTemplatesTest`?**
+  _High betweenness centrality (0.073) - this node is a cross-community bridge._
+- **Why does `hi()` connect `n` to `.now`, `file-upload.js`, `markdown-editor.js`, `MemberReports.php`, `constructor`, `rich-editor.js`?**
+  _High betweenness centrality (0.070) - this node is a cross-community bridge._
 - **Are the 18 inferred relationships involving `Gym` (e.g. with `Added` and `Changed`) actually correct?**
   _`Gym` has 18 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 23 inferred relationships involving `GymMember` (e.g. with `.calculateCurrentValue()` and `.calculateRetentionRate()`) actually correct?**

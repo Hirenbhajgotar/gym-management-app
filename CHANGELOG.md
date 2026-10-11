@@ -66,6 +66,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Filament Admin UI updates: added `device_serial` input, `adms_enabled` toggle with dynamic setup instructions, and table column/action in `BiometricDeviceResource`; added tenant-scoped `AdmsDeviceCommandResource` with retry/resend capabilities.
   - Comprehensive feature test suites in `tests/Feature/AdmsProtocolTest.php` (11 tests) and `tests/Feature/CleanupExpiredDeviceMembersTest.php` (5 tests).
   - Technical documentation in `docs/biometric/feature/biometric-adms-push-protocol.md`, `docs/biometric/database/adms-device-commands-fields.md`, and `docs/biometric/architecture/ADR-004-adms-push-protocol-and-lifecycle.md`.
+- **Multi-Channel Biometric Consent Distribution (Email & WhatsApp)**:
+  - Added on-demand consent request distribution in Filament Admin panel: `RequestBiometricConsentAction` header action on `ListGymMembers` (targeting all active unconsented members in the tenant) and table bulk action on `GymMemberResource` (targeting selected members).
+  - Dynamic dual-gate channel selection modal: `Send via WhatsApp` toggle is conditionally rendered ONLY when `NotificationChannelResolver::canSendBiometricConsentViaWhatsApp($gym)` passes (Gate 1: tenant WhatsApp notifications enabled and sender number active; Gate 2: approved `biometric_consent` template available).
+  - Two-tier asynchronous queued fan-out pipeline: `FanOutBiometricConsentRequestsJob` chunks eligible members in batches of 200 on `config('queue.notifications_queue')`, dispatching per-recipient `SendBiometricConsentNotificationJob` workers to prevent HTTP 504 gateway timeouts on large member rosters.
+  - Multi-channel delivery: delivers email via `BiometricConsentMail` and WhatsApp via `NotificationChannelResolver` / `WhatsAppChannel`, mapping variables (`{{1}}` member name, `{{2}}` gym name, `{{3}}` consent URL) with `WhatsAppVariableResolver`, wallet credit balance verification via `WhatsAppSendCharge`, and graceful text fallback in dev/sandbox environments.
+  - Eligibility and idempotency verification: `BiometricConsentEligibility` pre-filters and double-checks members, skipping already-consented (`hasActiveBiometricConsent() === true`), archived, or opted-out members, and logging aggregated statistics via `BiometricConsentDispatchReport`.
+  - Centralized signed URL factory: `BiometricConsentUrlFactory` generates tamper-proof 7-day signed routes (`consent.biometric.show`) with configurable expiry (`config('biometrics.consent_url_expiry_days')`).
+  - Hardware-aware onboarding welcome notification: integrated `InteractsWithBiometricConsent` into `WelcomeNotification`, embedding a biometric attendance notice and 7-day signed consent link when the member's gym has active biometric hardware (`Gym::hasActiveBiometricDevice()`), and cleanly omitting it when no devices are deployed.
+  - Added `NotificationType::BIOMETRIC_CONSENT` enum case.
+  - Dynamic queue worker command `app:work-queues` (`WorkQueuesCommand`) to poll derived queues (`default`, `notifications`, `broadcast`) based on configuration without hardcoded values.
+  - Tenant notification setting backfill migration: `2026_10_08_000000_backfill_biometric_consent_notification_setting` automatically sets `notification_biometric_consent = true` in `gym_settings.notifications` for all existing gyms.
+  - Architectural Decision Record: documented architecture, trade-offs, and design decisions in `docs/adr/adr-0003-biometric-consent-distribution-and-dual-gate-architecture.md`.
+  - Comprehensive feature test coverage: 90 tests covering dual-gate availability, Filament action authorization and modal schema, queued job execution, welcome email conditional display, worker queue derivation, and template lookup.
+
+### Changed
+- **Gym Settings & Notification Preferences (`GymSettings`)**:
+  - Added null safety guards on tenant resolution (`getGym()`) across `mount()`, `getWhatsAppNotificationTab()`, `afterStateUpdated()`, `save()`, and `downloadInvoice()`.
+  - Added `notification_biometric_consent` toggle in WhatsApp and Email notification setting tabs.
+- **WhatsApp Template Resolver & Messaging Services (`WhatsAppVariableResolver`, `MetaMessagingService`, `TwilioMessagingService`)**:
+  - Fixed array key handling in `WhatsAppVariableResolver` to safely support integer indices from decoded JSON templates and avoid runtime type errors.
+  - Strict typing, explicit array shape docblocks, and narrowed error return types in `MetaMessagingService` and `TwilioMessagingService`.
+
+### Removed
+- **Legacy Single-Channel Consent & Welcome Mailables**:
+  - Removed deprecated `SendBiometricConsentEmail` job (replaced by `SendBiometricConsentNotificationJob`).
+  - Removed redundant `WelcomeMemberMail` and `welcome-member.blade.php` view, consolidating member onboarding into `WelcomeNotification`.
 
 ## [v1.7.2] - 2026-09-19 (Current GitHub Release)
 

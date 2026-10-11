@@ -8,7 +8,6 @@ use App\Interfaces\MessagingInterface;
 use App\Providers\WhatsAppProviderFactory;
 use App\Services\GymContextResolver;
 use App\Services\NotificationChannelResolver;
-use App\Services\WhatsApp\WhatsAppCreditService;
 use Exception;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Arr;
@@ -104,12 +103,17 @@ class WhatsAppChannel
                 return $this->sendViaBody($provider, $sendTo, $message);
             }
         } catch (Exception $e) {
+            // No refund here. Every post-deduction call in both messaging services
+            // runs through WhatsAppSendCharge::attempt(), which is the only layer
+            // that knows whether a deduction actually happened — it hands the
+            // credit back on both the throw and the reported-failure path. A
+            // second refund from here credited the gym twice for one failed send,
+            // and credited it for a deduction that never happened whenever
+            // checkAndDeduct() itself threw on a short balance.
             Log::error('WhatsApp notification encountered an exception', [
                 ...$logContext,
                 'error' => $e->getMessage(),
             ]);
-
-            $this->refundCredit($gymId, $notifiable);
         }
 
         return null;
@@ -194,20 +198,5 @@ class WhatsAppChannel
         $id = property_exists($notifiable, 'id') ? $notifiable->id : null;
 
         return $id;
-    }
-
-    private function refundCredit(int $gymId, object $notifiable): void
-    {
-        try {
-            $creditService = resolve(WhatsAppCreditService::class, ['gymId' => $gymId]);
-            $creditService->refund(1);
-        } catch (Exception $th) {
-            Log::critical('Failed to refund WhatsApp credit', [
-                'notifiable_id' => $this->getNotifiableId($notifiable),
-                'gym_id' => $gymId,
-                'provider' => WhatsAppProviderFactory::getProviderForGym($gymId),
-                'error' => $th->getMessage(),
-            ]);
-        }
     }
 }

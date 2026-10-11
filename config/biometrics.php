@@ -45,6 +45,21 @@ return [
     ],
 
     'biometric_consent_email_delay' => (int) env('BIOMETRIC_CONSENT_EMAIL_DELAY', 1), // minutes
+
+    /**
+     * Validity window, in days, of the signed biometric consent URL.
+     *
+     * The TTL is a security-relevant parameter: the signed URL is an
+     * unauthenticated bearer credential that lets whoever holds it grant
+     * biometric consent for the member. Every mint site and every
+     * user-facing "valid for N days" string reads this single value via
+     * App\Services\Biometric\BiometricConsentUrlFactory.
+     *
+     * Clamped to 1..30 days. The ceiling is a security bound, not a preference:
+     * without it a misconfigured or tampered env value silently extends the
+     * window in which a leaked link is still good for every member at once.
+     */
+    'consent_url_expiry_days' => min(30, max(1, (int) env('BIOMETRIC_CONSENT_URL_EXPIRY_DAYS', 7))),
     'default_unlock_duration' => (int) env('BIOMETRIC_DEFAULT_UNLOCK_DURATION', 5), // seconds
     'door_controller_timeout' => (int) env('BIOMETRIC_DOOR_CONTROLLER_TIMEOUT', env('DOOR_CONTROLLER_TIMEOUT', 3)), // seconds
     'trusted_domains' => env('BIOMETRIC_TRUSTED_DOMAINS') ? explode(',', (string) env('BIOMETRIC_TRUSTED_DOMAINS')) : [],

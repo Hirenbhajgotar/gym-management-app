@@ -59,14 +59,15 @@ The **Gym Management System** (FluxFitness) is a multi-tenant SaaS application b
 - **Location:** `app/Models/Gym.php`, `app/Http/Middleware/ApplyTenantScopes.php`, `app/Services/GymContextResolver.php`
 - **Pattern:** Filament v3 native tenancy combined with Spatie Teams permission scoping (`gym_id` column). Every tenant-owned model defines `belongsTo(Gym::class)` and queries are scoped through `ApplyTenantScopes` middleware.
 
-### 3. Biometric Attendance & Access Control Engine
-- **Purpose:** Hardware-agnostic communication with physical biometric terminals (facial recognition, fingerprint scanners, door controllers) supporting real-time unlock and offline sync.
-- **Location:** `app/Biometrics/`, `app/Models/AdmsDeviceCommand.php`, `app/Http/Controllers/Api/AdmsController.php`, `app/Http/Controllers/Api/HikvisionAdmsController.php`
-- **Protocols Supported:**
+### 3. Biometric Attendance, Access Control & Consent Distribution Engine
+- **Purpose:** Hardware-agnostic communication with physical biometric terminals (facial recognition, fingerprint scanners, door controllers) supporting real-time unlock, offline sync, and legal pre-enrollment consent distribution.
+- **Location:** `app/Biometrics/`, `app/Models/AdmsDeviceCommand.php`, `app/Http/Controllers/Api/AdmsController.php`, `app/Http/Controllers/Api/HikvisionAdmsController.php`, `app/Services/Biometric/`, `app/Jobs/`
+- **Protocols & Subsystems Supported:**
   - **ADMS HTTP Push Protocol** (`/api/iclock/cdata`, `/api/iclock/getrequest`, `/api/iclock/devicecmd`): Native push communication for ZKTeco and eSSL devices with PBKDF2/salted SHA-256 communication keys.
   - **Hikvision ISAPI Event Push** (`/api/v1/biometric/hikvision/event`): Direct XML event stream ingestion with bearer device token authentication.
   - **Instant Webhook Door Relay** (`/api/v1/biometric/webhook/{token}`): Sub-second door unlock triggers with anti-passback enforcement (`anti_passback_window_seconds`).
   - **Remote FIFO Command Queue**: `AdmsDeviceCommand` model handles asynchronous user credential provisioning (`DATA UPDATE USERPIN`), deletion (`DATA DELETE user`), and device reboots with idempotency keys.
+  - **Multi-Channel Consent Distribution & Dual-Gate Engine**: On-demand broadcast actions (`RequestBiometricConsentAction`), table bulk actions, dual-gated WhatsApp channel availability (`NotificationChannelResolver::canSendBiometricConsentViaWhatsApp`), asynchronous chunked fan-out (`FanOutBiometricConsentRequestsJob` chunked at 200 + `SendBiometricConsentNotificationJob`), idempotent eligibility validation (`BiometricConsentEligibility`), and hardware-aware welcome onboarding integration (`WelcomeNotification`).
 
 ### 4. WhatsApp Automation & Marketing Suite
 - **Purpose:** High-throughput transactional messaging and bulk broadcast campaigns.
@@ -117,6 +118,13 @@ The **Gym Management System** (FluxFitness) is a multi-tenant SaaS application b
 4. **Hardware Purge / Unfreeze:** If freeze is indefinite or exceeds cutoff, queues `DATA DELETE user` on biometric terminals.
 5. **Reconciliation:** When member returns early or unfreezes, `MemberFreezeService` calculates actual frozen days, extends `membership_end` date, updates `member_payments` quietly, and re-provisions biometric credentials via `AdmsDeviceCommand`.
 
+### 4. Multi-Channel Biometric Consent Distribution Flow
+1. **Initiation:** Staff triggers `RequestBiometricConsentAction` on `ListGymMembers` (all eligible) or `GymMemberResource` bulk action (selected).
+2. **Dual-Gate Verification:** `NotificationChannelResolver::canSendBiometricConsentViaWhatsApp($gym)` dynamically verifies tenant WhatsApp activation AND approved `biometric_consent` template presence, rendering the WhatsApp toggle only when both pass.
+3. **Asynchronous Fan-Out:** `FanOutBiometricConsentRequestsJob` is dispatched to the background notifications queue, chunking eligible members into batches of 200.
+4. **Per-Recipient Delivery:** `SendBiometricConsentNotificationJob` verifies member consent idempotency (`hasActiveBiometricConsent() === false`), generates a 7-day signed route URL (`BiometricConsentUrlFactory`), and dispatches email via `BiometricConsentMail` and/or WhatsApp via `NotificationChannelResolver`.
+5. **Onboarding Pipeline:** New members receiving `WelcomeNotification` automatically get an embedded biometric attendance notice and signed consent link if their gym has active biometric hardware (`Gym::hasActiveBiometricDevice()`).
+
 ---
 
 ## Integration Points
@@ -158,4 +166,4 @@ The **Gym Management System** (FluxFitness) is a multi-tenant SaaS application b
 
 ---
 
-*Last updated: 2026-10-05*
+*Last updated: 2026-10-11*

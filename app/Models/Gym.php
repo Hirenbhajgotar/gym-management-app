@@ -232,6 +232,14 @@ class Gym extends Model
         return $this->hasMany(BiometricDevice::class);
     }
 
+    /**
+     * Determine if the gym has at least one active and enabled biometric device.
+     */
+    public function hasActiveBiometricDevice(): bool
+    {
+        return $this->biometricDevices()->active()->exists();
+    }
+
     // =========================
     // Helper Methods
     // =========================

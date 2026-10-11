@@ -6,6 +6,7 @@ namespace App\Helpers;
 
 use Illuminate\Support\Stringable;
 use InvalidArgumentException;
+use libphonenumber\PhoneNumberFormat;
 use libphonenumber\PhoneNumberUtil;
 use Propaganistas\LaravelPhone\PhoneNumber as LaravelPhonePhoneNumber;
 use Throwable;
@@ -81,6 +82,50 @@ class PhoneNumber
         $countryCode = '+' . ltrim($countryCode, '+');
 
         return $countryCode . $clean;
+    }
+
+    /**
+     * Normalize a phone number to E.164, or return null when the result could
+     * not actually be dialled.
+     *
+     * formatPhoneNumberWithCountryCode() only strips characters and prepends the
+     * default country code, so a value such as "abc" becomes "+91" — a string
+     * that passes every emptiness check but is not a real number. Callers that
+     * hand the result to a messaging provider must use this; callers that only
+     * display or store the number may keep using formatPhoneNumberWithCountryCode().
+     *
+     * Both isPossibleNumber() and isValidNumber() are required. Possibility
+     * alone accepts values that carry the right shape but cannot be dialled, so
+     * a "possible but invalid" number would still reach a provider.
+     *
+     * What comes back is the library's own E.164 rendering of the number it
+     * validated, not the string that was parsed. The two disagree whenever the
+     * input needs normalising — "09876543210" strips to "+9109876543210", which
+     * parses as country code 91 plus a valid ten-digit national number, so it
+     * validates while being a digit away from the number its owner registered.
+     */
+    public static function toDialableE164(string|Stringable $phone, ?string $defaultCountryCode = null): ?string
+    {
+        $raw = trim((string) $phone);
+
+        if ($raw === '') {
+            return null;
+        }
+
+        $formatted = self::formatPhoneNumberWithCountryCode($raw, $defaultCountryCode);
+
+        try {
+            $util = PhoneNumberUtil::getInstance();
+            $parsed = $util->parse($formatted);
+
+            if (! $util->isPossibleNumber($parsed) || ! $util->isValidNumber($parsed)) {
+                return null;
+            }
+
+            return $util->format($parsed, PhoneNumberFormat::E164);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /**

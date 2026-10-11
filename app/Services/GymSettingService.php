@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\NotificationType;
 use App\Models\Gym;
 use App\Models\GymSetting;
 
@@ -19,6 +20,7 @@ class GymSettingService
             'followup_reminders' => true,
             'lead_reminders_notifications' => true,
             'enable_low_balance_alerts' => true,
+            NotificationType::BIOMETRIC_CONSENT->value => true,
         ];
 
         foreach ($settings as $key => $value) {

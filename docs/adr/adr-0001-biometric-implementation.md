@@ -164,3 +164,4 @@ We designed and implemented a unified, multi-tier biometric architecture structu
 - **REF-006**: [Biometric Provider Abstraction Specification](file:///docs/biometric/feature/biometric-provider-abstraction.md)
 - **REF-007**: [AdmsProtocolTest Feature Test Suite](file:///tests/Feature/AdmsProtocolTest.php)
 - **REF-008**: [ADR-0002: Biometric Enrollment and Device Reconciliation Architecture](file:///docs/adr/adr-0002-biometric-enrollment-and-device-reconciliation.md)
+- **REF-009**: [ADR-0003: Multi-Channel Biometric Consent Distribution and Dual-Gated Notification Architecture](file:///docs/adr/adr-0003-biometric-consent-distribution-and-dual-gate-architecture.md)

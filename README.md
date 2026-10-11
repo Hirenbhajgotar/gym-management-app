@@ -107,7 +107,18 @@ Different user roles with specific permissions:
 
 3. **Queue & WebSockets Configuration**
    - Set `QUEUE_CONNECTION=redis`
-   - Run queue worker: `php artisan queue:work`
+   - Run queue worker: `php artisan app:work-queues`
+
+     > **Named queues matter.** `queue:work` with no `--queue` argument consumes the
+     > `default` queue *only*. The broadcast jobs use `queue.broadcast_queue`
+     > (`broadcast`) and tenant notifications use `queue.notifications_queue`
+     > (`notifications`), so a worker started without `--queue` will silently
+     > leave both feature sets unprocessed while reporting healthy.
+     >
+     > `app:work-queues` reads those two names from configuration, so renaming
+     > either one via `BROADCAST_QUEUE` / `NOTIFICATIONS_QUEUE` takes effect
+     > without editing the command. Passing `--queue=...` to `queue:work` by hand
+     > works too, but a literal list goes stale the moment either variable changes.
    - Start Laravel Reverb WebSocket server: `php artisan reverb:start`
 
 4. **Scheduled Jobs**

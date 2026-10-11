@@ -20,6 +20,7 @@ Comprehensive technical documentation for the biometric hardware integration, ac
 - **[ADR-004: ADMS Push Protocol and Hardware Lifecycle Management](architecture/ADR-004-adms-push-protocol-and-lifecycle.md)**
 - **[ADR-0001: Biometric System Architecture](../adr/adr-0001-biometric-implementation.md)**
 - **[ADR-0002: Biometric Enrollment & Device Reconciliation](../adr/adr-0002-biometric-enrollment-and-device-reconciliation.md)**
+- **[ADR-0003: Multi-Channel Biometric Consent Distribution & Dual-Gate Architecture](../adr/adr-0003-biometric-consent-distribution-and-dual-gate-architecture.md)**
 
 ### 3. Database Schema & Field References (`docs/biometric/database/`)
 - **[`biometric_devices`](database/biometric-devices-fields.md)**: Hardware devices, provider configurations, serial numbers, door zones, and ADMS toggle.
