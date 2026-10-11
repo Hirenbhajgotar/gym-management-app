@@ -7,6 +7,7 @@ namespace App\Observers;
 use App\Helpers\ParserHelper;
 use App\Models\BiometricDevice;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
+use Illuminate\Support\Facades\Cache;
 
 class BiometricDeviceObserver implements ShouldHandleEventsAfterCommit
 {
@@ -51,10 +52,34 @@ class BiometricDeviceObserver implements ShouldHandleEventsAfterCommit
     }
 
     /**
-     * Clear the navigation badge cache for the device's gym.
+     * Clear the navigation badge and device lookup caches.
      */
     private function clearCache(BiometricDevice $biometricDevice): void
     {
         ParserHelper::clearCache(BiometricDevice::NAVIGATION_BADGE_CACHE_KEY . $biometricDevice->gym_id);
+
+        $gymIds = array_filter([
+            $biometricDevice->getOriginal('gym_id'),
+            $biometricDevice->gym_id,
+        ], fn (mixed $id): bool => is_numeric($id));
+        foreach ($gymIds as $gymId) {
+            Cache::forget("biometric:gym:{$gymId}:has_adms_devices");
+        }
+
+        $serials = array_filter([
+            $biometricDevice->getOriginal('device_serial'),
+            $biometricDevice->device_serial,
+        ], fn (mixed $serial): bool => is_string($serial) && $serial !== '');
+        foreach ($serials as $serial) {
+            Cache::forget("biometric:device:serial:{$serial}");
+        }
+
+        $hashes = array_filter([
+            $biometricDevice->getOriginal('token_hash'),
+            $biometricDevice->token_hash,
+        ], fn (mixed $hash): bool => is_string($hash) && $hash !== '');
+        foreach ($hashes as $hash) {
+            Cache::forget("biometric:device:token:{$hash}");
+        }
     }
 }

@@ -33,7 +33,7 @@ class MembershipGuard
             return 'membership_expired';
         }
 
-        if ($gymMember->payment_status !== PaymentStatus::COMPLETED) {
+        if (! in_array($gymMember->payment_status, [PaymentStatus::COMPLETED, PaymentStatus::PARTIAL], true)) {
             return 'payment_pending';
         }
 

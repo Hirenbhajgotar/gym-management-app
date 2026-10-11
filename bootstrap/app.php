@@ -61,6 +61,9 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'auth:biometric-device' => \App\Http\Middleware\AuthenticateBiometricDevice::class,
+            'auth:adms-device' => \App\Http\Middleware\AuthenticateAdmsDevice::class,
+            'tenant' => \App\Http\Middleware\ResolveApiGymTenant::class,
+            'api.tenant' => \App\Http\Middleware\ResolveApiGymTenant::class,
         ]);
 
         // $middleware->alias([

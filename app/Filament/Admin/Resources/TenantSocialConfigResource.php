@@ -120,21 +120,21 @@ class TenantSocialConfigResource extends BaseResource
                                             ->label('App ID')
                                             ->maxLength(255)
                                             ->helperText('Facebook App ID or Business Account ID')
-                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
+                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value], true)),
 
                                         TextInput::make('app_secret')
                                             ->label('App Secret')
                                             ->password()
                                             ->revealable()
                                             ->helperText('Facebook App Secret')
-                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
+                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value], true)),
 
                                         TextInput::make('access_token')
                                             ->label('Access Token')
                                             ->password()
                                             ->revealable()
                                             ->maxLength(1000)
-                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
+                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value], true)),
 
                                         TextInput::make('webhook_verify_token')
                                             ->label('Webhook Verify Token')
@@ -142,7 +142,7 @@ class TenantSocialConfigResource extends BaseResource
                                             ->revealable()
                                             ->maxLength(500)
                                             ->helperText('Used to verify webhook subscription requests from the platform')
-                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value])),
+                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value, SocialPlatform::WhatsApp->value], true)),
 
                                         TextInput::make('webhook_url')
                                             ->label('Webhook URL')
@@ -157,7 +157,7 @@ class TenantSocialConfigResource extends BaseResource
                                             ->label('Page ID')
                                             ->maxLength(255)
                                             ->helperText('Facebook/Instagram Page ID')
-                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value])),
+                                            ->visible(fn ($get) => in_array($get('platform'), [SocialPlatform::Facebook->value, SocialPlatform::Instagram->value], true)),
 
                                         TextInput::make('phone_number_id')
                                             ->label('Phone Number ID')
@@ -358,7 +358,18 @@ class TenantSocialConfigResource extends BaseResource
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 ToggleColumn::make('is_active')
-                    ->label('Active'),
+                    ->label('Active')
+                    ->afterStateUpdated(function (TenantSocialConfig $record, bool $state): void {
+                        $platformName = $record->platform instanceof SocialPlatform ? $record->platform->value : 'unknown';
+                        activity()
+                            ->performedOn($record)
+                            ->withProperties([
+                                'gym_id' => $record->gym_id,
+                                'platform' => $platformName,
+                                'is_active' => $state,
+                            ])
+                            ->log("Social config for {$platformName} " . ($state ? 'activated' : 'deactivated'));
+                    }),
 
                 TextColumn::make('webhook_logs_count')
                     ->label('Webhooks')

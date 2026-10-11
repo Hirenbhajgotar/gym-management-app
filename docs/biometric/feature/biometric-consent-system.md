@@ -1,10 +1,12 @@
 ---
 feature: Biometric Consent System
-status: draft
-last_updated: 2026-04-03
+status: active
+last_updated: 2026-10-11
 author: docs-agent
 related_docs:
-  - ../architecture/ADR-003-consent-before-enrollment.md
+  - ../../adr/adr-0001-biometric-implementation.md
+  - ../../adr/adr-0002-biometric-enrollment-and-device-reconciliation.md
+  - ../../adr/adr-0003-biometric-consent-distribution-and-dual-gate-architecture.md
   - ../database/biometric-consents-fields.md
   - ../database/gym-members-fields.md
 ---
@@ -21,10 +23,17 @@ The biometric consent system ensures GDPR compliance by requiring members to exp
 
 | Class / File | Responsibility |
 |---|---|
-| `GymMemberObserver` (`app/Observers/GymMemberObserver.php`) | Triggers consent email on member creation |
-| `SendBiometricConsentEmail` (`app/Jobs/SendBiometricConsentEmail.php`) | Queued job with delay for sending consent email |
-| `BiometricConsentMail` (`app/Mail/BiometricConsentMail.php`) | Email with signed consent URL |
-| `BiometricConsentController` (`app/Http/Controllers/BiometricConsentController.php`) | Handles consent form GET/POST |
+| `RequestBiometricConsentAction` (`app/Filament/Admin/Actions/RequestBiometricConsentAction.php`) | Filament header action for on-demand consent broadcasts |
+| `GymMemberResource` (`app/Filament/Admin/Resources/GymMemberResource.php`) | Filament table bulk action for selected unconsented members |
+| `NotificationChannelResolver` (`app/Services/NotificationChannelResolver.php`) | Verifies dual-gate (WhatsApp configured + approved template) |
+| `BiometricConsentEligibility` (`app/Services/Biometric/BiometricConsentEligibility.php`) | Validates member active status, missing consent, and opt-in channels |
+| `BiometricConsentUrlFactory` (`app/Services/Biometric/BiometricConsentUrlFactory.php`) | Generates secure, 7-day signed consent route URLs |
+| `FanOutBiometricConsentRequestsJob` (`app/Jobs/FanOutBiometricConsentRequestsJob.php`) | Asynchronously chunks eligible member batches of 200 |
+| `SendBiometricConsentNotificationJob` (`app/Jobs/SendBiometricConsentNotificationJob.php`) | Delivers consent links via Email and/or WhatsApp per recipient |
+| `WelcomeNotification` (`app/Notifications/Member/WelcomeNotification.php`) | Conditionally includes biometric notice in welcome email if devices exist |
+| `GymMemberObserver` (`app/Observers/GymMemberObserver.php`) | Handles member lifecycle events |
+| `BiometricConsentMail` (`app/Mail/BiometricConsentMail.php`) | Email mailable with signed consent URL |
+| `BiometricConsentController` (`app/Http/Controllers/BiometricConsentController.php`) | Handles consent form GET/POST (`consent.biometric.show`) |
 | `BiometricConsentStoreRequest` (`app/Http/Requests/BiometricConsentStoreRequest.php`) | Form request validation |
 | `BiometricConsent` (`app/Models/BiometricConsent.php`) | Consent record model |
 | `MembershipGuard` (`app/Biometrics/Services/MembershipGuard.php`) | Checks consent before allowing check-in |

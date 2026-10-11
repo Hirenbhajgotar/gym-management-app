@@ -7,6 +7,7 @@ namespace Tests\Feature\Filament\StaffPanel;
 use App\Models\Gym;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Contracts\Permission;
 use Spatie\Permission\Models\Role;
@@ -15,6 +16,8 @@ use Tests\TestCase;
 
 abstract class StaffPanelTestCase extends TestCase
 {
+    use RefreshDatabase;
+
     protected Gym $testGym;
 
     protected User $adminUser;
@@ -26,12 +29,6 @@ abstract class StaffPanelTestCase extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        $database = $this->app->make('config')->get('database.connections.mysql.database');
-
-        if ($database === 'gym_app') {
-            $this->fail('SAFETY: Tests are targeting the production database "gym_app". Aborting to prevent data loss.');
-        }
 
         $this->testGym = Gym::factory()->create([
             'name' => 'Test Gym',

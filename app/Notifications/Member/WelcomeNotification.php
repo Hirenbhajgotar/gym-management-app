@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Notifications\Member;
 
 use App\Enums\NotificationType;
-use App\Helpers\ParserHelper;
+use App\Helpers\PhoneNumber;
 use App\Models\GymMember;
 use App\Notifications\BaseTenantNotification;
+use App\Notifications\Concerns\InteractsWithBiometricConsent;
 use App\Services\WhatsAppVariableResolver;
 use Exception;
 use Illuminate\Bus\Queueable;
@@ -17,18 +18,23 @@ use Illuminate\Support\Facades\Storage;
 
 class WelcomeNotification extends BaseTenantNotification
 {
-    use Queueable;
+    use InteractsWithBiometricConsent, Queueable;
 
     public function __construct(
         public readonly GymMember $member
     ) {
         $this->gym = $this->member->gym;
-        $this->onQueue('notifications');
+        $this->onQueue(config()->string('queue.notifications_queue', 'notifications'));
     }
 
     protected function getNotificationType(): string
     {
         return NotificationType::WELCOME->value;
+    }
+
+    protected function biometricNoticeMember(): ?GymMember
+    {
+        return $this->member;
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -40,8 +46,20 @@ class WelcomeNotification extends BaseTenantNotification
             ->subject("Welcome to {$this->gym->name}")
             ->greeting("Hello {$memberName},")
             ->line('Welcome to our gym! We are excited to have you on board.')
-            ->line('Thank you for joining us!')
-            ->salutation("Regards, {$this->gym->name}");
+            ->line('Thank you for joining us!');
+
+        $consentUrl = $this->biometricConsentUrl();
+
+        if ($consentUrl !== null) {
+            $validity = $this->biometricConsentValidityLabel();
+
+            $mail->line('**Biometric Attendance & Access**')
+                ->line("{$this->gym->name} uses biometric devices for check-in and facility access. Before we can enroll your biometric attendance, your consent is required under data privacy regulations.")
+                ->action('Submit Biometric Consent', $consentUrl)
+                ->line("This consent link is valid for {$validity}.");
+        }
+
+        $mail->salutation("Regards, {$this->gym->name}");
 
         // Attach invoice if exists on the latest payment
         $latestPayment = $this->member->latestPayment;
@@ -115,7 +133,11 @@ class WelcomeNotification extends BaseTenantNotification
             return null;
         }
 
-        return ParserHelper::formatPhoneNumberWithCountryCode($phoneNumber);
+        // formatPhoneNumberWithCountryCode() only strips and prepends the default
+        // code, so a stored 'abc' becomes '+91' — non-empty, not a number, and it
+        // would be handed straight to the provider. toDialableE164() returns null
+        // instead, which the falsy check above already treats as unreachable.
+        return PhoneNumber::toDialableE164($phoneNumber);
     }
 
     /**

@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Enums\DefaultRole;
+use App\Http\Controllers\Api\AdmsController;
 use App\Http\Controllers\Api\BiometricCheckInController;
 use App\Http\Controllers\Api\BiometricDeviceController;
 use App\Http\Controllers\Api\BiometricEnrollController;
 use App\Http\Controllers\Api\BiometricOfflineSyncController;
 use App\Http\Controllers\Api\BiometricWebhookController;
 use App\Http\Controllers\Api\FacebookLeadController;
+use App\Http\Controllers\Api\HikvisionAdmsController;
 use App\Http\Controllers\Api\InstagramLeadController;
 use App\Http\Controllers\Api\RazorpayWebhookController;
 use App\Http\Controllers\Api\TwilioTemplateWebhookController;
@@ -16,11 +19,12 @@ use App\Http\Controllers\Api\WebhookTestController;
 use App\Http\Controllers\Api\WhatsAppLeadController;
 use App\Http\Controllers\Api\WhatsAppTemplateWebhookController;
 use App\Http\Controllers\ReportApiController;
+use App\Http\Middleware\AuthenticateAdmsDevice;
 use App\Http\Middleware\AuthenticateBiometricDevice;
+use App\Http\Resources\TenantSocialConfigResource;
 use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\TenantSocialConfig;
-use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -114,36 +118,25 @@ Route::prefix('leads')->middleware(['auth:sanctum', 'tenant'])->group(function (
 
     // Get leads by source
     Route::get('/source/{source}', function (Request $request, $source) {
-        $user = $request->user();
-        $tenant = Filament::getTenant();
-        if (! $user || ! $tenant?->id) {
+        $tenant = $request->attributes->get('tenant');
+        if (! ($tenant instanceof Gym)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $gym = Gym::query()->where('id', $tenant->id)->first();
-        if (! $gym) {
-            return response()->json(['error' => 'No gym found for tenant'], 404);
-        }
-
         return Lead::query()->where('source', $source)
-            ->where('gym_id', $gym->id)
+            ->where('gym_id', $tenant->id)
             ->paginate(20);
     })->where('source', 'facebook|instagram|whatsapp|indiamart|justdial|social_media')
         ->name('api.leads.by-source');
 
     // Get lead analytics
     Route::get('/analytics', function (Request $request) {
-        $user = $request->user();
-        if (! $user || ! $user->tenant_id) {
+        $tenant = $request->attributes->get('tenant');
+        if (! ($tenant instanceof Gym)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $gym = Gym::query()->where('tenant_id', $user->tenant_id)->first();
-        if (! $gym) {
-            return response()->json(['error' => 'No gym found for tenant'], 404);
-        }
-
-        $gymId = $gym->id;
+        $gymId = $tenant->id;
 
         $analytics = [
             'total_leads' => Lead::query()->where('gym_id', $gymId)->count(),
@@ -172,35 +165,43 @@ Route::prefix('social-config')->middleware(['auth:sanctum', 'tenant'])->group(fu
 
     // Get all configurations for current tenant
     Route::get('/', function (Request $request) {
-        $user = $request->user();
-        if (! $user || ! $user->tenant_id) {
+        $tenant = $request->attributes->get('tenant');
+        if (! ($tenant instanceof Gym)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        return TenantSocialConfig::query()->where('tenant_id', $user->tenant_id)
-            ->get();
+        $configs = TenantSocialConfig::query()->where('gym_id', $tenant->id)->get();
+
+        return TenantSocialConfigResource::collection($configs);
     })->name('api.social-config.index');
 
     // Get specific configuration
     Route::get('/{id}', function (Request $request, $id) {
-        $user = $request->user();
-        if (! $user || ! $user->tenant_id) {
+        $tenant = $request->attributes->get('tenant');
+        if (! ($tenant instanceof Gym)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        return TenantSocialConfig::query()->where('tenant_id', $user->tenant_id)
+        $config = TenantSocialConfig::query()->where('gym_id', $tenant->id)
             ->where('id', $id)
             ->firstOrFail();
+
+        return TenantSocialConfigResource::make($config);
     })->name('api.social-config.show');
 
     // Toggle configuration status
     Route::patch('/{id}/toggle', function (Request $request, $id) {
-        $user = $request->user();
-        if (! $user || ! $user->tenant_id) {
+        $tenant = $request->attributes->get('tenant');
+        if (! ($tenant instanceof Gym)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $config = TenantSocialConfig::query()->where('tenant_id', $user->tenant_id)
+        $user = $request->user();
+        if (! $user || (! $user->hasAnyRole([DefaultRole::GYM_OWNER, DefaultRole::SUPER_ADMIN, DefaultRole::ADMIN, DefaultRole::MANAGER]) && ! $user->can('manage_social_config'))) {
+            return response()->json(['error' => 'Forbidden: Insufficient permissions to modify social configuration'], 403);
+        }
+
+        $config = TenantSocialConfig::query()->where('gym_id', $tenant->id)
             ->where('id', $id)
             ->firstOrFail();
 
@@ -224,7 +225,7 @@ Route::prefix('reports')->middleware(['auth:sanctum', 'tenant'])->group(function
 });
 
 // Biometric Device API Routes
-Route::prefix('v1/biometric')->middleware([AuthenticateBiometricDevice::class])->group(function () {
+Route::prefix('v1/biometric')->middleware(['throttle:biometric-api', AuthenticateBiometricDevice::class])->group(function () {
     Route::post('/check-in', [BiometricCheckInController::class, 'checkIn'])
         ->name('api.biometric.check-in');
     Route::post('/check-out', [BiometricCheckInController::class, 'checkOut'])
@@ -237,6 +238,8 @@ Route::prefix('v1/biometric')->middleware([AuthenticateBiometricDevice::class])-
         ->name('api.biometric.template.delete');
     Route::post('/heartbeat', [BiometricDeviceController::class, 'heartbeat'])
         ->name('api.biometric.heartbeat');
+    Route::post('/device/heartbeat', [BiometricDeviceController::class, 'heartbeat'])
+        ->name('api.biometric.device.heartbeat');
     Route::get('/device/config', [BiometricDeviceController::class, 'config'])
         ->name('api.biometric.config');
     Route::get('/device/test', [BiometricDeviceController::class, 'testConnection'])
@@ -250,3 +253,21 @@ Route::prefix('v1/biometric')->middleware([AuthenticateBiometricDevice::class])-
 // Vendor webhook routes (token verified inside controller)
 Route::post('/v1/biometric/webhook/{token}', [BiometricWebhookController::class, 'handle'])
     ->name('api.biometric.webhook');
+
+// ADMS Protocol Routes (eSSL/ZKTeco push protocol)
+Route::prefix('iclock')->middleware([
+    'throttle:biometric-api',
+    AuthenticateAdmsDevice::class,
+])->group(function () {
+    Route::match(['get', 'post'], '/cdata', [AdmsController::class, 'cdata'])
+        ->name('adms.cdata');
+    Route::get('/getrequest', [AdmsController::class, 'getRequest'])
+        ->name('adms.getrequest');
+    Route::post('/devicecmd', [AdmsController::class, 'deviceCmd'])
+        ->name('adms.devicecmd');
+});
+
+// Hikvision ISAPI event push (uses biometric device token auth)
+Route::post('/v1/biometric/hikvision/event', [HikvisionAdmsController::class, 'handleEvent'])
+    ->middleware(['throttle:biometric-api', AuthenticateBiometricDevice::class])
+    ->name('api.biometric.hikvision.event');

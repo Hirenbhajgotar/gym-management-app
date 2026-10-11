@@ -1,4 +1,4 @@
-<!-- 2. Gym QR Code Preview Modal (First-Party Server-Generated SVG QR) -->
+<!-- Gym QR Code Preview Modal -->
 <div x-show="showQrModal" 
     x-cloak
     role="dialog"
@@ -17,7 +17,7 @@
         @click="showQrModal = false"></div>
 
     <!-- Modal Dialog Container -->
-    <div class="relative w-full max-w-md bg-[#0d1520] border border-white/15 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.9)] overflow-hidden z-10 my-8 text-center"
+    <div class="relative w-full max-w-md bg-[#0d1520] border border-white/15 rounded-3xl shadow-2xl overflow-hidden z-10 my-8 text-center"
         x-show="showQrModal"
         x-transition:enter="transition ease-out duration-300 transform"
         x-transition:enter-start="opacity-0 scale-95 translate-y-4"
@@ -39,10 +39,10 @@
             </button>
         </div>
 
-        <!-- Modal Content (First-Party Rendered SVG QR Graphic & Direct Link) -->
+        <!-- Modal Content (Vector QR Graphic & Direct Link) -->
         <div class="p-6 sm:p-8 space-y-6">
-            <!-- First-Party Vector QR Container -->
-            <div class="bg-white p-6 rounded-2xl inline-block shadow-[0_0_30px_rgba(6,182,212,0.2)]">
+            <!-- Vector QR Container -->
+            <div class="bg-white p-6 rounded-2xl inline-block shadow-lg">
                 <div x-show="activeQrGym.qrSvg" x-html="activeQrGym.qrSvg" class="w-48 h-48 sm:w-56 sm:h-56 mx-auto flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain"></div>
                 <div x-show="!activeQrGym.qrSvg" class="w-48 h-48 sm:w-56 sm:h-56 mx-auto flex items-center justify-center text-gray-400 text-xs font-mono">
                     Generating secure QR...
@@ -50,14 +50,14 @@
             </div>
 
             <div class="space-y-2">
-                <p class="text-xs text-gray-300 font-medium">Display this QR code at your front desk or turnstile gate for instant member check-ins.</p>
+                <p class="text-xs text-gray-300 font-medium">Display this QR code at your front desk or turnstile gate for member check-ins.</p>
             </div>
 
             <!-- Copy Link & Close Actions -->
             <div class="flex items-center gap-3">
                 <button type="button"
                     @click="copyToClipboard(activeQrGym.checkinUrl, activeQrGym.id)"
-                    class="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-cyan-400 to-emerald-400 text-black font-headline font-black text-xs rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.3)] uppercase tracking-wider cursor-pointer">
+                    class="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-cyan-400 to-emerald-400 text-black font-headline font-black text-xs rounded-xl shadow-md uppercase tracking-wider cursor-pointer">
                     <span class="material-symbols-outlined text-base" x-text="copiedGymId === activeQrGym.id ? 'check_circle' : 'link'"></span>
                     <span x-text="copiedGymId === activeQrGym.id ? 'Check-in Link Copied!' : 'Copy Check-in URL'"></span>
                 </button>

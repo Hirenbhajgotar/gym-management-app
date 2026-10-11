@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
+use App\Biometrics\Services\RedisBiometricCacheService;
 use App\Events\Reports\MemberStatsUpdated;
 use App\Events\Reports\TrainerStatsUpdated;
 use App\Helpers\ParserHelper;
-use App\Jobs\SendBiometricConsentEmail;
+use App\Jobs\SendBiometricConsentNotificationJob;
 use App\Models\GymMember;
 use App\Models\ReportGoal;
 use App\Services\AvatarService;
@@ -36,11 +37,16 @@ class GymMemberObserver implements ShouldHandleEventsAfterCommit
             $gymMember->save(); // Save the updated profile_photo
         }
 
-        // Auto-send biometric consent email
-        // Only if member has an email address
-        if (filled($gymMember->email)) {
+        // Onboarding consent email. Gated on an active biometric device so a gym
+        // that does not run biometric check-in never asks a new member for
+        // consent it will never use (REQ-10/REQ-11 on the live path).
+        if (filled($gymMember->email) && $gymMember->gym?->hasActiveBiometricDevice() === true) {
             // Eager-load gym relation to prevent N+1 when Mailable accesses $gymMember->gym->name
-            dispatch(new SendBiometricConsentEmail($gymMember->load('gym')))
+            dispatch(new SendBiometricConsentNotificationJob(
+                gymMember: $gymMember->load('gym'),
+                sendEmail: true,
+                sendWhatsApp: false,
+            ))
                 ->delay(now()->addMinutes(config('biometrics.biometric_consent_email_delay')))
                 ->afterCommit();
         }
@@ -97,6 +103,12 @@ class GymMemberObserver implements ShouldHandleEventsAfterCommit
 
         // Invalidate dashboard widget caches
         $this->dashboardCacheService->invalidateMemberWidgets($gymMember->gym_id);
+
+        // Invalidate biometric access summary cache
+        resolve(RedisBiometricCacheService::class)->invalidateMember(
+            $gymMember->gym_id,
+            $gymMember->id
+        );
 
         // Broadcast real-time event
         broadcast(new MemberStatsUpdated($gymMember->gym_id));

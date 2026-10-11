@@ -9,6 +9,7 @@ use App\Filament\Admin\Clusters\Reports\Pages\LeadReports;
 use App\Filament\Admin\Clusters\Reports\Pages\MemberReports;
 use App\Filament\Admin\Clusters\Reports\Pages\ReportsDashboard;
 use App\Filament\Admin\Clusters\Reports\Pages\RevenueReports;
+use App\Models\Gym;
 use App\Traits\HasTenantAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -70,7 +71,9 @@ class ReportApiController extends Controller
 
     private function generateReport(Request $request, string $reportClass, callable $getData): JsonResponse
     {
-        $gymId = $this->getGymId();
+        /** @var Gym|null $gym */
+        $gym = $request->attributes->get('gym') ?? $request->attributes->get('tenant');
+        $gymId = $gym ? $gym->id : $this->getGymId();
 
         $report = new $reportClass();
         $report->manualGymId = $gymId;

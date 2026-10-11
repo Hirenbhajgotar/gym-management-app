@@ -87,6 +87,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember notFrozen()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember withoutActiveBiometricConsent(int $gymId)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember membershipEndingOn(\Illuminate\Support\Carbon $date)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GymMember whereAge($value)
@@ -343,6 +344,14 @@ class GymMember extends Model
         return $this->hasMany(BiometricConsent::class, 'gym_member_id');
     }
 
+    /**
+     * @return HasOne<BiometricConsent, $this>
+     */
+    public function biometricConsent(): HasOne
+    {
+        return $this->hasOne(BiometricConsent::class, 'gym_member_id')->whereNull('revoked_at')->latestOfMany();
+    }
+
     public function activeBiometricConsent(): ?BiometricConsent
     {
         if ($this->relationLoaded('biometricConsents')) {
@@ -358,15 +367,31 @@ class GymMember extends Model
             ->first();
     }
 
-    public function hasActiveBiometricConsent(): bool
+    public function hasActiveBiometricConsent(bool $fresh = false): bool
     {
-        if (array_key_exists('biometric_consents_exists', $this->attributes)) {
+        if (! $fresh && array_key_exists('biometric_consents_exists', $this->attributes)) {
             return (bool) $this->attributes['biometric_consents_exists'];
         }
 
         return $this->biometricConsents()
             ->where('gym_id', $this->gym_id)
             ->whereNull('revoked_at')
+            ->exists();
+    }
+
+    /**
+     * Whether this member has ever withdrawn a biometric consent.
+     *
+     * The mirror image of hasActiveBiometricConsent(), and deliberately not its
+     * negation: a member can hold a revoked row and no active one. Revocation is
+     * the member exercising a compliance right, so it has to be able to end the
+     * consent state — it must not be something the next inbound link undoes.
+     */
+    public function hasRevokedBiometricConsent(bool $fresh = false): bool
+    {
+        return $this->biometricConsents()
+            ->where('gym_id', $this->gym_id)
+            ->whereNotNull('revoked_at')
             ->exists();
     }
 
@@ -514,6 +539,24 @@ class GymMember extends Model
     protected function archived(Builder $query): void
     {
         $query->where('is_archived', true);
+    }
+
+    /**
+     * Scope to members without an active biometric consent.
+     *
+     * $gymId is required rather than nullable: omitting it silently drops the
+     * tenant predicate and scans every gym's consents, which is more restrictive,
+     * not less — a footgun rather than a leak, but still never what the caller meant.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function withoutActiveBiometricConsent(Builder $query, int $gymId): void
+    {
+        $query->whereDoesntHave('biometricConsents', function (Builder $q) use ($gymId) {
+            $q->where('gym_id', $gymId);
+            $q->whereNull('revoked_at');
+        });
     }
 
     /**

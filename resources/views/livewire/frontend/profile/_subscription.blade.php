@@ -1,12 +1,12 @@
-<!-- 1. Current Subscription Status Card -->
-<div id="subscription-status" class="bg-[#0d1520]/90 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-[0_0_40px_rgba(0,0,0,0.6)] backdrop-blur-xl relative overflow-hidden">
+<!-- Current Subscription Status Card -->
+<div id="subscription-status" class="bg-[#0d1520]/90 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-xl relative overflow-hidden">
     <div class="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
         <div class="flex items-center gap-2.5">
             <span class="material-symbols-outlined text-emerald-400 text-2xl">verified_user</span>
             <h3 class="font-headline font-bold text-xl text-white uppercase tracking-tight">Active Subscription</h3>
         </div>
         @if ($this->subscription && $this->subscription->isActive())
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 {{ $this->subscription->status->value }}
             </span>
@@ -26,7 +26,7 @@
         <div class="space-y-6">
             <div class="p-6 rounded-2xl bg-gradient-to-r from-emerald-950/30 via-[#0a1518] to-cyan-950/30 border border-emerald-500/30 relative overflow-hidden">
                 <div class="grid md:grid-cols-3 gap-6 items-center">
-                    <!-- Plan Title & Badge -->
+                    <!-- Plan Title -->
                     <div class="space-y-1">
                         <div class="text-[11px] font-bold uppercase tracking-widest text-emerald-400 font-mono">Current Tier</div>
                         <div class="font-headline font-black text-3xl text-white tracking-tight uppercase">
@@ -62,11 +62,10 @@
                 </div>
             </div>
 
-            <!-- Renewal Button (if needed) -->
+            <!-- Renewal Button -->
             <div class="flex flex-wrap items-center gap-4">
                 <button wire:click="renewPlan" wire:loading.attr="disabled"
-                    class="group relative overflow-hidden inline-flex items-center justify-center gap-2.5 bg-[#22c55e] hover:bg-[#16a34a] text-black font-headline font-black text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_25px_rgba(34,197,94,0.6)] active:scale-[0.98] transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
-                    <span class="absolute inset-0 w-1/2 h-full bg-white/30 transform -skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-1000 ease-out"></span>
+                    class="inline-flex items-center justify-center gap-2.5 bg-[#22c55e] hover:bg-[#16a34a] text-black font-headline font-black text-xs sm:text-sm px-6 py-3.5 rounded-xl shadow-lg active:scale-[0.98] transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                     <span wire:loading.remove wire:target="renewPlan" class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-lg font-bold">autorenew</span>
                         <span>Renew Subscription</span>
@@ -93,7 +92,7 @@
                 </div>
             </div>
             <button wire:click="renewPlan" wire:loading.attr="disabled"
-                class="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-orange-500 text-white font-headline font-bold text-sm px-6 py-3.5 rounded-xl shadow-[0_0_20px_rgba(244,63,94,0.3)] hover:brightness-110 active:scale-[0.98] transition-all uppercase tracking-wider cursor-pointer disabled:opacity-50">
+                class="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-orange-500 text-white font-headline font-bold text-sm px-6 py-3.5 rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all uppercase tracking-wider cursor-pointer disabled:opacity-50">
                 <span wire:loading.remove wire:target="renewPlan" class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-lg">published_with_changes</span>
                     <span>Renew Subscription</span>
@@ -115,7 +114,7 @@
                 <span class="material-symbols-outlined text-3xl">info</span>
                 <div>
                     <h4 class="font-headline font-bold text-lg text-white">No Active Subscription</h4>
-                    <p class="text-xs text-gray-400">Select one of our high-performance gym management plans below to get started with automated WhatsApp chasers, billing, and member check-ins.</p>
+                    <p class="text-xs text-gray-400">Select one of our plans below to get started with automated WhatsApp notifications, billing, and member check-ins.</p>
                 </div>
             </div>
         </div>

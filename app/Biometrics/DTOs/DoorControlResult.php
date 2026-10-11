@@ -62,7 +62,7 @@ readonly class DoorControlResult
             success: true,
             status: 'skipped',
             failureReason: null,
-            unlockedAt: now()
+            unlockedAt: null
         );
     }
 

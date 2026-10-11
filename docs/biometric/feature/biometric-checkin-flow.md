@@ -6,8 +6,11 @@ author: docs-agent
 related_docs:
   - ../architecture/ADR-001-biometric-provider-abstraction.md
   - ../architecture/ADR-002-door-access-attendance-integrity.md
+  - ../architecture/ADR-004-adms-push-protocol-and-lifecycle.md
   - ../database/attendances-fields.md
   - ../database/biometric-devices-fields.md
+  - ../database/adms-device-commands-fields.md
+  - ./biometric-adms-push-protocol.md
 ---
 
 # Biometric Check-in Flow
@@ -22,13 +25,16 @@ The biometric check-in flow handles member authentication via biometric devices 
 
 | Class / File | Responsibility |
 |---|---|
-| `CheckInService` (`app/Biometrics/Services/CheckInService.php`) | Main orchestrator for the entire check-in flow |
+| `CheckInService` (`app/Biometrics/Services/CheckInService.php`) | Main orchestrator for webhook & REST API check-in flows |
+| `AdmsEventService` (`app/Biometrics/Services/AdmsEventService.php`) | Orchestrator for ADMS & Hikvision push events with auto-checkout |
 | `DoorControlService` (`app/Biometrics/Services/DoorControlService.php`) | Handles door unlock operations |
 | `BiometricProviderRegistry` (`app/Biometrics/BiometricProviderRegistry.php`) | Resolves biometric provider instances |
 | `AntiSpoofGuard` (`app/Biometrics/Services/AntiSpoofGuard.php`) | Validates liveness scores |
-| `MembershipGuard` (`app/Biometrics/Services/MembershipGuard.php`) | Validates membership status |
+| `MembershipGuard` (`app/Biometrics/Services/MembershipGuard.php`) | Validates membership status (payments, freeze, expiry, consent) |
 | `FraudDetector` (`app/Biometrics/Services/FraudDetector.php`) | Detects duplicate/suspicious check-ins |
-| `BiometricWebhookController` (`app/Http/Controllers/Api/BiometricWebhookController.php`) | Receives device POSTs |
+| `BiometricWebhookController` (`app/Http/Controllers/Api/BiometricWebhookController.php`) | Receives vendor webhook POSTs (door control) |
+| `AdmsController` (`app/Http/Controllers/Api/AdmsController.php`) | Ingests eSSL/ZKTeco push protocol events (`iclock/*`) |
+| `HikvisionAdmsController` (`app/Http/Controllers/Api/HikvisionAdmsController.php`) | Ingests Hikvision ISAPI XML event push |
 | `GymMember` (`app/Models/GymMember.php`) | Member model with access methods |
 | `BiometricDevice` (`app/Models/BiometricDevice.php`) | Device with purpose helpers |
 | `Attendances` (`app/Models/Attendances.php`) | Attendance record model |
@@ -66,12 +72,20 @@ BiometricWebhookController → CheckInService.processCheckIn(sample, device)
 
 ## Feature Flow
 
-### Trigger
+### Triggers
 
+#### Trigger 1: Vendor Webhook / Cloud Recognition
 Physical biometric device POSTs to `POST /api/v1/biometric/webhook` with:
 - Device authentication token
 - Biometric sample (base64 image or template)
 - Device ID
+
+#### Trigger 2: ADMS Push Protocol (eSSL, ZKTeco, Hikvision)
+Hardware terminals push on-device verified logs:
+- `POST /api/iclock/cdata?SN={serial}&table=ATTLOG` (eSSL / ZKTeco tab-delimited records)
+- `POST /api/v1/biometric/hikvision/event` (Hikvision ISAPI XML alert events)
+
+Handled by `AdmsEventService` with automatic check-out detection when members scan leaving the facility. See [Biometric ADMS Push Protocol](./biometric-adms-push-protocol.md).
 
 ### Happy Path: Attendance-Only Device
 

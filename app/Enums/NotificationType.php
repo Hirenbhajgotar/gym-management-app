@@ -15,6 +15,7 @@ enum NotificationType: string
     case LEAD_REMINDER = 'lead_reminders_notifications';
     case WELCOME = 'welcome_notifications';
     case PROMOTIONAL = 'promotional_notifications';
+    case BIOMETRIC_CONSENT = 'biometric_consent_notifications';
 
     public function getLabel(): string
     {
@@ -28,6 +29,7 @@ enum NotificationType: string
             self::LEAD_REMINDER => 'Lead Reminders',
             self::WELCOME => 'Welcome Notifications',
             self::PROMOTIONAL => 'Promotional Notifications',
+            self::BIOMETRIC_CONSENT => 'Biometric Consent Notifications',
         };
     }
 
@@ -43,6 +45,7 @@ enum NotificationType: string
             self::LEAD_REMINDER => 'Send reminders for pending leads that need attention',
             self::WELCOME => 'Send welcome message to new members',
             self::PROMOTIONAL => 'Send promotional messages to members',
+            self::BIOMETRIC_CONSENT => 'Send biometric consent requests to members',
         };
     }
 }

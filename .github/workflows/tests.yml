@@ -5,15 +5,26 @@ on:
     branches:
       - develop
       - main
+      - 'feature/**'
   pull_request:
     branches:
       - develop
       - main
+      - 'feature/**'
 
 jobs:
   ci:
     runs-on: ubuntu-latest
-    environment: Testing
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: gym_app_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
       - name: Checkout
@@ -22,9 +33,9 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.4
+          php-version: '8.2'
           tools: composer:v2
-          coverage: xdebug
+          coverage: none
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -50,5 +61,20 @@ jobs:
       - name: Build Assets
         run: npm run build
 
+      - name: Run Migrations
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: gym_app_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: php artisan migrate --env=testing --force
+
       - name: Run Tests
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: gym_app_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
         run: ./vendor/bin/phpunit

@@ -9,7 +9,6 @@ use App\Biometrics\DTOs\BiometricSample;
 use App\Biometrics\DTOs\CheckInResult;
 use App\Biometrics\DTOs\DoorControlResult;
 use App\Biometrics\DTOs\TemplateRef;
-use App\Biometrics\DTOs\VerificationResult;
 use App\Enums\AttendanceStatus;
 use App\Events\MemberCheckedIn;
 use App\Events\MemberCheckedOut;
@@ -20,6 +19,7 @@ use App\Models\BiometricTemplate;
 use App\Models\GymMember;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Throwable;
 
 class CheckInService
 {
@@ -29,7 +29,8 @@ class CheckInService
         protected MembershipGuard $membershipGuard,
         protected FraudDetector $fraudDetector,
         protected FusionEngine $fusionEngine,
-        protected DoorControlService $doorControlService
+        protected DoorControlService $doorControlService,
+        protected RedisBiometricCacheService $biometricCache
     ) {}
 
     public function processCheckIn(BiometricSample $sample, BiometricDevice $device): CheckInResult
@@ -37,13 +38,18 @@ class CheckInService
         // ─────────────────────────────────────────────
         // STEP 1: Resolve provider
         // ─────────────────────────────────────────────
+        if (! $device->provider_type) {
+            return $this->denyAndLog($device, null, 'provider_not_configured');
+        }
+
         $provider = $this->registry->resolve($device->provider_type, $device->provider_config ?? []);
 
         // ─────────────────────────────────────────────
         // STEP 2: Liveness check
         // ─────────────────────────────────────────────
-        $livenessScore = $this->antiSpoofGuard->check($sample, $provider);
-        if ($livenessScore < config('biometrics.liveness_threshold', 0.75)) {
+        $livenessScore = $this->antiSpoofGuard->getLivenessScore($sample, $provider);
+        $livenessThreshold = config()->float('biometrics.liveness_threshold', 0.75);
+        if ($livenessScore < $livenessThreshold) {
             return $this->denyAndLog($device, null, 'liveness_failed');
         }
 
@@ -97,12 +103,25 @@ class CheckInService
         $guardResult = $this->membershipGuard->canCheckIn($gymMember);
 
         if (! $guardResult->allowed) {
-            return $this->denyAndLog($device, $gymMember, $guardResult->reason);
+            return $this->denyAndLog($device, $gymMember, $guardResult->reason ?? 'access_denied');
         }
 
         // ─────────────────────────────────────────────
-        // STEP 7: Fraud detection
+        // STEP 7: Fraud detection & Anti-Passback
         // ─────────────────────────────────────────────
+        $fraudWindowSeconds = config()->integer('biometrics.anti_passback_window_seconds', 60);
+        $lockToken = null;
+        $antiPassbackAcquired = $this->biometricCache->acquireAntiPassbackLock(
+            $device->gym_id,
+            $gymMember->id,
+            $fraudWindowSeconds,
+            $lockToken
+        );
+
+        if (! $antiPassbackAcquired) {
+            return $this->denyAndLog($device, $gymMember, 'anti_passback_rejection');
+        }
+
         $isDuplicate = $this->fraudDetector->isDuplicate($gymMember);
 
         if ($this->fraudDetector->isSuspiciousVelocity($gymMember)) {
@@ -110,18 +129,151 @@ class CheckInService
         }
 
         // ─────────────────────────────────────────────
-        // STEP 8: Branch on device purpose
+        // STEP 8: Finalize Check-In (Door + Attendance)
         // ─────────────────────────────────────────────
+        try {
+            $result = $this->finalizeCheckIn(
+                gymMember: $gymMember,
+                device: $device,
+                confidenceScore: $verificationResult->confidence ?? null,
+                livenessScore: $livenessScore,
+                isDuplicate: $isDuplicate,
+                providerType: $device->provider_type->value
+            );
 
+            if (! $result->granted && $lockToken !== null) {
+                $this->biometricCache->releaseAntiPassbackLock($device->gym_id, $gymMember->id, $lockToken);
+            }
+
+            return $result;
+        } catch (Throwable $e) {
+            if ($lockToken !== null) {
+                $this->biometricCache->releaseAntiPassbackLock($device->gym_id, $gymMember->id, $lockToken);
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Process check-in for devices that verify biometric templates on-device (Device-Native Mode)
+     *
+     * @param  array<string, mixed>  $metadata
+     */
+    public function processDeviceNativeCheckIn(
+        BiometricDevice $device,
+        mixed $memberIdentifier,
+        array $metadata = []
+    ): CheckInResult {
+        if (blank($memberIdentifier)) {
+            return $this->denyAndLog($device, null, 'member_identifier_missing');
+        }
+
+        $idStr = is_string($memberIdentifier) || is_numeric($memberIdentifier) ? (string) $memberIdentifier : '';
+        if ($idStr === '') {
+            return $this->denyAndLog($device, null, 'member_identifier_missing');
+        }
+
+        $gymMember = null;
+
+        // 1. PIN is member ID: verify if numeric and belongs to device gym
+        if (ctype_digit($idStr) || is_numeric($idStr)) {
+            $gymMember = GymMember::query()
+                ->where('gym_id', $device->gym_id)
+                ->where('id', (int) $idStr)
+                ->first();
+        }
+
+        // 2. If not found by direct ID, check template_ref
+        if (! $gymMember) {
+            $template = BiometricTemplate::findByTemplateRef($device->gym_id, $idStr);
+            if ($template?->gymMember && $template->gymMember->gym_id === $device->gym_id) {
+                $gymMember = $template->gymMember;
+            }
+        }
+
+        if (! $gymMember) {
+            return $this->denyAndLog($device, null, 'member_not_found');
+        }
+
+        // 3. Fast-path: Check Redis member access cache for the verified member
+        $summary = $this->biometricCache->getMemberAccessSummary($device->gym_id, $gymMember->id);
+
+        // 2. Validate Membership Access via cached summary / guard
+        if ($summary && ! $summary['can_access']) {
+            return $this->denyAndLog($device, $gymMember, $summary['denial_reason'] ?? 'access_denied');
+        }
+
+        $guardResult = $this->membershipGuard->canCheckIn($gymMember);
+        if (! $guardResult->allowed) {
+            return $this->denyAndLog($device, $gymMember, $guardResult->reason ?? 'access_denied');
+        }
+
+        // 3. Atomic Anti-Passback Lock via Redis (O(1) memory check, prevents DB lock contention)
+        $fraudWindowSeconds = config()->integer('biometrics.anti_passback_window_seconds', 60);
+        $lockToken = null;
+        $antiPassbackAcquired = $this->biometricCache->acquireAntiPassbackLock(
+            $device->gym_id,
+            $gymMember->id,
+            $fraudWindowSeconds,
+            $lockToken
+        );
+
+        if (! $antiPassbackAcquired) {
+            return $this->denyAndLog($device, $gymMember, 'anti_passback_rejection');
+        }
+
+        $isDuplicate = $this->fraudDetector->isDuplicate($gymMember);
+
+        if ($this->fraudDetector->isSuspiciousVelocity($gymMember)) {
+            broadcast(new SuspiciousCheckInDetected($gymMember, $device, 'suspicious_velocity'));
+        }
+
+        try {
+            $result = $this->finalizeCheckIn(
+                gymMember: $gymMember,
+                device: $device,
+                confidenceScore: 1.0,
+                livenessScore: 1.0,
+                isDuplicate: $isDuplicate,
+                providerType: 'device_native'
+            );
+
+            if (! $result->granted && $lockToken !== null) {
+                $this->biometricCache->releaseAntiPassbackLock($device->gym_id, $gymMember->id, $lockToken);
+            }
+
+            return $result;
+        } catch (Throwable $e) {
+            if ($lockToken !== null) {
+                $this->biometricCache->releaseAntiPassbackLock($device->gym_id, $gymMember->id, $lockToken);
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Finalize check-in by handling door control, creating attendance, and firing events
+     */
+    private function finalizeCheckIn(
+        GymMember $gymMember,
+        BiometricDevice $device,
+        ?float $confidenceScore,
+        float $livenessScore,
+        bool $isDuplicate,
+        ?string $providerType = null
+    ): CheckInResult {
         // ── Branch A: Attendance Only ──────────────────
         if ($device->isAttendanceOnly()) {
             $attendance = $this->createAttendance(
                 gymMember: $gymMember,
                 device: $device,
-                verificationResult: $verificationResult,
+                confidenceScore: $confidenceScore,
                 livenessScore: $livenessScore,
                 isDuplicate: $isDuplicate,
-                doorStatus: 'not_applicable'
+                doorStatus: 'not_applicable',
+                providerType: $providerType
             );
 
             event(new MemberCheckedIn($attendance, $device));
@@ -131,8 +283,7 @@ class CheckInService
 
         // ── Branch B: Door Access (with or without attendance) ──
         if ($device->isDoorAccess()) {
-            // STEP 8B-1: Check for existing attendance today
-            // (prevents duplicate if gym has a separate attendance_only device)
+            // Check for existing attendance today (prevents duplicates for multi-device gyms)
             $existingAttendance = Attendances::query()->where('gym_id', $device->gym_id)
                 ->whereHasMorph('attendanceable', [GymMember::class],
                     fn (Builder $q) => $q->where('id', $gymMember->id)
@@ -143,13 +294,11 @@ class CheckInService
                 ->with('attendanceable')
                 ->first();
 
-            // STEP 8B-2: Attempt door unlock
+            // Attempt door unlock
             $doorResult = $this->doorControlService->unlock($device);
 
-            // STEP 8B-3: If door unlock FAILED via API → do not create attendance
-            // Relay/Wiegand return skipped() which counts as success
+            // If door unlock FAILED via API → do not create attendance
             if ($doorResult->status === 'failed') {
-                // Log the door failure
                 $this->doorControlService->logEvent(
                     device: $device,
                     gymMember: $gymMember,
@@ -158,7 +307,6 @@ class CheckInService
                     result: $doorResult
                 );
 
-                // Return error — let device show failure message
                 return new CheckInResult(
                     granted: false,
                     result: 'door_failed',
@@ -168,29 +316,27 @@ class CheckInService
                 );
             }
 
-            // STEP 8B-4: Door succeeded
-            // Create attendance only if:
-            // (a) device purpose is door_access (not door_access_no_attendance)
-            // (b) no attendance already exists today from another device
+            // Door succeeded: Create or update attendance
             $attendance = null;
+            $confirmedUnlockAt = $doorResult->status === 'unlocked' ? $doorResult->unlockedAt : null;
 
             if ($device->shouldCreateAttendance() && ! $existingAttendance) {
                 $attendance = $this->createAttendance(
                     gymMember: $gymMember,
                     device: $device,
-                    verificationResult: $verificationResult,
+                    confidenceScore: $confidenceScore,
                     livenessScore: $livenessScore,
                     isDuplicate: $isDuplicate,
                     doorStatus: $doorResult->status,
-                    doorUnlockedAt: $doorResult->unlockedAt
+                    doorUnlockedAt: $confirmedUnlockAt,
+                    providerType: $providerType
                 );
             }
 
-            // If attendance already existed, update its door status
             if ($existingAttendance && $device->shouldCreateAttendance()) {
                 $existingAttendance->update([
                     'door_status' => $doorResult->status,
-                    'door_unlocked_at' => $doorResult->unlockedAt,
+                    'door_unlocked_at' => $confirmedUnlockAt,
                 ]);
                 $attendance = $existingAttendance;
             }
@@ -200,19 +346,21 @@ class CheckInService
                 device: $device,
                 gymMember: $gymMember,
                 attendance: $attendance,
-                eventType: 'unlock_granted',
+                eventType: $doorResult->status === 'unlocked' ? 'unlock_granted' : 'directive_sent',
                 result: $doorResult
             );
 
-            // Only fire check-in event if there's an attendance record
             if ($device->shouldCreateAttendance() && ($attendance || $existingAttendance)) {
                 event(new MemberCheckedIn($attendance ?? $existingAttendance, $device));
+            }
+
+            if (! $device->shouldCreateAttendance()) {
+                return CheckInResult::grantedWithoutAttendance($doorResult);
             }
 
             return CheckInResult::granted($attendance ?? $existingAttendance, $doorResult);
         }
 
-        // Fallback — should never reach here
         return CheckInResult::denied('unknown_device_purpose');
     }
 
@@ -222,13 +370,14 @@ class CheckInService
     private function createAttendance(
         GymMember $gymMember,
         BiometricDevice $device,
-        VerificationResult $verificationResult,
+        ?float $confidenceScore,
         float $livenessScore,
         bool $isDuplicate,
         string $doorStatus,
-        ?Carbon $doorUnlockedAt = null
+        ?Carbon $doorUnlockedAt = null,
+        ?string $providerType = null
     ): Attendances {
-        /** `@var` Attendances */
+        /** @var Attendances $attendance */
         $attendance = $gymMember->attendances()->create([
             'gym_id' => $device->gym_id,
             'check_in_time' => now(),
@@ -236,8 +385,8 @@ class CheckInService
             'check_in_method' => 'biometric',
             'device_id' => $device->id,
             'biometric_type' => $device->device_type,
-            'provider_type' => $device->provider_type,
-            'confidence_score' => $verificationResult->confidence ?? null,
+            'provider_type' => $providerType ?? $device->provider_type?->value,
+            'confidence_score' => $confidenceScore,
             'liveness_score' => $livenessScore,
             'check_in_result' => $isDuplicate ? 'suspicious' : 'granted',
             'door_status' => $doorStatus,

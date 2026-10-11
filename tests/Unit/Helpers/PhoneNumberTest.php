@@ -6,6 +6,7 @@ namespace Tests\Unit\Helpers;
 
 use App\Helpers\PhoneNumber;
 use Illuminate\Support\Stringable;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -190,5 +191,103 @@ class PhoneNumberTest extends TestCase
     public function normalize_phone_number_handles_dashes_only(): void
     {
         $this->assertEquals('', PhoneNumber::normalizePhoneNumber('---'));
+    }
+
+    #[Test]
+    public function to_dialable_e164_returns_a_valid_number(): void
+    {
+        $this->assertSame('+919261212121', PhoneNumber::toDialableE164('+919261212121'));
+    }
+
+    #[Test]
+    public function to_dialable_e164_normalises_a_local_number_using_the_default_country_code(): void
+    {
+        $this->assertSame('+919261212121', PhoneNumber::toDialableE164('9261212121'));
+    }
+
+    #[DataProvider('nonCanonicalInputs')]
+    public function to_dialable_e164_returns_the_canonical_form_of_the_number_it_validated(string $input, string $expected): void
+    {
+        $this->assertSame($expected, PhoneNumber::toDialableE164($input));
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public static function nonCanonicalInputs(): array
+    {
+        return [
+            'already canonical' => ['+919261212121', '+919261212121'],
+            'national trunk zero' => ['09261212121', '+919261212121'],
+            'separators and spaces' => ['+91 92612 12121', '+919261212121'],
+            'bare national number' => ['9261212121', '+919261212121'],
+        ];
+    }
+
+    /**
+     * An international access prefix is refused rather than dialled.
+     * formatPhoneNumberWithCountryCode() strips to digits and prepends the
+     * default code, so "009191261212121" becomes "+910091912612121" — a
+     * different, invalid number. Null is the safe outcome; teaching that shared
+     * formatter to read the prefix belongs there, not here.
+     */
+    #[Test]
+    public function to_dialable_e164_refuses_an_international_access_prefix(): void
+    {
+        $this->assertNull(PhoneNumber::toDialableE164('009191261212121'));
+    }
+
+    /**
+     * Whatever came out before, the returned value has to survive a re-parse as
+     * the same number it validated. That round-trip is the property callers
+     * actually depend on, and it is what the trunk-zero case broke.
+     */
+    #[Test]
+    public function to_dialable_e164_output_round_trips_to_the_same_number(): void
+    {
+        foreach (['09261212121', '9261212121', '+91 92612 12121'] as $input) {
+            $dialable = PhoneNumber::toDialableE164($input);
+
+            $this->assertNotNull($dialable, "[{$input}] should resolve.");
+            $this->assertSame(
+                PhoneNumber::toDialableE164($dialable),
+                $dialable,
+                "[{$input}] did not round-trip: [{$dialable}] parsed as a different number."
+            );
+        }
+    }
+
+    /**
+     * formatPhoneNumberWithCountryCode() turns this into "+91", a string that
+     * passes every emptiness check but is not a number.
+     */
+    #[Test]
+    public function to_dialable_e164_returns_null_for_alpha_input(): void
+    {
+        $this->assertNull(PhoneNumber::toDialableE164('abc'));
+    }
+
+    #[Test]
+    public function to_dialable_e164_returns_null_for_empty_input(): void
+    {
+        $this->assertNull(PhoneNumber::toDialableE164(''));
+        $this->assertNull(PhoneNumber::toDialableE164('   '));
+    }
+
+    /**
+     * The validity check, not just possibility: libphonenumber reports this
+     * number as possible (right country code, right length) but not valid,
+     * because no assignable Indian range covers the 0000 operator prefix.
+     */
+    #[Test]
+    public function to_dialable_e164_returns_null_for_a_possible_but_invalid_number(): void
+    {
+        $this->assertNull(PhoneNumber::toDialableE164('+910000000000'));
+    }
+
+    #[Test]
+    public function to_dialable_e164_handles_stringable_input(): void
+    {
+        $this->assertSame('+919261212121', PhoneNumber::toDialableE164(new Stringable('+91 92612 12121')));
     }
 }

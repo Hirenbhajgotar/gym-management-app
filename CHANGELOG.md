@@ -8,6 +8,91 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Breaking Changes
+- **Enforce ADMS Device Communication Key by Default (`ADMS_REQUIRE_COMM_KEY=true`)**:
+  - `config('biometrics.adms.require_comm_key')` now defaults to `true` (previously `false`). All unkeyed deployments will reject unauthenticated ADMS requests until provisioned.
+  - PBKDF2 iterations are now configurable via `config('biometrics.adms.pbkdf2_iterations')` (default 100,000).
+  - Backfill command (`biometrics:backfill-adms-comm-keys`) now detects and re-provisions legacy unsalted SHA-256 hashes when run with `--provision`.
+  - Removed orphaned `BIOMETRIC_FALLBACK_PIN` from `.env.example`.
+
+### Fixed
+- **Door Controller TLS SNI (`DoorControlService`)**:
+  - Replaced IP-in-URL rewriting with `CURLOPT_RESOLVE` to prevent DNS rebinding TOCTOU without breaking TLS SNI certificate validation on HTTPS door controllers.
+- **Member Biometric Enrollment (`EnrollBiometricAction`)**:
+  - Unified enrollment into modal action `EnrollBiometricAction` on Gym Member resource, deprecating and retiring the standalone `EnrollMember` page.
+  - Replaced invalid `user_info` command type with `user_add`.
+  - Canonical `idempotency_key` format (`user_add:{gym_id}:{device_id}:{member_id}[:stage]:{template_id}`) with `UniqueConstraintViolationException` handling and failure notification to operator.
+  - Sibling terminals in the same gym are automatically provisioned via `BiometricTemplatePropagator` with `Propagated` lifecycle status.
+- **Command Cancellation & Idempotency (`AdmsDeviceCommand`)**:
+  - Added `cancelInFlightFor()` static helper ensuring correct SQL NULL-key semantics across cancel blocks.
+  - Added `markCancelled()` method that sets status to `CANCELLED` (for both `PENDING` and `SENT` commands) and clears `idempotency_key` to prevent collisions upon retry.
+  - Added `cancelDeleteCommands()` static helper for batch cancellation across writers.
+  - Preserved `idempotency_key` across command execution and failures in `markAcknowledged()`, enabling reconcilers to re-drive existing failed commands within retry caps.
+  - Reset `attempt_count` to 0 on Filament command resend (both single and bulk actions).
+- **Nightly Enrollment Reconciler (`ReconcileBiometricEnrollmentsCommand`)**:
+  - Nightly scheduled reconciliation for active `Synced` and `Propagated` templates, queueing replacement `user_add` commands when hardware delivery commands are missing or failed, with safeguards for archived/expired members and live de-provisioning commands.
+- **Durable Hardware Delivery Tracking (`BiometricTemplate`)**:
+  - Added `hardware_confirmed_at` timestamp column and data migration to record when hardware acknowledges credential installation across active templates, preserving delivery evidence independently of command log pruning.
+  - A hardware acknowledgement is terminal confirmation: `AdmsDeviceCommand::reconcileUserAdd()` now promotes a `Pending` placeholder to `Synced` and activates it, so the 7-day abandoned-placeholder sweep can no longer revoke a credential the terminal is holding.
+- **Superseded & Pending Placeholder Cleanup (`CleanupSupersededTemplatesCommand`)**:
+  - Validates `--days > 0` and `--pending-days > 0` to prevent accidental immediate retirement.
+  - Chunks records with `chunkById(100)` for memory safety.
+  - Retires `Superseded` rows with a **soft delete** rather than destroying them, satisfying OpenSpec §3's "kept for audit/retention"; a `superseded_reason` discriminator distinguishes a plain re-enrolment from an operator overriding a GDPR Art. 17 erasure request, and the override is written to the activity log.
+  - Pending placeholders delivered to hardware are handed to `BiometricDeProvisioner`, which emits a `user_delete` and parks the row at `PendingDeletion`; the command summary now reports those separately instead of counting them as purged.
+  - Placeholders that were never delivered are retired outright, because there is no hardware credential to erase.
+- **Consent Gate on Command Resend (`AdmsDeviceCommandResource`)**:
+  - `resend` and `resendSelected` now refuse to re-queue a `user_add`/`user_update` when the target member has no active `BiometricConsent` (ADR-003 / OpenSpec §4). `user_delete` is exempt so erasure remains possible after consent is revoked.
+- **Permission Sync Dynamic Set (`SyncPermissionsCommand`)**:
+  - Strict separation between Filament-discovered permissions and hardcoded dynamic defaults: `permissions:sync` applies discovered permissions by default (falling back to dynamic defaults only if discovery resolves empty). Added explicit `--include-dynamic` flag to opt into merging dynamic default permissions, with per-role change logging.
+- **Webhook & Event Response Handling (`BiometricWebhookController`)**:
+  - Added missing denial reasons (`no_active_check_in`, `already_checked_in`, `anti_passback`, `device_offline`, `untrusted_door_controller_url`).
+  - Propagates `$doorResult->failureReason` in response and adjusts display message/LED to warning when check-in succeeds but door fails to unlock.
+- **Test Suite & CI Hardening**:
+  - Corrected `DB_PASSWORD` from `root` to `password` and forced `DB_HOST=127.0.0.1` in `phpunit.xml`.
+  - Removed `environment: Testing` from CI workflows and reduced `lint.yml` permissions to `contents: read`.
+  - Added pre-boot safety guard in `TestCase` and `WhatsAppSetupTestCase` before `parent::setUp()` triggers `migrate:fresh`.
+  - Removed duplicate safety guard from `StaffPanelTestCase`.
+  - Deleted unused `FreezesClock` trait and removed vestigial `phpstan:dtos` composer script.
+  - Replaced blanket `2026_09_28_130000` migration with an intentional no-op log.
+
+### Added
+- **Biometric ADMS Push Protocol (eSSL, ZKTeco, Hikvision)**:
+  - Added native ADMS (`iclock`) push endpoints: `/api/iclock/cdata` (handshake & `ATTLOG` attendance push), `/api/iclock/getrequest` (command queue polling), and `/api/iclock/devicecmd` (execution acknowledgments).
+  - Added Hikvision ISAPI XML event push endpoint `/api/v1/biometric/hikvision/event` with device token authentication.
+  - Dual-channel coexistence: terminals can simultaneously use the vendor webhook (`/api/v1/biometric/webhook/{token}`) for real-time door relay unlock directives, and ADMS for attendance logging & member provisioning.
+  - Implemented `AdmsEventService` with automated check-out detection (treating check-ins as check-outs if an open session already exists today) and anti-passback locking.
+  - Added `AdmsDeviceCommand` model, migration, factory, and `AdmsCommandStatusEnum` (`PENDING`, `SENT`, `ACKNOWLEDGED`, `FAILED`) implementing Filament's `HasLabel` and `HasColor`.
+  - Added three-layer expired member deprovisioning via `CleanupExpiredDeviceMembers` scheduled daily at 03:00, calculating cutoff via: `membership_end` + `gym_grace_days` (default 7) + `adms_grace_days` (default 10). Automatically queues `DATA DELETE user` commands and deactivates biometric templates.
+  - Filament Admin UI updates: added `device_serial` input, `adms_enabled` toggle with dynamic setup instructions, and table column/action in `BiometricDeviceResource`; added tenant-scoped `AdmsDeviceCommandResource` with retry/resend capabilities.
+  - Comprehensive feature test suites in `tests/Feature/AdmsProtocolTest.php` (11 tests) and `tests/Feature/CleanupExpiredDeviceMembersTest.php` (5 tests).
+  - Technical documentation in `docs/biometric/feature/biometric-adms-push-protocol.md`, `docs/biometric/database/adms-device-commands-fields.md`, and `docs/biometric/architecture/ADR-004-adms-push-protocol-and-lifecycle.md`.
+- **Multi-Channel Biometric Consent Distribution (Email & WhatsApp)**:
+  - Added on-demand consent request distribution in Filament Admin panel: `RequestBiometricConsentAction` header action on `ListGymMembers` (targeting all active unconsented members in the tenant) and table bulk action on `GymMemberResource` (targeting selected members).
+  - Dynamic dual-gate channel selection modal: `Send via WhatsApp` toggle is conditionally rendered ONLY when `NotificationChannelResolver::canSendBiometricConsentViaWhatsApp($gym)` passes (Gate 1: tenant WhatsApp notifications enabled and sender number active; Gate 2: approved `biometric_consent` template available).
+  - Two-tier asynchronous queued fan-out pipeline: `FanOutBiometricConsentRequestsJob` chunks eligible members in batches of 200 on `config('queue.notifications_queue')`, dispatching per-recipient `SendBiometricConsentNotificationJob` workers to prevent HTTP 504 gateway timeouts on large member rosters.
+  - Multi-channel delivery: delivers email via `BiometricConsentMail` and WhatsApp via `NotificationChannelResolver` / `WhatsAppChannel`, mapping variables (`{{1}}` member name, `{{2}}` gym name, `{{3}}` consent URL) with `WhatsAppVariableResolver`, wallet credit balance verification via `WhatsAppSendCharge`, and graceful text fallback in dev/sandbox environments.
+  - Eligibility and idempotency verification: `BiometricConsentEligibility` pre-filters and double-checks members, skipping already-consented (`hasActiveBiometricConsent() === true`), archived, or opted-out members, and logging aggregated statistics via `BiometricConsentDispatchReport`.
+  - Centralized signed URL factory: `BiometricConsentUrlFactory` generates tamper-proof 7-day signed routes (`consent.biometric.show`) with configurable expiry (`config('biometrics.consent_url_expiry_days')`).
+  - Hardware-aware onboarding welcome notification: integrated `InteractsWithBiometricConsent` into `WelcomeNotification`, embedding a biometric attendance notice and 7-day signed consent link when the member's gym has active biometric hardware (`Gym::hasActiveBiometricDevice()`), and cleanly omitting it when no devices are deployed.
+  - Added `NotificationType::BIOMETRIC_CONSENT` enum case.
+  - Dynamic queue worker command `app:work-queues` (`WorkQueuesCommand`) to poll derived queues (`default`, `notifications`, `broadcast`) based on configuration without hardcoded values.
+  - Tenant notification setting backfill migration: `2026_10_08_000000_backfill_biometric_consent_notification_setting` automatically sets `notification_biometric_consent = true` in `gym_settings.notifications` for all existing gyms.
+  - Architectural Decision Record: documented architecture, trade-offs, and design decisions in `docs/adr/adr-0003-biometric-consent-distribution-and-dual-gate-architecture.md`.
+  - Comprehensive feature test coverage: 90 tests covering dual-gate availability, Filament action authorization and modal schema, queued job execution, welcome email conditional display, worker queue derivation, and template lookup.
+
+### Changed
+- **Gym Settings & Notification Preferences (`GymSettings`)**:
+  - Added null safety guards on tenant resolution (`getGym()`) across `mount()`, `getWhatsAppNotificationTab()`, `afterStateUpdated()`, `save()`, and `downloadInvoice()`.
+  - Added `notification_biometric_consent` toggle in WhatsApp and Email notification setting tabs.
+- **WhatsApp Template Resolver & Messaging Services (`WhatsAppVariableResolver`, `MetaMessagingService`, `TwilioMessagingService`)**:
+  - Fixed array key handling in `WhatsAppVariableResolver` to safely support integer indices from decoded JSON templates and avoid runtime type errors.
+  - Strict typing, explicit array shape docblocks, and narrowed error return types in `MetaMessagingService` and `TwilioMessagingService`.
+
+### Removed
+- **Legacy Single-Channel Consent & Welcome Mailables**:
+  - Removed deprecated `SendBiometricConsentEmail` job (replaced by `SendBiometricConsentNotificationJob`).
+  - Removed redundant `WelcomeMemberMail` and `welcome-member.blade.php` view, consolidating member onboarding into `WelcomeNotification`.
+
 ## [v1.7.2] - 2026-09-19 (Current GitHub Release)
 
 ### Added

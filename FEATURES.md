@@ -46,6 +46,11 @@ A modern, multi-tenant **Gym Management & Operations Platform** built with **Lar
 ## 3. Smart Attendance & Access Control (Biometric + QR)
 ### Biometric Device Integration
 * **Provider-Agnostic Biometric Engine**: Hardware abstraction layer supporting major biometric hardware vendors (e.g., ZKTeco, Hikvision, eSSL).
+* **ADMS Push Protocol Engine**: Native HTTP push communication protocol supporting eSSL and ZKTeco (`/api/iclock/cdata`, `/api/iclock/getrequest`, `/api/iclock/devicecmd`) and Hikvision ISAPI XML event push (`/api/v1/biometric/hikvision/event`).
+* **Dual-Channel Coexistence**: Real-time webhook door unlock (`/api/v1/biometric/webhook/{token}`) for physical relay opening alongside background ADMS attendance sync and remote command queues on a single terminal.
+* **Smart Auto-Checkout Detection**: Automatically determines whether an incoming push punch represents a check-in or check-out based on open attendance records for the day.
+* **Automated Expired Member Deprovisioning**: Daily scheduled hardware cleanup (`biometrics:cleanup-expired-members`) purging members expired beyond the 3-layer grace threshold (`plan_expiry + gym_grace_days + adms_grace_days`).
+* **Remote Device Command Queue**: Asynchronous FIFO command dispatching (`AdmsDeviceCommand`) for remote user registration, deletion, and biometric updates with status tracking and manual resend capabilities.
 * **Biometric Consent System**: Compliant consent collection (GDPR/DPDP ready) before capturing or syncing fingerprints/facial templates.
 * **Template Management**: Secure synchronization of biometric identifiers directly to edge devices.
 * **Automated Door Access Control**: Real-time door unlocking based on valid, active membership; automatically revokes access when plans expire.

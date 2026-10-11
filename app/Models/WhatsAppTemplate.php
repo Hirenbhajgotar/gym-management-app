@@ -282,11 +282,11 @@ class WhatsAppTemplate extends Model
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     public function getVariablePlaceholders(): array
     {
-        /** @var array<string, mixed> $placeholders */
+        /** @var array<array-key, mixed> $placeholders */
         $placeholders = is_array($this->variable_placeholder) ? $this->variable_placeholder : [];
 
         return $placeholders;

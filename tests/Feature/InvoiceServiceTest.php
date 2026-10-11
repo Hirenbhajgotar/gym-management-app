@@ -228,7 +228,7 @@ final class InvoiceServiceTest extends TestCase
         $user1 = User::factory()->create();
 
         // Simulate Gym 1 with ID 10001
-        $payment1 = Payment::query()->create([
+        Payment::query()->create([
             'razorpay_order_id' => 'order_' . fake()->uuid(),
             'user_id' => $user1->id,
             'gym_id' => $gym1->id,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Policies;
 
+use App\Policies\BasePolicy;
 use App\Policies\BiometricDevicePolicy;
 use App\Policies\GymMemberAttendancePolicy;
 use App\Policies\ReportGoalPolicy;
@@ -22,7 +23,7 @@ use Tests\Feature\Filament\StaffPanel\StaffPanelTestCase;
 class BasePolicyIntegrationTest extends StaffPanelTestCase
 {
     /**
-     * @return array<string, array{0: class-string, 1: string}>
+     * @return array<string, array{0: class-string<BasePolicy>, 1: string}>
      */
     public static function policyPermissionMap(): array
     {
@@ -30,7 +31,7 @@ class BasePolicyIntegrationTest extends StaffPanelTestCase
             'BiometricDevicePolicy' => [BiometricDevicePolicy::class, 'view_any_biometric_device'],
             'TrainerPolicy' => [TrainerPolicy::class, 'view_any_trainer'],
             'WhatsAppTemplatePolicy' => [WhatsAppTemplatePolicy::class, 'view_any_whatsapp_template'],
-            'WhatsAppTransactionPolicy' => [WhatsAppTransactionPolicy::class, 'view_any_whatsapp_transaction'],
+            'WhatsAppTransactionPolicy' => [WhatsAppTransactionPolicy::class, 'view_any_whatsapp_credit_transaction'],
             'WhatsAppUsageLogPolicy' => [WhatsAppUsageLogPolicy::class, 'view_any_whatsapp_usage_log'],
             'ReportGoalPolicy' => [ReportGoalPolicy::class, 'view_any_report_goal'],
             // 'BaseEmployeePolicy' => [BaseEmployeePolicy::class, 'view_any_base_employee'],
@@ -41,6 +42,9 @@ class BasePolicyIntegrationTest extends StaffPanelTestCase
         ];
     }
 
+    /**
+     * @param  class-string<BasePolicy>  $policyClass
+     */
     #[Test]
     #[DataProvider('policyPermissionMap')]
     public function view_any_returns_false_without_permission(string $policyClass, string $permissionSlug): void
@@ -50,23 +54,29 @@ class BasePolicyIntegrationTest extends StaffPanelTestCase
             Permission::query()->firstOrCreate(['name' => $permissionSlug, 'guard_name' => 'web']),
         );
 
+        /** @var BasePolicy $policy */
+        $policy = new $policyClass();
+
         $this->assertFalse(
-            (new $policyClass())->viewAny($this->managerUser),
+            $policy->viewAny($this->managerUser),
             "{$policyClass}::viewAny should return false without '{$permissionSlug}'",
         );
     }
 
+    /**
+     * @param  class-string<BasePolicy>  $policyClass
+     */
     #[Test]
     #[DataProvider('policyPermissionMap')]
     public function view_any_returns_true_with_permission(string $policyClass, string $permissionSlug): void
     {
-        setPermissionsTeamId($this->testGym->id);
-        $this->managerUser->givePermissionTo(
-            Permission::query()->firstOrCreate(['name' => $permissionSlug, 'guard_name' => 'web']),
-        );
+        $this->grantPermission($this->managerUser, $permissionSlug);
+
+        /** @var BasePolicy $policy */
+        $policy = new $policyClass();
 
         $this->assertTrue(
-            (new $policyClass())->viewAny($this->managerUser->fresh()),
+            $policy->viewAny($this->managerUser->refresh()),
             "{$policyClass}::viewAny should return true with '{$permissionSlug}'",
         );
     }

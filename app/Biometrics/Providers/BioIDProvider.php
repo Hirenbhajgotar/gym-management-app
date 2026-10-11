@@ -16,8 +16,14 @@ use RuntimeException;
 class BioIDProvider implements BiometricProvider
 {
     public function __construct(
-        protected array $config
-    ) {}
+        protected array $config = []
+    ) {
+        /** @var array<string, mixed> $systemConfig */
+        $systemConfig = config()->array('biometrics.providers_config.bioid', []);
+        /** @var array<string, mixed> $filteredConfig */
+        $filteredConfig = array_filter($config, static fn ($v): bool => $v !== null && $v !== '');
+        $this->config = array_merge($systemConfig, $filteredConfig);
+    }
 
     protected function getHeaders(): array
     {
