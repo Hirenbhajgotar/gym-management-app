@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+
+## [v1.8.0] - 2026-10-11 (Current GitHub Release)
+
 ### Breaking Changes
 - **Enforce ADMS Device Communication Key by Default (`ADMS_REQUIRE_COMM_KEY=true`)**:
   - `config('biometrics.adms.require_comm_key')` now defaults to `true` (previously `false`). All unkeyed deployments will reject unauthenticated ADMS requests until provisioned.
