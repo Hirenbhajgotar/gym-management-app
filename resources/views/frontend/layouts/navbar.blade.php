@@ -3,12 +3,12 @@
     @keydown.escape.window="mobileMenuOpen = false"
     :class="scrolled ? 'bg-surface/90 backdrop-blur-xl border-b border-outline-variant/30 shadow-2xl py-3.5' : 'bg-surface/40 backdrop-blur-md border-b border-white/5 py-4 lg:py-5'"
     class="fixed top-0 w-full z-50 transition-all duration-300">
-    <div class="container mx-auto px-6 max-w-7xl">
+    <div class="container mx-auto px-4 sm:px-6 max-w-7xl">
         <div class="flex justify-between items-center">
             <!-- Brand Logo -->
-            <a href="{{ route('home') }}" class="group flex items-center gap-2.5">
-                <div class="flex text-2xl lg:text-3xl font-black italic text-primary tracking-tighter font-headline items-center gap-2 uppercase">
-                    <span class="material-symbols-outlined filled text-3xl lg:text-4xl text-primary group-hover:rotate-12 transition-transform duration-300">all_inclusive</span>
+            <a href="{{ route('home') }}" class="group flex items-center gap-2">
+                <div class="flex text-xl sm:text-2xl lg:text-3xl font-black italic text-primary tracking-tighter font-headline items-center gap-1.5 sm:gap-2 uppercase">
+                    <span class="material-symbols-outlined filled text-2xl sm:text-3xl lg:text-4xl text-primary group-hover:rotate-12 transition-transform duration-300">all_inclusive</span>
                     <span class="text-on-surface">Flux<span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-container">Fitness</span></span>
                 </div>
             </a>

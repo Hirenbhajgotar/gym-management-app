@@ -2082,9 +2082,9 @@
     "semantic_hash": ""
   },
   "app/Filament/Admin/Pages/GymSettings.php": {
-    "mtime": 1791542219.9149454,
-    "seen": 1791560270.8009956,
-    "ast_hash": "d280342d0f85fdab12d58ff2e3819364",
+    "mtime": 1791715096.857942,
+    "seen": 1791729272.7961903,
+    "ast_hash": "6cb8b2a6ae79d6a210e06e2db0c40589",
     "semantic_hash": ""
   },
   "app/Filament/Admin/Pages/LeadKanbanBoard.php": {
@@ -2190,9 +2190,9 @@
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/GymMemberResource.php": {
-    "mtime": 1791541850.6373804,
-    "seen": 1791560270.801449,
-    "ast_hash": "510158c2b634157fcdbaf71bccb60e1d",
+    "mtime": 1791650575.8950164,
+    "seen": 1791729272.796236,
+    "ast_hash": "65af30fc8033f5960936247ceda58926",
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/GymResource.php": {
@@ -3558,9 +3558,9 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/BiometricConsentController.php": {
-    "mtime": 1791630972.3190682,
-    "seen": 1791641416.882844,
-    "ast_hash": "639991626e524e50c5bb707875159f20",
+    "mtime": 1791714357.9852421,
+    "seen": 1791729272.796591,
+    "ast_hash": "e7099830be1528858e640b1a5598f329",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Controller.php": {
@@ -4500,9 +4500,9 @@
     "semantic_hash": ""
   },
   "app/Models/WhatsAppTemplate.php": {
-    "mtime": 1788940905.3080072,
-    "seen": 1790693264.1211822,
-    "ast_hash": "441c67ebd4d5b8e020873d91d6bd5ffd",
+    "mtime": 1791716026.742839,
+    "seen": 1791729272.7968097,
+    "ast_hash": "76363415990ec212131f9fb0f9e7e942",
     "semantic_hash": ""
   },
   "app/Models/WhatsAppUsageLog.php": {
@@ -5454,9 +5454,9 @@
     "semantic_hash": ""
   },
   "app/Services/WhatsAppVariableResolver.php": {
-    "mtime": 1791440589.7592099,
-    "seen": 1791457874.7082436,
-    "ast_hash": "fb0ed0c1c3045d5916cdbe1e1a2c9795",
+    "mtime": 1791716058.905771,
+    "seen": 1791729272.7970786,
+    "ast_hash": "cbd462bab2363043b64a8c158947c4be",
     "semantic_hash": ""
   },
   "app/Services/ErrorReporting/ExceptionMarkdownFormatter.php": {
@@ -5496,9 +5496,9 @@
     "semantic_hash": ""
   },
   "app/Services/Meta/MetaMessagingService.php": {
-    "mtime": 1791637657.3645875,
-    "seen": 1791641416.8834033,
-    "ast_hash": "099b3abca9e07ae5424c6835f561d555",
+    "mtime": 1791714724.610585,
+    "seen": 1791729272.79703,
+    "ast_hash": "7dd65ebb2346aad819fc4bdd8dcc73de",
     "semantic_hash": ""
   },
   "app/Services/Meta/MetaTemplateService.php": {
@@ -5544,9 +5544,9 @@
     "semantic_hash": ""
   },
   "app/Services/Twilio/TwilioMessagingService.php": {
-    "mtime": 1791610551.9910152,
-    "seen": 1791626042.4825666,
-    "ast_hash": "b00f4cf56506dfd472c30c7ff0df2b3d",
+    "mtime": 1791714817.0678992,
+    "seen": 1791729272.7970634,
+    "ast_hash": "76691a89d53cd0cd93edf08ffaa926e7",
     "semantic_hash": ""
   },
   "app/Services/Twilio/TwilioPhoneService.php": {
@@ -9048,9 +9048,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Services/Meta/MetaMessagingServiceTest.php": {
-    "mtime": 1791637336.7168658,
-    "seen": 1791641416.8848279,
-    "ast_hash": "f956712260f757c6c297343495ed50cd",
+    "mtime": 1791643507.6582808,
+    "seen": 1791729272.7981424,
+    "ast_hash": "0740d14cce3f3c361c4133141e6d26ee",
     "semantic_hash": ""
   },
   "tests/Feature/Services/Meta/MetaTemplateServiceSubmitTest.php": {
@@ -9360,9 +9360,9 @@
     "semantic_hash": ""
   },
   "CHANGELOG.md": {
-    "mtime": 1791207660.3797455,
-    "seen": 1791298410.474422,
-    "ast_hash": "d1d8a50616b96e3f468091b472f0b8fb",
+    "mtime": 1791726376.156191,
+    "seen": 1791729272.7997875,
+    "ast_hash": "1c3447fc968738a5f470794c3daf3ae3",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
@@ -13884,15 +13884,15 @@
     "semantic_hash": ""
   },
   "docs/adr/adr-0001-biometric-implementation.md": {
-    "mtime": 1791360123.6483107,
-    "seen": 1791364729.3363523,
-    "ast_hash": "b44b98f250ddf91ef685026be2a4717e",
+    "mtime": 1791725186.5513842,
+    "seen": 1791729272.799806,
+    "ast_hash": "af6fa81e0a32ff30db93561001693264",
     "semantic_hash": ""
   },
   "docs/biometric/README.md": {
-    "mtime": 1791360139.4618,
-    "seen": 1791364729.3363986,
-    "ast_hash": "f211f8f084deee93b5cb123b08804f00",
+    "mtime": 1791725243.973404,
+    "seen": 1791729272.7998104,
+    "ast_hash": "3eb577a17b86727c9a4e6ef9505a6349",
     "semantic_hash": ""
   },
   "docs/biometric/architecture/ADR-001-biometric-provider-abstraction.md": {
@@ -13962,9 +13962,9 @@
     "semantic_hash": ""
   },
   "docs/biometric/feature/biometric-consent-system.md": {
-    "mtime": 1780389210.3692987,
-    "seen": 1790693264.1234243,
-    "ast_hash": "e930fb8695953549ab5fcaff07972717",
+    "mtime": 1791725226.870764,
+    "seen": 1791729272.7998278,
+    "ast_hash": "e4c5779e6fae8fbf6387cfa7ca86fbb2",
     "semantic_hash": ""
   },
   "docs/biometric/feature/biometric-provider-abstraction.md": {
@@ -14988,9 +14988,9 @@
     "semantic_hash": ""
   },
   "app/Filament/Admin/Actions/EnrollBiometricAction.php": {
-    "mtime": 1791301661.164867,
-    "seen": 1791357755.7626903,
-    "ast_hash": "0f2e2198fed434a922bd14737e5b0fc9",
+    "mtime": 1791648245.2248063,
+    "seen": 1791729272.7961035,
+    "ast_hash": "1745aaaf24c2d4d6309ee5591203d2da",
     "semantic_hash": ""
   },
   "database/migrations/2026_09_30_220000_make_enrolled_at_nullable_in_biometric_templates_table.php": {
@@ -15510,21 +15510,21 @@
     "semantic_hash": ""
   },
   ".gsd/ARCHITECTURE.md": {
-    "mtime": 1791183387.4013367,
-    "seen": 1791186580.9842284,
-    "ast_hash": "a1195129fc809bbb210d6bf7ca509d00",
+    "mtime": 1791727279.8879833,
+    "seen": 1791729272.799351,
+    "ast_hash": "0b492bbc670575f8f6b38d84192c9362",
     "semantic_hash": ""
   },
   ".gsd/STACK.md": {
-    "mtime": 1791183402.2090225,
-    "seen": 1791186580.9842293,
-    "ast_hash": "d1fb05e3ff43c9d41d855aaaad943f79",
+    "mtime": 1791727293.5357792,
+    "seen": 1791729272.7993603,
+    "ast_hash": "0b51fedf84da03930bbc345ac24d630c",
     "semantic_hash": ""
   },
   ".gsd/STATE.md": {
-    "mtime": 1791386664.7438867,
-    "seen": 1791457874.7397108,
-    "ast_hash": "93bcd1b588486315884ca9b92cdc55a5",
+    "mtime": 1791727211.9854672,
+    "seen": 1791729272.7993617,
+    "ast_hash": "73ee88b304e9f956dcd3206d2452552b",
     "semantic_hash": ""
   },
   ".gsd/examples/cross-platform.md": {
@@ -15822,15 +15822,15 @@
     "semantic_hash": ""
   },
   "docs/adr/adr-0002-biometric-enrollment-and-device-reconciliation.md": {
-    "mtime": 1791360108.1537282,
-    "seen": 1791364729.3363807,
-    "ast_hash": "a494bd75054ebc4af0d4164fd82d9cb2",
+    "mtime": 1791725193.5281763,
+    "seen": 1791729272.7998078,
+    "ast_hash": "c8cdb6b6558cb0cea010f416d697a809",
     "semantic_hash": ""
   },
   "app/Jobs/SendBiometricConsentNotificationJob.php": {
-    "mtime": 1791549840.8572192,
-    "seen": 1791560270.8055978,
-    "ast_hash": "fe0881f36d8bd1be3c6a75f4cd781ecb",
+    "mtime": 1791714505.4596796,
+    "seen": 1791729272.796682,
+    "ast_hash": "eb2d84498eb7bdaefa0c1d84420eea3a",
     "semantic_hash": ""
   },
   "storage/framework/lsp-253506b4f266ebf3.php": {
@@ -15840,15 +15840,15 @@
     "semantic_hash": ""
   },
   ".gsd/DECISIONS.md": {
-    "mtime": 1791369494.1069298,
-    "seen": 1791380659.305011,
-    "ast_hash": "8eee2bfa48fa4deff4cd941971058fea",
+    "mtime": 1791727178.98986,
+    "seen": 1791729272.799353,
+    "ast_hash": "aaca293a1825e992ca3dc853c93d715c",
     "semantic_hash": ""
   },
   ".gsd/JOURNAL.md": {
-    "mtime": 1791374526.5012908,
-    "seen": 1791380659.3050125,
-    "ast_hash": "60d4f6413f63dddca4215fa0e2a5ddc4",
+    "mtime": 1791727187.8362937,
+    "seen": 1791729272.799354,
+    "ast_hash": "881d6c33037bda4d137d6cfbe5abbb3f",
     "semantic_hash": ""
   },
   ".gsd/REQUIREMENTS.md": {
@@ -15858,9 +15858,9 @@
     "semantic_hash": ""
   },
   ".gsd/ROADMAP.md": {
-    "mtime": 1791386648.302901,
-    "seen": 1791457874.7396486,
-    "ast_hash": "ce24fffc5af5d76d6931a663bb45a776",
+    "mtime": 1791727200.7032862,
+    "seen": 1791729272.7993574,
+    "ast_hash": "0768b8e7934faea6d35050eec9dfb316",
     "semantic_hash": ""
   },
   ".gsd/SPEC.md": {
@@ -15875,54 +15875,6 @@
     "ast_hash": "a1b9ffd1a562022649a48d542f199580",
     "semantic_hash": ""
   },
-  ".gsd/phases/1/1-PLAN.md": {
-    "mtime": 1791369835.54174,
-    "seen": 1791380659.3050308,
-    "ast_hash": "b9955acf44ac9da0984d1f959117d22f",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/1/1-SUMMARY.md": {
-    "mtime": 1791370244.7939372,
-    "seen": 1791380659.3050323,
-    "ast_hash": "63a961d65c07a898c6ca53077b6f0ac9",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/1/2-PLAN.md": {
-    "mtime": 1791369856.3858838,
-    "seen": 1791380659.3050337,
-    "ast_hash": "e0aeb8874b6639fb683cf4b2a85cf801",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/1/2-SUMMARY.md": {
-    "mtime": 1791373494.7383113,
-    "seen": 1791380659.305035,
-    "ast_hash": "74a77ebee5e3baae71b775cea0e4a1b1",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/2/1-PLAN.md": {
-    "mtime": 1791373846.8858194,
-    "seen": 1791380659.3050363,
-    "ast_hash": "f55e971b74042e1379cba83c6ec22cef",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/2/1-SUMMARY.md": {
-    "mtime": 1791374459.1015356,
-    "seen": 1791380659.3050373,
-    "ast_hash": "f1e53c54a461affb2d9e31dedba74862",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/3/1-PLAN.md": {
-    "mtime": 1791374925.3190348,
-    "seen": 1791380659.3050387,
-    "ast_hash": "24f23ee7bedd4e4103273315fc60e081",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/3/1-SUMMARY.md": {
-    "mtime": 1791380394.2291653,
-    "seen": 1791380659.3050396,
-    "ast_hash": "3d95f694537bdb8a4e919004b3dfcdc3",
-    "semantic_hash": ""
-  },
   "tests/Feature/Filament/BiometricConsentActionsTest.php": {
     "mtime": 1791631397.5886228,
     "seen": 1791641416.884664,
@@ -15933,36 +15885,6 @@
     "mtime": 1791619458.851871,
     "seen": 1791626042.492171,
     "ast_hash": "2fddcc03f21e639a12f586029fbbf28d",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/4/1-PLAN.md": {
-    "mtime": 1791380857.6210873,
-    "seen": 1791383234.3650916,
-    "ast_hash": "5a99fe4f5871ebc4aaff4f6acc2ab73e",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/4/1-SUMMARY.md": {
-    "mtime": 1791381547.748577,
-    "seen": 1791383234.3651216,
-    "ast_hash": "0f1920df2c3cc34161390883db405a25",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/4/2-PLAN.md": {
-    "mtime": 1791380874.5499005,
-    "seen": 1791383234.3651454,
-    "ast_hash": "b3f65fbd4daa05531aba9d8f75835e08",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/4/2-SUMMARY.md": {
-    "mtime": 1791382970.9287846,
-    "seen": 1791383234.3651633,
-    "ast_hash": "94cd6f24af8b0cf12089bfd5422fcfd8",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/4/VERIFICATION.md": {
-    "mtime": 1791382985.9027264,
-    "seen": 1791383234.3651817,
-    "ast_hash": "d10739336d971b3fa95937b209539990",
     "semantic_hash": ""
   },
   "app/Filament/Admin/Actions/RequestBiometricConsentAction.php": {
@@ -15990,15 +15912,15 @@
     "semantic_hash": ""
   },
   "app/Services/Biometric/BiometricConsentUrlFactory.php": {
-    "mtime": 1791610606.5916734,
-    "seen": 1791626042.4817939,
-    "ast_hash": "92852df8229fc3ee685c3f71293d8b89",
+    "mtime": 1791714585.760425,
+    "seen": 1791729272.7969885,
+    "ast_hash": "14ba38096a9e518af088e51b51230136",
     "semantic_hash": ""
   },
   "tests/Feature/Filament/BiometricConsentAuthorizationTest.php": {
-    "mtime": 1791631429.3310692,
-    "seen": 1791641416.8846667,
-    "ast_hash": "e3906f94c25d9bd57aa816d8085de51d",
+    "mtime": 1791643896.8631294,
+    "seen": 1791729272.7980475,
+    "ast_hash": "7de4dcac47f7d4cc3d30ae862fbde3f9",
     "semantic_hash": ""
   },
   "tests/Feature/Jobs/SendBiometricConsentNotificationJobTest.php": {
@@ -16019,46 +15941,16 @@
     "ast_hash": "70e2d5c39d22ee28629f29cc68725970",
     "semantic_hash": ""
   },
-  ".gsd/phases/5/1-PLAN.md": {
-    "mtime": 1791384602.2184393,
-    "seen": 1791457874.7401278,
-    "ast_hash": "d79c568e784a3ef6ca04f4910279dcd2",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/5/1-SUMMARY.md": {
-    "mtime": 1791385497.169049,
-    "seen": 1791457874.7401478,
-    "ast_hash": "1702e3cb5271bb1e3d0c3eef253950aa",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/5/2-PLAN.md": {
-    "mtime": 1791384638.7620535,
-    "seen": 1791457874.740166,
-    "ast_hash": "eec86a3c408273db591b052e27d4c14a",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/5/2-SUMMARY.md": {
-    "mtime": 1791386572.5782917,
-    "seen": 1791457874.740183,
-    "ast_hash": "7d066163d59a2cea519b448792a1ec1b",
-    "semantic_hash": ""
-  },
-  ".gsd/phases/5/VERIFICATION.md": {
-    "mtime": 1791641200.3783214,
-    "seen": 1791641416.886302,
-    "ast_hash": "a4a2d53fc659714c2d4b0317e7dfc274",
-    "semantic_hash": ""
-  },
   "app/Console/Commands/WorkQueuesCommand.php": {
-    "mtime": 1791631111.159093,
-    "seen": 1791641416.882041,
-    "ast_hash": "93b53f6a9e1fba22dc741246de4e06a5",
+    "mtime": 1791720719.253092,
+    "seen": 1791729272.7959023,
+    "ast_hash": "5ac8ca0101e4fb59be1355d30b95671c",
     "semantic_hash": ""
   },
   "app/Jobs/FanOutBiometricConsentRequestsJob.php": {
-    "mtime": 1791549841.0460165,
-    "seen": 1791560270.8054426,
-    "ast_hash": "0c0c2c23cd67441e6a19bed1b6d75a3b",
+    "mtime": 1791714454.4427564,
+    "seen": 1791729272.7966661,
+    "ast_hash": "03012d2f7a685ce4648a2559a8708bb3",
     "semantic_hash": ""
   },
   "app/Services/Biometric/BiometricConsentDispatchReport.php": {
@@ -16080,9 +15972,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Console/Commands/WorkQueuesCommandTest.php": {
-    "mtime": 1791631129.9591045,
-    "seen": 1791641416.884633,
-    "ast_hash": "46281c65b9cfbdb467b61df702c6329c",
+    "mtime": 1791719463.425644,
+    "seen": 1791729272.7980247,
+    "ast_hash": "ffdffb5ebd131c781fcec88d2f3da211",
     "semantic_hash": ""
   },
   "app/Services/WhatsApp/TemplateLookup.php": {
@@ -16101,6 +15993,186 @@
     "mtime": 1791618692.7502184,
     "seen": 1791626042.4931479,
     "ast_hash": "988878a3a1295716ea6bf043f4c3cfdd",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0-SUMMARY.md": {
+    "mtime": 1791727037.365548,
+    "seen": 1791729272.7993722,
+    "ast_hash": "fc2360d527245dcfd4bb61eea33ca827",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/1/1-PLAN.md": {
+    "mtime": 1791369835.54174,
+    "seen": 1791729272.7993743,
+    "ast_hash": "b9955acf44ac9da0984d1f959117d22f",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/1/1-SUMMARY.md": {
+    "mtime": 1791370244.7939372,
+    "seen": 1791729272.7993753,
+    "ast_hash": "63a961d65c07a898c6ca53077b6f0ac9",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/1/2-PLAN.md": {
+    "mtime": 1791369856.3858838,
+    "seen": 1791729272.7993765,
+    "ast_hash": "e0aeb8874b6639fb683cf4b2a85cf801",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/1/2-SUMMARY.md": {
+    "mtime": 1791373494.7383113,
+    "seen": 1791729272.7993774,
+    "ast_hash": "74a77ebee5e3baae71b775cea0e4a1b1",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/2/1-PLAN.md": {
+    "mtime": 1791373846.8858194,
+    "seen": 1791729272.7993786,
+    "ast_hash": "f55e971b74042e1379cba83c6ec22cef",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/2/1-SUMMARY.md": {
+    "mtime": 1791374459.1015356,
+    "seen": 1791729272.7993803,
+    "ast_hash": "f1e53c54a461affb2d9e31dedba74862",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/3/1-PLAN.md": {
+    "mtime": 1791374925.3190348,
+    "seen": 1791729272.7993817,
+    "ast_hash": "24f23ee7bedd4e4103273315fc60e081",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/3/1-SUMMARY.md": {
+    "mtime": 1791380394.2291653,
+    "seen": 1791729272.7993827,
+    "ast_hash": "3d95f694537bdb8a4e919004b3dfcdc3",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/4/1-PLAN.md": {
+    "mtime": 1791380857.6210873,
+    "seen": 1791729272.7993844,
+    "ast_hash": "5a99fe4f5871ebc4aaff4f6acc2ab73e",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/4/1-SUMMARY.md": {
+    "mtime": 1791381547.748577,
+    "seen": 1791729272.7993853,
+    "ast_hash": "0f1920df2c3cc34161390883db405a25",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/4/2-PLAN.md": {
+    "mtime": 1791380874.5499005,
+    "seen": 1791729272.7993863,
+    "ast_hash": "b3f65fbd4daa05531aba9d8f75835e08",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/4/2-SUMMARY.md": {
+    "mtime": 1791382970.9287846,
+    "seen": 1791729272.7993875,
+    "ast_hash": "94cd6f24af8b0cf12089bfd5422fcfd8",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/4/VERIFICATION.md": {
+    "mtime": 1791382985.9027264,
+    "seen": 1791729272.7993884,
+    "ast_hash": "d10739336d971b3fa95937b209539990",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/5/1-PLAN.md": {
+    "mtime": 1791384602.2184393,
+    "seen": 1791729272.7993898,
+    "ast_hash": "d79c568e784a3ef6ca04f4910279dcd2",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/5/1-SUMMARY.md": {
+    "mtime": 1791385497.169049,
+    "seen": 1791729272.7993908,
+    "ast_hash": "1702e3cb5271bb1e3d0c3eef253950aa",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/5/2-PLAN.md": {
+    "mtime": 1791384638.7620535,
+    "seen": 1791729272.7993922,
+    "ast_hash": "eec86a3c408273db591b052e27d4c14a",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/5/2-SUMMARY.md": {
+    "mtime": 1791386572.5782917,
+    "seen": 1791729272.7993937,
+    "ast_hash": "7d066163d59a2cea519b448792a1ec1b",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/5/VERIFICATION.md": {
+    "mtime": 1791642908.842372,
+    "seen": 1791729272.7993946,
+    "ast_hash": "b5d89172e0d0791f9f518c03393a46cb",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/6/1-PLAN.md": {
+    "mtime": 1791711760.4249604,
+    "seen": 1791729272.7993956,
+    "ast_hash": "56eacd7121b8f89203abc00288441888",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/6/1-SUMMARY.md": {
+    "mtime": 1791714573.9482243,
+    "seen": 1791729272.7993965,
+    "ast_hash": "0e6d7c85a2ad40d8c9e65a117dd68e4a",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/6/2-PLAN.md": {
+    "mtime": 1791711783.3769784,
+    "seen": 1791729272.7993975,
+    "ast_hash": "4ff0677eb4d4b15454f2901aedd815c4",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/6/2-SUMMARY.md": {
+    "mtime": 1791714908.9531298,
+    "seen": 1791729272.7993987,
+    "ast_hash": "176e44ae38b220cbfea80197201f19fa",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/6/3-PLAN.md": {
+    "mtime": 1791711801.7748697,
+    "seen": 1791729272.7993996,
+    "ast_hash": "7fc0a99b3d9444e49512112afba9cb21",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/6/3-SUMMARY.md": {
+    "mtime": 1791717423.3930523,
+    "seen": 1791729272.799401,
+    "ast_hash": "1dfa9c238e579117837339bbcc961b56",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/6/VERIFICATION.md": {
+    "mtime": 1791717443.0232034,
+    "seen": 1791729272.799402,
+    "ast_hash": "d9ca695d99026d8f98a56f4da7ba9877",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/DECISIONS.md": {
+    "mtime": 1791369494.1069298,
+    "seen": 1791729272.7994032,
+    "ast_hash": "8eee2bfa48fa4deff4cd941971058fea",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/JOURNAL.md": {
+    "mtime": 1791374526.5012908,
+    "seen": 1791729272.7994044,
+    "ast_hash": "60d4f6413f63dddca4215fa0e2a5ddc4",
+    "semantic_hash": ""
+  },
+  ".gsd/milestones/v1.0/REQUIREMENTS.md": {
+    "mtime": 1791386622.4425492,
+    "seen": 1791729272.7994053,
+    "ast_hash": "267fb9b5168c07ca51e5e315c849888a",
+    "semantic_hash": ""
+  },
+  "docs/adr/adr-0003-biometric-consent-distribution-and-dual-gate-architecture.md": {
+    "mtime": 1791725175.4813101,
+    "seen": 1791729272.7998092,
+    "ast_hash": "6638acbb7448b8aaea2b1e3ef1995feb",
     "semantic_hash": ""
   }
 }

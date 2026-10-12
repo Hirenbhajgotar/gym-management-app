@@ -156,9 +156,9 @@
 
     <!-- Ambient Glowing Backdrop Orbs -->
     <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div class="absolute top-[-10%] right-[-10%] w-[700px] h-[700px] bg-primary-container/10 blur-[140px] rounded-full animate-pulse"></div>
-        <div class="absolute top-[40%] left-[-15%] w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full animate-float"></div>
-        <div class="absolute bottom-[-10%] right-[10%] w-[650px] h-[650px] bg-primary-container/8 blur-[160px] rounded-full"></div>
+        <div class="absolute top-[-10%] right-[-10%] w-[320px] sm:w-[700px] h-[320px] sm:h-[700px] bg-primary-container/10 blur-[100px] sm:blur-[140px] rounded-full animate-pulse"></div>
+        <div class="absolute top-[40%] left-[-15%] w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-primary/5 blur-[100px] sm:blur-[150px] rounded-full animate-float"></div>
+        <div class="absolute bottom-[-10%] right-[10%] w-[300px] sm:w-[650px] h-[300px] sm:h-[650px] bg-primary-container/8 blur-[100px] sm:blur-[160px] rounded-full"></div>
     </div>
 
     <!-- Navigation -->
