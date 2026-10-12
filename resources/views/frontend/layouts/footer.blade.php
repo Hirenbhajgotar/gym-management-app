@@ -1,5 +1,5 @@
-<footer class="bg-surface-container-lowest border-t border-outline-variant/20 pt-16 pb-12 relative z-10">
-    <div class="container mx-auto px-6 max-w-7xl">
+<footer class="bg-surface-container-lowest border-t border-outline-variant/20 pt-12 sm:pt-16 pb-8 sm:pb-12 relative z-10">
+    <div class="container mx-auto px-4 sm:px-6 max-w-7xl">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 mb-16">
             <!-- Col 1: Brand & Bio -->
             <div class="lg:col-span-2 space-y-5">
@@ -116,8 +116,8 @@
 
 <!-- Scroll to top button -->
 <button id="scrollTop" aria-label="Scroll to top"
-    class="cursor-pointer fixed bottom-6 right-6 w-12 h-12 bg-surface-container-high border border-outline-variant/50 text-primary rounded-xl flex items-center justify-center opacity-0 transition-all duration-300 hover:scale-110 hover:border-primary hover:bg-surface-container-highest shadow-xl z-50">
-    <span class="material-symbols-outlined text-2xl">arrow_upward</span>
+    class="cursor-pointer fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-10 h-10 sm:w-12 sm:h-12 bg-surface-container-high border border-outline-variant/50 text-primary rounded-xl flex items-center justify-center opacity-0 transition-all duration-300 hover:scale-110 hover:border-primary hover:bg-surface-container-highest shadow-xl z-50">
+    <span class="material-symbols-outlined text-xl sm:text-2xl">arrow_upward</span>
 </button>
 
 <script defer>

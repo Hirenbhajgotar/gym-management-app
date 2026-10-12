@@ -3,49 +3,49 @@
     @livewire('toast')
     
     <!-- Hero Section with Motion Elements & Authentic Gym Copy -->
-    <section id="home" class="relative min-h-[92vh] flex items-center pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden bg-[#07090e]">
+    <section id="home" class="relative min-h-0 lg:min-h-[92vh] flex items-center pt-20 sm:pt-28 lg:pt-36 pb-12 sm:pb-16 lg:pb-24 overflow-hidden bg-[#07090e]">
         <!-- Blueprint Grid & Ambient Kinetic Glow Background -->
         <div class="absolute inset-0 pointer-events-none z-0">
             <!-- Grid Lines -->
             <div class="absolute inset-0" style="background-image: linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px); background-size: 36px 36px;"></div>
             
             <!-- Ambient Kinetic Glowing Color Spots -->
-            <div class="absolute top-1/4 left-1/10 w-[500px] h-[500px] bg-cyan-500/10 blur-[140px] rounded-full animate-pulse"></div>
-            <div class="absolute top-1/3 right-1/10 w-[600px] h-[600px] bg-emerald-500/10 blur-[150px] rounded-full animate-float"></div>
-            <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-cyan-900/20 via-emerald-900/10 to-transparent blur-[110px] pointer-events-none"></div>
+            <div class="absolute top-1/4 left-1/10 w-[280px] h-[280px] sm:w-[500px] sm:h-[500px] bg-cyan-500/10 blur-[100px] sm:blur-[140px] rounded-full animate-pulse pointer-events-none"></div>
+            <div class="absolute top-1/3 right-1/10 w-[300px] h-[300px] sm:w-[600px] sm:h-[600px] bg-emerald-500/10 blur-[100px] sm:blur-[150px] rounded-full animate-float pointer-events-none"></div>
+            <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-full max-w-[800px] h-[350px] bg-gradient-to-b from-cyan-900/20 via-emerald-900/10 to-transparent blur-[110px] pointer-events-none"></div>
         </div>
 
-        <div class="container mx-auto px-6 max-w-7xl relative z-10">
-            <div class="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        <div class="container mx-auto px-4 sm:px-6 max-w-7xl relative z-10">
+            <div class="grid lg:grid-cols-12 gap-10 sm:gap-12 lg:gap-8 items-center">
                 <!-- Left Column: High-Impact Hero Value & Authentic Metrics -->
-                <div class="lg:col-span-6 space-y-8 animate-slide-up text-center lg:text-left">
+                <div class="lg:col-span-6 space-y-6 sm:space-y-8 animate-slide-up text-center lg:text-left">
                     <!-- Status Pill Badge with Motion Pulse -->
-                    <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#0d1520]/90 border border-emerald-500/40 text-xs font-bold uppercase tracking-widest text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)] mx-auto lg:mx-0">
-                        <span class="relative flex h-2 w-2">
+                    <div class="inline-flex items-center gap-2 sm:gap-2.5 px-3 py-1.5 sm:px-3.5 rounded-full bg-[#0d1520]/90 border border-emerald-500/40 text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)] mx-auto lg:mx-0 max-w-full">
+                        <span class="relative flex h-2 w-2 flex-shrink-0">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                         </span>
-                        <span>ALL-IN-ONE GYM SOFTWARE • BUILT FOR INDIAN GYMS</span>
+                        <span class="truncate sm:whitespace-normal">ALL-IN-ONE GYM SOFTWARE • BUILT FOR INDIAN GYMS</span>
                     </div>
 
                     <!-- Authentic High-Converting Headline -->
-                    <div class="space-y-1">
-                        <h1 class="font-headline font-black text-5xl sm:text-6xl lg:text-7xl leading-[0.92] tracking-tighter text-white uppercase drop-shadow-lg">
-                            SUPERCHARGE YOUR <br />
+                    <div class="space-y-2 sm:space-y-3">
+                        <h1 class="font-headline font-black text-3xl xs:text-4xl sm:text-5xl lg:text-6xl xl:text-7xl leading-[1.08] sm:leading-[0.92] tracking-tight sm:tracking-tighter text-white uppercase drop-shadow-lg">
+                            SUPERCHARGE YOUR <br class="hidden sm:inline" />
                             <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-300 to-[#cafd00] drop-shadow-[0_0_30px_rgba(6,182,212,0.4)]">
                                 FITNESS EMPIRE
                             </span>
                         </h1>
-                        <p class="text-gray-400 font-medium text-base sm:text-lg max-w-xl mx-auto lg:mx-0 pt-4 leading-relaxed">
+                        <p class="text-gray-400 font-medium text-sm sm:text-base lg:text-lg max-w-xl mx-auto lg:mx-0 pt-2 sm:pt-4 leading-relaxed">
                             Stop losing revenue to expired memberships and manual registers. Automate WhatsApp fee chasers, biometric QR attendance, GST billing, and Meta lead pipelines in one unified platform.
                         </p>
                     </div>
 
                     <!-- Call To Action Buttons with Interactive Motion Hover -->
-                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2">
+                    <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start pt-1 sm:pt-2">
                         <!-- Primary Solid Neon Green Button with Shimmer -->
                         <button wire:click="startFreeTrial" wire:loading.attr="disabled"
-                            class="group relative overflow-hidden cursor-pointer inline-flex items-center justify-center gap-2.5 bg-[#22c55e] hover:bg-[#16a34a] text-black font-headline font-black text-sm sm:text-base px-8 py-4 rounded-xl shadow-[0_0_25px_rgba(34,197,94,0.4)] hover:shadow-[0_0_35px_rgba(34,197,94,0.7)] active:scale-[0.98] transition-all uppercase tracking-wider disabled:opacity-75 disabled:cursor-not-allowed">
+                            class="w-full sm:w-auto group relative overflow-hidden cursor-pointer inline-flex items-center justify-center gap-2.5 bg-[#22c55e] hover:bg-[#16a34a] text-black font-headline font-black text-sm sm:text-base px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl shadow-[0_0_25px_rgba(34,197,94,0.4)] hover:shadow-[0_0_35px_rgba(34,197,94,0.7)] active:scale-[0.98] transition-all uppercase tracking-wider disabled:opacity-75 disabled:cursor-not-allowed">
                             <span class="absolute inset-0 w-1/2 h-full bg-white/30 transform -skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-1000 ease-out"></span>
                             <span wire:loading.remove wire:target="startFreeTrial" class="relative z-10 flex items-center gap-2">
                                 <span>START 14-DAY FREE TRIAL</span>
@@ -64,7 +64,7 @@
                         <x-frontend.modal size="xl" triggerClass="w-full sm:w-auto inline-block">
                             <x-slot:trigger>
                                 <button type="button"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#0a0f18]/80 border-2 border-cyan-400/80 rounded-xl hover:bg-cyan-400/10 hover:border-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] transition-all text-sm sm:text-base font-headline font-bold text-white uppercase tracking-wider cursor-pointer group">
+                                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 bg-[#0a0f18]/80 border-2 border-cyan-400/80 rounded-xl hover:bg-cyan-400/10 hover:border-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] transition-all text-sm sm:text-base font-headline font-bold text-white uppercase tracking-wider cursor-pointer group">
                                     <span class="material-symbols-outlined text-cyan-400 text-xl group-hover:scale-110 transition-transform">play_circle</span>
                                     <span>WATCH LIVE TOUR</span>
                                 </button>
@@ -96,29 +96,29 @@
                     </div>
 
                     <!-- Bottom Metrics Row (Authentic Gym SaaS Proof) -->
-                    <div class="flex items-center justify-center lg:justify-start gap-8 sm:gap-12 pt-4 border-t border-white/10">
+                    <div class="grid grid-cols-3 gap-2 sm:gap-8 lg:gap-10 pt-4 sm:pt-6 border-t border-white/10 text-center sm:text-left">
                         <div class="group">
-                            <div class="text-2xl sm:text-3xl font-headline font-black text-white tracking-tight group-hover:text-cyan-400 transition-colors">
+                            <div class="text-xl sm:text-2xl lg:text-3xl font-headline font-black text-white tracking-tight group-hover:text-cyan-400 transition-colors">
                                 {{ config('app.platform_state_badges.members_managed.value', '2,400+') }}
                             </div>
-                            <div class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">
+                            <div class="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-widest text-gray-400 mt-0.5 truncate">
                                 ACTIVE MEMBERS
                             </div>
                         </div>
                         <div class="group">
-                            <div class="text-2xl sm:text-3xl font-headline font-black text-white tracking-tight flex items-center gap-1.5 justify-center lg:justify-start">
-                                <span class="text-cyan-400 text-2xl drop-shadow-[0_0_10px_rgba(6,182,212,0.6)]">★</span>
+                            <div class="text-xl sm:text-2xl lg:text-3xl font-headline font-black text-white tracking-tight flex items-center gap-1 justify-center sm:justify-start">
+                                <span class="text-cyan-400 text-lg sm:text-2xl drop-shadow-[0_0_10px_rgba(6,182,212,0.6)]">★</span>
                                 <span>4.9</span>
                             </div>
-                            <div class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">
+                            <div class="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-widest text-gray-400 mt-0.5 truncate">
                                 OWNER RATING
                             </div>
                         </div>
                         <div class="group">
-                            <div class="text-2xl sm:text-3xl font-headline font-black text-white tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+                            <div class="text-xl sm:text-2xl lg:text-3xl font-headline font-black text-white tracking-tight text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
                                 99.9%
                             </div>
-                            <div class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mt-0.5">
+                            <div class="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider sm:tracking-widest text-gray-400 mt-0.5 truncate">
                                 WHATSAPP DELIVERY
                             </div>
                         </div>
@@ -126,15 +126,15 @@
                 </div>
 
                 <!-- Right Column: Hero Media Frame with Interactive Parallax & Animated Badges -->
-                <div class="lg:col-span-6 relative mt-8 lg:mt-0">
+                <div class="lg:col-span-6 relative mt-4 sm:mt-8 lg:mt-0 px-1 sm:px-0">
                     <div class="relative w-full max-w-xl mx-auto group">
                         <!-- Ambient Radial Edge Glow -->
-                        <div class="absolute -inset-2 bg-gradient-to-r from-cyan-500/20 via-emerald-500/15 to-cyan-500/20 rounded-3xl blur-2xl opacity-60 group-hover:opacity-100 transition-opacity duration-700"></div>
+                        <div class="absolute -inset-2 bg-gradient-to-r from-cyan-500/20 via-emerald-500/15 to-cyan-500/20 rounded-3xl blur-2xl opacity-60 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
 
                         <!-- Main Screen Media Frame with Clean Gym Dashboard Visual -->
                         <div class="relative rounded-2xl overflow-hidden border border-white/20 bg-[#080d16] shadow-[0_0_60px_rgba(0,0,0,0.9)] transform transition-transform duration-700 group-hover:scale-[1.01] group-hover:-translate-y-1">
                             <!-- Background Base Gym Photo with Dark Glass Gradient Filter -->
-                            <div class="absolute inset-0 z-0">
+                            <div class="absolute inset-0 z-0 pointer-events-none">
                                 <picture>
                                     <source srcset="{{ asset('images/banner.webp') }}" type="image/webp">
                                     <img src="{{ asset('images/banner.jpg') }}" 
@@ -147,19 +147,19 @@
                                 <div class="absolute inset-0" style="background-image: linear-gradient(to right, rgba(34, 197, 94, 0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(34, 197, 94, 0.04) 1px, transparent 1px); background-size: 24px 24px;"></div>
                             </div>
 
-                            <!-- Dashboard Container -->
-                            <div class="relative z-10 p-4 sm:p-5 space-y-3.5">
+                            <!-- Dashboard Container (pb-12 on mobile provides comfortable vertical clearance for the bottom floating badge) -->
+                            <div class="relative z-10 p-3 sm:p-5 space-y-3 sm:space-y-3.5 pb-12 sm:pb-5">
                                 <!-- Top Window Title Bar -->
-                                <div class="flex items-center justify-between pb-3 border-b border-white/10 text-xs">
+                                <div class="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-white/10 text-xs">
                                     <div class="flex items-center gap-2">
                                         <div class="flex gap-1.5">
-                                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500/80"></span>
-                                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
-                                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+                                            <span class="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-rose-500/80"></span>
+                                            <span class="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-amber-500/80"></span>
+                                            <span class="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-emerald-500/80"></span>
                                         </div>
-                                        <span class="text-gray-400 font-mono text-[11px] ml-1.5 hidden sm:inline">IRONCORE FITNESS • LIVE OWNER DASHBOARD</span>
+                                        <span class="text-gray-400 font-mono text-[10px] sm:text-[11px] ml-1 hidden xs:inline sm:inline">IRONCORE FITNESS • LIVE OWNER DASHBOARD</span>
                                     </div>
-                                    <div class="flex items-center gap-2 text-[11px] font-mono">
+                                    <div class="flex items-center gap-2 text-[10px] sm:text-[11px] font-mono">
                                         <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
                                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                                             REAL-TIME SYNC
@@ -168,22 +168,22 @@
                                 </div>
 
                                 <!-- Metric Cards Grid with SVG Wave Chart -->
-                                <div class="grid grid-cols-12 gap-3">
+                                <div class="grid grid-cols-12 gap-2.5 sm:gap-3">
                                     <!-- Card 1: Monthly Fee Inflow with SVG Sparkline -->
-                                    <div class="col-span-12 sm:col-span-7 bg-[#0f1726]/90 border border-emerald-500/30 rounded-xl p-3.5 space-y-2 shadow-lg relative overflow-hidden">
+                                    <div class="col-span-12 sm:col-span-7 bg-[#0f1726]/90 border border-emerald-500/30 rounded-xl p-3 sm:p-3.5 space-y-1.5 sm:space-y-2 shadow-lg relative overflow-hidden">
                                         <div class="flex justify-between items-start">
                                             <div>
-                                                <div class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Monthly Revenue Inflow</div>
-                                                <div class="text-xl sm:text-2xl font-headline font-black text-white flex items-baseline gap-2 mt-0.5">
+                                                <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-gray-400">Monthly Revenue Inflow</div>
+                                                <div class="text-lg sm:text-2xl font-headline font-black text-white flex items-baseline gap-2 mt-0.5">
                                                     <span>₹4,82,500</span>
-                                                    <span class="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">+28.4%</span>
+                                                    <span class="text-[10px] sm:text-[11px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">+28.4%</span>
                                                 </div>
                                             </div>
-                                            <span class="material-symbols-outlined text-emerald-400 text-lg">trending_up</span>
+                                            <span class="material-symbols-outlined text-emerald-400 text-base sm:text-lg">trending_up</span>
                                         </div>
 
                                         <!-- SVG Glowing Sparkline Wave Chart -->
-                                        <div class="h-14 w-full pt-1 relative">
+                                        <div class="h-11 sm:h-14 w-full pt-1 relative">
                                             <svg class="w-full h-full overflow-visible" viewBox="0 0 300 60" fill="none" preserveAspectRatio="none">
                                                 <defs>
                                                     <linearGradient id="heroGreenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -203,82 +203,82 @@
                                     </div>
 
                                     <!-- Card 2: Live Gym Floor Capacity -->
-                                    <div class="col-span-12 sm:col-span-5 bg-[#0f1726]/90 border border-cyan-500/30 rounded-xl p-3.5 space-y-2.5 shadow-lg flex flex-col justify-between">
-                                        <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                    <div class="col-span-12 sm:col-span-5 bg-[#0f1726]/90 border border-cyan-500/30 rounded-xl p-3 sm:p-3.5 space-y-2 sm:space-y-2.5 shadow-lg flex flex-col justify-between">
+                                        <div class="flex justify-between items-center text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-gray-400">
                                             <span>Floor Density</span>
                                             <span class="text-cyan-400 font-mono">68/80</span>
                                         </div>
                                         <div>
-                                            <div class="text-lg font-headline font-black text-cyan-400">85% Capacity</div>
-                                            <div class="text-[10px] text-gray-400">Peak Morning Rush Hour</div>
+                                            <div class="text-base sm:text-lg font-headline font-black text-cyan-400">85% Capacity</div>
+                                            <div class="text-[9px] sm:text-[10px] text-gray-400">Peak Morning Rush Hour</div>
                                         </div>
                                         <!-- Capacity Segmented Bar -->
-                                        <div class="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
+                                        <div class="w-full bg-surface-container-high rounded-full h-1.5 sm:h-2 overflow-hidden">
                                             <div class="bg-gradient-to-r from-cyan-400 via-emerald-400 to-[#cafd00] h-full rounded-full w-[85%]"></div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Live Operations Micro-Stream (Biometric Scan + WhatsApp Chaser) -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-body">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 text-xs font-body">
                                     <!-- Biometric Scan Toast -->
-                                    <div class="bg-[#0b121e]/95 border border-cyan-500/30 rounded-xl p-2.5 flex items-center gap-2.5 shadow-sm">
-                                        <div class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center flex-shrink-0">
-                                            <span class="material-symbols-outlined text-base">fingerprint</span>
+                                    <div class="bg-[#0b121e]/95 border border-cyan-500/30 rounded-xl p-2 sm:p-2.5 flex items-center gap-2 sm:gap-2.5 shadow-sm">
+                                        <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center flex-shrink-0">
+                                            <span class="material-symbols-outlined text-sm sm:text-base">fingerprint</span>
                                         </div>
                                         <div class="min-w-0 flex-1">
-                                            <div class="flex justify-between items-center text-[11px]">
+                                            <div class="flex justify-between items-center text-[10px] sm:text-[11px]">
                                                 <span class="font-bold text-white truncate">Rohan Mehta</span>
-                                                <span class="text-emerald-400 text-[10px] font-mono font-bold">0.2s PASS</span>
+                                                <span class="text-emerald-400 text-[9px] sm:text-[10px] font-mono font-bold">0.2s PASS</span>
                                             </div>
-                                            <div class="text-[10px] text-gray-400 truncate">Turnstile #1 • Gold Annual</div>
+                                            <div class="text-[9px] sm:text-[10px] text-gray-400 truncate">Turnstile #1 • Gold Annual</div>
                                         </div>
                                     </div>
 
                                     <!-- WhatsApp Auto-Invoice Toast -->
-                                    <div class="bg-[#0b121e]/95 border border-emerald-500/30 rounded-xl p-2.5 flex items-center gap-2.5 shadow-sm">
-                                        <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
-                                            <span class="material-symbols-outlined text-base">mark_chat_read</span>
+                                    <div class="bg-[#0b121e]/95 border border-emerald-500/30 rounded-xl p-2 sm:p-2.5 flex items-center gap-2 sm:gap-2.5 shadow-sm">
+                                        <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                                            <span class="material-symbols-outlined text-sm sm:text-base">mark_chat_read</span>
                                         </div>
                                         <div class="min-w-0 flex-1">
-                                            <div class="flex justify-between items-center text-[11px]">
+                                            <div class="flex justify-between items-center text-[10px] sm:text-[11px]">
                                                 <span class="font-bold text-white truncate">₹2,499 Collected</span>
-                                                <span class="text-cyan-400 text-[10px] font-mono">UPI QR</span>
+                                                <span class="text-cyan-400 text-[9px] sm:text-[10px] font-mono">UPI QR</span>
                                             </div>
-                                            <div class="text-[10px] text-gray-400 truncate">WhatsApp GST Invoice Sent ✓✓</div>
+                                            <div class="text-[9px] sm:text-[10px] text-gray-400 truncate">WhatsApp GST Invoice Sent ✓✓</div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Bottom Live Simulation Status Bar -->
-                                <div class="glass-card rounded-xl p-2.5 flex items-center justify-between text-xs backdrop-blur-md border border-white/10">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></div>
-                                        <span class="text-white font-bold text-[11px]">Biometric Gate Sync: <span class="text-emerald-400 font-medium">All Devices Online</span></span>
+                                <div class="glass-card rounded-xl p-2 sm:p-2.5 flex items-center justify-between text-xs backdrop-blur-md border border-white/10">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <div class="w-2 h-2 rounded-full bg-emerald-400 animate-ping flex-shrink-0"></div>
+                                        <span class="text-white font-bold text-[10px] sm:text-[11px] truncate">Biometric Gate Sync: <span class="text-emerald-400 font-medium">All Devices Online</span></span>
                                     </div>
-                                    <span class="text-[10px] text-gray-400 font-mono hidden sm:inline">0.2s Local Gateway Sync</span>
+                                    <span class="text-[10px] text-gray-400 font-mono hidden sm:inline flex-shrink-0">0.2s Local Gateway Sync</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Top-Right Floating Badge: AUTOMATION READY (with Keyframe Bobbing) -->
-                        <div class="absolute -top-4 -right-3 sm:-top-5 sm:-right-5 bg-[#0c1322]/95 backdrop-blur-md border border-cyan-500/40 rounded-xl px-4 py-2.5 shadow-[0_0_20px_rgba(6,182,212,0.25)] transform rotate-[3deg] group-hover:rotate-0 group-hover:scale-105 transition-all duration-500 animate-float">
-                            <div class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                        <!-- Top-Right Floating Badge: AUTOMATION READY (positioned safely on mobile without negative overflow) -->
+                        <div class="absolute -top-3.5 right-1 sm:-top-5 sm:-right-5 bg-[#0c1322]/95 backdrop-blur-md border border-cyan-500/40 rounded-xl px-2.5 py-1.5 sm:px-4 sm:py-2.5 shadow-[0_0_20px_rgba(6,182,212,0.25)] transform rotate-[1.5deg] sm:rotate-[3deg] group-hover:rotate-0 group-hover:scale-105 transition-all duration-500 animate-float z-20 max-w-[85vw] sm:max-w-none">
+                            <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-gray-400">
                                 AUTOMATION READY
                             </div>
-                            <div class="text-sm font-headline font-black text-cyan-400 tracking-wide drop-shadow-[0_0_8px_rgba(6,182,212,0.6)] flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-base">chat</span>
-                                <span>WhatsApp & Social CRM</span>
+                            <div class="text-xs sm:text-sm font-headline font-black text-cyan-400 tracking-wide drop-shadow-[0_0_8px_rgba(6,182,212,0.6)] flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-sm sm:text-base">chat</span>
+                                <span class="truncate">WhatsApp & Social CRM</span>
                             </div>
                         </div>
 
-                        <!-- Bottom-Left Floating Badge: LIVE CHECK-INS (with Delayed Bobbing) -->
-                        <div class="absolute -bottom-5 -left-3 sm:-bottom-6 sm:-left-5 bg-[#0c1322]/95 backdrop-blur-md border border-emerald-500/40 rounded-xl px-4 py-2.5 shadow-[0_0_20px_rgba(16,185,129,0.25)] transform rotate-[-3deg] group-hover:rotate-0 group-hover:scale-105 transition-all duration-500 animate-float" style="animation-delay: 1.5s;">
-                            <div class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                        <!-- Bottom-Left Floating Badge: LIVE CHECK-INS (positioned safely on mobile without negative overflow or covering sync text) -->
+                        <div class="absolute -bottom-3.5 left-2 sm:-bottom-6 sm:-left-5 bg-[#0c1322]/95 backdrop-blur-md border border-emerald-500/40 rounded-xl px-2.5 py-1.5 sm:px-4 sm:py-2.5 shadow-[0_0_20px_rgba(16,185,129,0.25)] transform rotate-[-1.5deg] sm:rotate-[-3deg] group-hover:rotate-0 group-hover:scale-105 transition-all duration-500 animate-float z-20 max-w-[85vw] sm:max-w-none" style="animation-delay: 1.5s;">
+                            <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-gray-400">
                                 LIVE CHECK-INS TODAY
                             </div>
-                            <div class="text-lg font-headline font-black text-emerald-400 flex items-center gap-1.5 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]">
-                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]"></span>
+                            <div class="text-xs sm:text-lg font-headline font-black text-emerald-400 flex items-center gap-1.5 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]">
+                                <span class="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399] flex-shrink-0"></span>
                                 <span>1,240+ CHECKED IN</span>
                             </div>
                         </div>
@@ -289,9 +289,9 @@
     </section>
 
     <!-- Kinetic Capability Ticker Strip -->
-    <section class="border-y border-outline-variant/20 bg-surface-container-lowest/80 backdrop-blur-md py-4 overflow-hidden relative z-10">
-        <div class="container mx-auto px-6 max-w-8xl">
-            <div class="flex flex-wrap items-center justify-between gap-6 sm:gap-8 text-xs sm:text-sm font-semibold uppercase tracking-wider text-on-surface-variant">
+    <section class="border-y border-outline-variant/20 bg-surface-container-lowest/80 backdrop-blur-md py-3.5 sm:py-4 overflow-hidden relative z-10">
+        <div class="container mx-auto px-4 sm:px-6 max-w-8xl">
+            <div class="flex flex-wrap items-center justify-center sm:justify-between gap-3 sm:gap-6 lg:gap-8 text-xs sm:text-sm font-semibold uppercase tracking-wider text-on-surface-variant">
                 <div class="flex items-center gap-2 text-on-surface hover:text-emerald-400 transition-colors">
                     <span class="material-symbols-outlined text-emerald-400 text-base">chat</span>
                     <span>Automated WhatsApp Reminders</span>
@@ -317,29 +317,29 @@
     </section>
 
     <!-- Interactive Live Simulation / Feature Showcase Tabs -->
-    <section id="features" class="py-20 relative overflow-hidden bg-surface-container-lowest" x-data="{ activeTab: 'whatsapp' }">
-        <div class="container mx-auto px-6 max-w-7xl relative z-10">
-            <div class="text-center max-w-3xl mx-auto mb-12 space-y-3">
+    <section id="features" class="py-14 sm:py-20 relative overflow-hidden bg-surface-container-lowest" x-data="{ activeTab: 'whatsapp' }">
+        <div class="container mx-auto px-4 sm:px-6 max-w-7xl relative z-10">
+            <div class="text-center max-w-3xl mx-auto mb-8 sm:mb-12 space-y-3">
                 <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-container-high border border-outline-variant/30 text-xs font-bold uppercase tracking-widest text-primary">
                     <span>Interactive Live Simulation</span>
                 </div>
-                <h2 class="font-headline font-black text-3xl sm:text-4xl lg:text-5xl tracking-tight text-white uppercase">
+                <h2 class="font-headline font-black text-2xl sm:text-4xl lg:text-5xl tracking-tight text-white uppercase leading-tight">
                     SEE HOW FLUXFITNESS RUNS <br />
                     <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-300 to-[#cafd00]">ON AUTOPILOT</span>
                 </h2>
             </div>
 
             <!-- Tab Switcher Navigation -->
-            <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-10 max-w-3xl mx-auto">
-                <button @click="activeTab = 'whatsapp'" :class="activeTab === 'whatsapp' ? 'bg-[#22c55e] text-black shadow-[0_0_20px_rgba(34,197,94,0.4)]' : 'bg-surface-container-high text-gray-300 hover:text-white border border-white/10'" class="px-5 py-2.5 rounded-xl font-headline font-bold text-xs sm:text-sm uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2">
+            <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-8 sm:mb-10 max-w-3xl mx-auto">
+                <button @click="activeTab = 'whatsapp'" :class="activeTab === 'whatsapp' ? 'bg-[#22c55e] text-black shadow-[0_0_20px_rgba(34,197,94,0.4)]' : 'bg-surface-container-high text-gray-300 hover:text-white border border-white/10'" class="px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl font-headline font-bold text-xs sm:text-sm uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2">
                     <span class="material-symbols-outlined text-base">mark_chat_read</span>
                     <span>WhatsApp Due Chasers</span>
                 </button>
-                <button @click="activeTab = 'attendance'" :class="activeTab === 'attendance' ? 'bg-[#22c55e] text-black shadow-[0_0_20px_rgba(34,197,94,0.4)]' : 'bg-surface-container-high text-gray-300 hover:text-white border border-white/10'" class="px-5 py-2.5 rounded-xl font-headline font-bold text-xs sm:text-sm uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2">
+                <button @click="activeTab = 'attendance'" :class="activeTab === 'attendance' ? 'bg-[#22c55e] text-black shadow-[0_0_20px_rgba(34,197,94,0.4)]' : 'bg-surface-container-high text-gray-300 hover:text-white border border-white/10'" class="px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl font-headline font-bold text-xs sm:text-sm uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2">
                     <span class="material-symbols-outlined text-base">fingerprint</span>
                     <span>Biometric Attendance</span>
                 </button>
-                <button @click="activeTab = 'crm'" :class="activeTab === 'crm' ? 'bg-[#22c55e] text-black shadow-[0_0_20px_rgba(34,197,94,0.4)]' : 'bg-surface-container-high text-gray-300 hover:text-white border border-white/10'" class="px-5 py-2.5 rounded-xl font-headline font-bold text-xs sm:text-sm uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2">
+                <button @click="activeTab = 'crm'" :class="activeTab === 'crm' ? 'bg-[#22c55e] text-black shadow-[0_0_20px_rgba(34,197,94,0.4)]' : 'bg-surface-container-high text-gray-300 hover:text-white border border-white/10'" class="px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl font-headline font-bold text-xs sm:text-sm uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2">
                     <span class="material-symbols-outlined text-base">hub</span>
                     <span>Instagram Lead CRM</span>
                 </button>
@@ -469,18 +469,18 @@
     </section>
 
     <!-- Key Features Section -->
-    <section id="features" class="py-24 relative overflow-hidden bg-surface-container-low/40">
-        <div class="container mx-auto px-6 max-w-7xl relative z-10">
+    <section id="core-features" class="py-16 sm:py-24 relative overflow-hidden bg-surface-container-low/40">
+        <div class="container mx-auto px-4 sm:px-6 max-w-7xl relative z-10">
             <!-- Section Header -->
-            <div class="text-center max-w-3xl mx-auto mb-20 space-y-4">
+            <div class="text-center max-w-3xl mx-auto mb-12 sm:mb-20 space-y-3 sm:space-y-4">
                 <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-container-high border border-outline-variant/30 text-xs font-bold uppercase tracking-widest text-primary">
                     <span>Core System Modules</span>
                 </div>
-                <h2 class="font-headline font-extrabold text-4xl sm:text-5xl lg:text-6xl tracking-tight text-on-surface leading-tight">
+                <h2 class="font-headline font-extrabold text-2xl sm:text-4xl lg:text-5xl tracking-tight text-on-surface leading-tight">
                     BUILT SPECIFICALLY FOR <br />
                     <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-container">INDIAN GYM OPERATIONS</span>
                 </h2>
-                <p class="text-on-surface-variant text-base sm:text-lg">
+                <p class="text-on-surface-variant text-sm sm:text-base lg:text-lg">
                     Everything you need to run, scale, and automate your fitness center from day one.
                 </p>
             </div>
@@ -701,7 +701,7 @@
     </section>
 
     <!-- Solutions Section (Why Choose Us & Interactive Impact Simulator) -->
-    <section id="solutions" class="py-24 bg-surface-container-lowest relative z-10 border-t border-outline-variant/20 overflow-hidden" x-data="{ 
+    <section id="solutions" class="py-16 sm:py-24 bg-surface-container-lowest relative z-10 border-t border-outline-variant/20 overflow-hidden" x-data="{ 
         comparisonMode: 'flux',
         gymMembers: 350,
         activeStep: 1,
@@ -734,24 +734,24 @@
         <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-gradient-to-tr from-emerald-500/10 via-cyan-500/5 to-[#cafd00]/10 blur-[170px] rounded-full pointer-events-none animate-pulse"></div>
         <div class="absolute -bottom-20 -left-20 w-96 h-96 bg-primary-container/10 blur-[130px] rounded-full pointer-events-none"></div>
 
-        <div class="container mx-auto px-6 max-w-7xl relative z-10 space-y-24">
+        <div class="container mx-auto px-4 sm:px-6 max-w-7xl relative z-10 space-y-16 sm:space-y-24">
             <!-- Section Header -->
-            <div class="text-center max-w-3xl mx-auto space-y-4">
+            <div class="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
                 <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-high border border-primary/30 text-xs font-bold uppercase tracking-widest text-primary shadow-[0_0_15px_rgba(34,197,94,0.15)]">
                     <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
                     <span>The Gym Management Solution</span>
                 </div>
-                <h2 class="font-headline font-extrabold text-4xl sm:text-5xl lg:text-6xl tracking-tight text-on-surface leading-tight">
+                <h2 class="font-headline font-extrabold text-2xl sm:text-4xl lg:text-5xl tracking-tight text-on-surface leading-tight">
                     WHY 500+ INDIAN GYMS <br />
                     <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-300 to-cyan-400">UPGRADE TO FLUXFITNESS</span>
                 </h2>
-                <p class="text-on-surface-variant text-base sm:text-lg">
+                <p class="text-on-surface-variant text-sm sm:text-base lg:text-lg">
                     See how modern fitness clubs eliminate operational friction, stop revenue leaks, and automate member retention.
                 </p>
             </div>
 
             <!-- INTERACTIVE PIPELINE: The 4-Stage Member Lifecycle -->
-            <div class="glass-card rounded-3xl p-6 sm:p-10 border border-primary/30 relative overflow-hidden shadow-2xl bg-gradient-to-b from-surface-container-high/60 via-surface-container-low/40 to-surface-container-high/60">
+            <div class="glass-card rounded-3xl p-4 sm:p-8 lg:p-10 border border-primary/30 relative overflow-hidden shadow-2xl bg-gradient-to-b from-surface-container-high/60 via-surface-container-low/40 to-surface-container-high/60">
                 <!-- Header & Controls -->
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-8 border-b border-white/10">
                     <div>
@@ -1312,18 +1312,18 @@
     </section>
 
     <!-- Pricing Section -->
-    <section id="pricing" class="py-24 relative overflow-hidden bg-surface">
-        <div class="container mx-auto px-6 max-w-7xl relative z-10">
+    <section id="pricing" class="py-16 sm:py-24 relative overflow-hidden bg-surface">
+        <div class="container mx-auto px-4 sm:px-6 max-w-7xl relative z-10">
             <!-- Section Header -->
-            <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
+            <div class="text-center max-w-3xl mx-auto mb-10 sm:mb-16 space-y-3 sm:space-y-4">
                 <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-container-high border border-outline-variant/30 text-xs font-bold uppercase tracking-widest text-primary">
                     <span>Transparent Pricing</span>
                 </div>
-                <h2 class="font-headline font-extrabold text-4xl sm:text-5xl lg:text-6xl tracking-tight text-on-surface">
+                <h2 class="font-headline font-extrabold text-2xl sm:text-4xl lg:text-5xl tracking-tight text-on-surface leading-tight">
                     SIMPLE, PREDICTABLE <br />
                     <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-container">PLANS FOR YOUR GYM</span>
                 </h2>
-                <p class="text-on-surface-variant text-base sm:text-lg">
+                <p class="text-on-surface-variant text-sm sm:text-base lg:text-lg">
                     No hidden setup fees. No long-term lock-in. Cancel anytime.
                 </p>
             </div>
@@ -1452,7 +1452,7 @@
     </section>
 
     <!-- FAQ Section (Interactive Search & Categories) -->
-    <section id="faq" class="py-24 bg-surface-container-low/30 relative z-10 border-t border-outline-variant/20 overflow-hidden" x-data="{ 
+    <section id="faq" class="py-16 sm:py-24 bg-surface-container-low/30 relative z-10 border-t border-outline-variant/20 overflow-hidden" x-data="{ 
         activeAccordion: 1,
         searchQuery: '',
         activeCategory: 'all',
@@ -1486,17 +1486,17 @@
         <!-- Ambient Kinetic Glow -->
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-primary/5 blur-[150px] rounded-full pointer-events-none"></div>
 
-        <div class="container mx-auto px-6 max-w-5xl relative z-10 space-y-12">
+        <div class="container mx-auto px-4 sm:px-6 max-w-5xl relative z-10 space-y-8 sm:space-y-12">
             <!-- Section Header -->
-            <div class="text-center max-w-3xl mx-auto space-y-4">
+            <div class="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
                 <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-high border border-primary/30 text-xs font-bold uppercase tracking-widest text-primary shadow-[0_0_15px_rgba(34,197,94,0.15)]">
                     <span class="material-symbols-outlined text-sm">help</span>
                     <span>Frequently Asked Questions</span>
                 </div>
-                <h2 class="font-headline font-extrabold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-on-surface">
+                <h2 class="font-headline font-extrabold text-2xl sm:text-4xl lg:text-5xl tracking-tight text-on-surface leading-tight">
                     FREQUENTLY ASKED <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-300 to-cyan-400">QUESTIONS</span>
                 </h2>
-                <p class="text-on-surface-variant text-base sm:text-lg">
+                <p class="text-on-surface-variant text-sm sm:text-base lg:text-lg">
                     Everything you need to know about setting up, automating, and scaling your gym with FluxFitness.
                 </p>
             </div>
@@ -1788,7 +1788,7 @@
     </section>
 
     <!-- Interactive Contact Hub Section -->
-    <section id="contact" class="py-24 bg-surface-container-lowest relative z-10 border-t border-outline-variant/20 overflow-hidden" x-data="{
+    <section id="contact" class="py-16 sm:py-24 bg-surface-container-lowest relative z-10 border-t border-outline-variant/20 overflow-hidden" x-data="{
         activeTab: 'whatsapp',
         selectedTopic: 'pricing',
         gymName: '',
@@ -1820,18 +1820,18 @@
         <!-- Ambient Background Glow -->
         <div class="absolute top-1/3 left-1/4 w-[750px] h-[450px] bg-gradient-to-r from-emerald-500/10 via-cyan-500/5 to-[#cafd00]/5 blur-[160px] rounded-full pointer-events-none"></div>
 
-        <div class="container mx-auto px-6 max-w-7xl relative z-10 space-y-16">
+        <div class="container mx-auto px-4 sm:px-6 max-w-7xl relative z-10 space-y-12 sm:space-y-16">
             <!-- Section Header -->
-            <div class="text-center max-w-3xl mx-auto space-y-4">
+            <div class="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
                 <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-high border border-primary/30 text-xs font-bold uppercase tracking-widest text-primary shadow-[0_0_15px_rgba(34,197,94,0.15)]">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                     <span>Direct Support & Sales Team</span>
                 </div>
-                <h2 class="font-headline font-extrabold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-on-surface">
+                <h2 class="font-headline font-extrabold text-2xl sm:text-4xl lg:text-5xl tracking-tight text-on-surface leading-tight">
                     LET'S TALK ABOUT YOUR <br />
                     <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-300 to-cyan-400">GYM'S GROWTH</span>
                 </h2>
-                <p class="text-on-surface-variant text-base sm:text-lg">
+                <p class="text-on-surface-variant text-sm sm:text-base lg:text-lg">
                     Whether you need a live demo, custom multi-branch pricing, or biometric hardware advice, our Indian support team is ready to assist.
                 </p>
             </div>
@@ -2056,38 +2056,38 @@
     </section>
 
     <!-- Bottom High-Conversion CTA Banner -->
-    <section class="py-20 relative overflow-hidden">
-        <div class="container mx-auto px-6 max-w-5xl relative z-10">
-            <div class="glass-card rounded-3xl p-8 sm:p-14 border border-primary/40 text-center space-y-8 relative overflow-hidden shadow-2xl">
+    <section class="py-14 sm:py-20 relative overflow-hidden">
+        <div class="container mx-auto px-4 sm:px-6 max-w-5xl relative z-10">
+            <div class="glass-card rounded-3xl p-6 sm:p-14 border border-primary/40 text-center space-y-6 sm:space-y-8 relative overflow-hidden shadow-2xl">
                 <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary-container/15 rounded-full blur-3xl pointer-events-none"></div>
 
-                <div class="space-y-4 max-w-2xl mx-auto relative z-10">
-                    <h2 class="font-headline font-extrabold text-3xl sm:text-5xl text-on-surface leading-tight">
+                <div class="space-y-3 sm:space-y-4 max-w-2xl mx-auto relative z-10">
+                    <h2 class="font-headline font-extrabold text-2xl sm:text-4xl lg:text-5xl text-on-surface leading-tight">
                         READY TO ELEVATE YOUR <br />
                         <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-container">GYM BUSINESS?</span>
                     </h2>
-                    <p class="text-on-surface-variant text-base sm:text-lg">
+                    <p class="text-on-surface-variant text-sm sm:text-base lg:text-lg">
                         Join hundreds of successful gym owners who streamlined their operations and boosted member retention with FluxFitness.
                     </p>
                 </div>
 
-                <div class="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center relative z-10">
                     <button wire:click="startFreeTrial" wire:loading.attr="disabled"
-                        class="cursor-pointer inline-flex items-center justify-center gap-2 bg-primary-container text-on-primary-fixed font-headline font-bold text-base sm:text-lg px-9 py-4 rounded-xl shadow-xl shadow-primary/20 hover:brightness-110 active:scale-[0.98] transition-all uppercase tracking-wide">
+                        class="cursor-pointer w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary-container text-on-primary-fixed font-headline font-bold text-sm sm:text-lg px-8 sm:px-9 py-3.5 sm:py-4 rounded-xl shadow-xl shadow-primary/20 hover:brightness-110 active:scale-[0.98] transition-all uppercase tracking-wide">
                         <span wire:loading.remove wire:target="startFreeTrial">Get Started Free</span>
                         <span wire:loading wire:target="startFreeTrial">Starting...</span>
                     </button>
                     <a href="{{ route('request-demo') }}"
-                        class="inline-flex items-center justify-center gap-2 bg-surface-container-high border border-outline-variant/40 text-on-surface font-headline font-semibold text-base sm:text-lg px-8 py-4 rounded-xl hover:bg-surface-container-highest hover:border-primary/50 transition-all">
+                        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-surface-container-high border border-outline-variant/40 text-on-surface font-headline font-semibold text-sm sm:text-lg px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl hover:bg-surface-container-highest hover:border-primary/50 transition-all">
                         Request a Personalized Demo
                     </a>
                 </div>
 
-                <div class="text-xs text-on-surface-variant flex items-center justify-center gap-4 relative z-10 pt-2 font-medium">
+                <div class="text-xs text-on-surface-variant flex flex-wrap items-center justify-center gap-2 sm:gap-4 relative z-10 pt-1 sm:pt-2 font-medium">
                     <span>⚡ Instant 2-minute setup</span>
-                    <span>•</span>
+                    <span class="hidden xs:inline">•</span>
                     <span>🔒 100% Data Isolation</span>
-                    <span>•</span>
+                    <span class="hidden xs:inline">•</span>
                     <span>🇮🇳 Built for Indian Gyms</span>
                 </div>
             </div>
