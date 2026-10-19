@@ -199,3 +199,4 @@ Rather than relying on disjointed observer-triggered consent emails:
 - **REF-009**: [WelcomeNotification](file:///app/Notifications/Member/WelcomeNotification.php)
 - **REF-010**: [Biometric Consent Actions Feature Test Suite](file:///tests/Feature/Filament/BiometricConsentActionsTest.php)
 - **REF-011**: [Dual-Gate Availability Feature Test Suite](file:///tests/Feature/Services/NotificationChannelResolverDualGateTest.php)
+- **REF-012**: [ADR-0004: Member Archival Lifecycle, Cryptographic Biometric Credential Erasure, and Access Revocation Architecture](file:///docs/adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md)

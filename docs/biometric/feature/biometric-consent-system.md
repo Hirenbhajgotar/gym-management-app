@@ -7,7 +7,9 @@ related_docs:
   - ../../adr/adr-0001-biometric-implementation.md
   - ../../adr/adr-0002-biometric-enrollment-and-device-reconciliation.md
   - ../../adr/adr-0003-biometric-consent-distribution-and-dual-gate-architecture.md
+  - ../../adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md
   - ../database/biometric-consents-fields.md
+  - ../database/biometric-templates-fields.md
   - ../database/gym-members-fields.md
 ---
 
@@ -37,7 +39,10 @@ The biometric consent system ensures GDPR compliance by requiring members to exp
 | `BiometricConsentStoreRequest` (`app/Http/Requests/BiometricConsentStoreRequest.php`) | Form request validation |
 | `BiometricConsent` (`app/Models/BiometricConsent.php`) | Consent record model |
 | `MembershipGuard` (`app/Biometrics/Services/MembershipGuard.php`) | Checks consent before allowing check-in |
-| `BiometricDataDeletionService` (`app/Biometrics/Services/BiometricDataDeletionService.php`) | Handles consent revocation |
+| `BiometricDataDeletionService` (`app/Biometrics/Services/BiometricDataDeletionService.php`) | Handles consent revocation & resilient multi-template erasure |
+| `BiometricDeProvisioner` (`app/Biometrics/Services/BiometricDeProvisioner.php`) | Coordinates hardware command queuing, cloud provider deletion, and epoch tracking |
+| `MemberArchiveService` (`app/Services/MemberArchiveService.php`) | Enforces member archival access revocation and triggers biometric credential erasure |
+| `MemberArchiveAuthorization` (`app/Services/MemberArchiveAuthorization.php`) | Asserts Spatie archive/unarchive permissions for authenticated operators |
 
 ### Data Flow
 
@@ -171,7 +176,10 @@ When a new `GymMember` is created (via admin panel or API):
 | No biometric without consent | MembershipGuard rejects check-in if no active consent |
 | Consent records | BiometricConsent stores version, IP, timestamp |
 | Right to withdraw | Revocation triggers template deletion |
-| Data deletion | BiometricDataDeletionService calls provider.deleteTemplate() |
+| Data deletion | BiometricDataDeletionService calls provider.deleteTemplate() and queues hardware user_delete |
+| Inactive Member Archival | Inactive members (>2 years) archived and live credentials erased (ADR-0004) |
+| Erasure Obligation Tracking | `is_erasure_obligation` prevents accidental superseding of pending deletion tasks |
+| Cooldown & Operator Attention | 24h cooldown avoids retry exhaustion; unresolvable erasures surface in admin widget |
 | No raw biometric storage | Only template references, never raw data |
 | Consent expiry | URL expires in 7 days (configurable) |
 
