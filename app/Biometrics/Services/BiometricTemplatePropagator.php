@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Biometrics\Services;
 
 use App\Biometrics\Exceptions\BiometricConsentRequiredException;
+use App\Biometrics\Exceptions\MemberArchivedException;
 use App\Biometrics\ValueObjects\AdmsCommandKey;
 use App\Biometrics\ValueObjects\BiometricPropagationResult;
 use App\Enums\AdmsCommandStatusEnum;
@@ -13,6 +14,7 @@ use App\Models\AdmsDeviceCommand;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -27,6 +29,7 @@ class BiometricTemplatePropagator
     /**
      * Propagate enrolled biometric profile to all other active ADMS devices in the gym.
      *
+     * @throws MemberArchivedException when the member is archived at fan-out time
      * @throws BiometricConsentRequiredException when consent is absent at fan-out time
      */
     public function propagateToSiblingDevices(
@@ -34,6 +37,13 @@ class BiometricTemplatePropagator
         GymMember $member,
         BiometricTemplate $template
     ): BiometricPropagationResult {
+        // Fan-out creates/user_adds credentials on every sibling, so it is a
+        // grant-side producer and must ask the same archive question as the
+        // originating enrolment. Today's sole caller does so inside the enrol
+        // transaction's row lock, but that coupling disappears if the fan-out
+        // ever moves to a queued job — so the check is stated here, not assumed.
+        $member->assertMayHoldBiometricCredential();
+
         $siblingDevices = BiometricDevice::query()
             ->where('gym_id', $originatingDevice->gym_id)
             ->where('id', '!=', $originatingDevice->id)
@@ -147,11 +157,16 @@ class BiometricTemplatePropagator
     }
 
     /**
-     * Demote a live GDPR erasure request on the sibling to `Superseded`.
+     * Demote a live explicit erasure request on the sibling to `Superseded`.
      *
-     * This is an operator override of a member's Art. 17 request, so it is recorded as
-     * such and retained for audit rather than being an implicit consequence of a
-     * column write.
+     * This is an explicit erasure request — member- or operator-initiated — overtaken by a
+     * re-enrolment, so it is recorded as such and retained for audit rather than being an
+     * implicit consequence of a column write.
+     *
+     * The fan-out only discharges the origin's own provenance class: the superseder is
+     * handed `$template->provenance()`, so a hardware origin cannot demote a cloud-backed
+     * erasure on the sibling (nor the reverse). On ADR-004's dual-mode device the two share
+     * a PIN but are two credentials, and `Superseded` strands whichever one is demoted.
      */
     protected function supersedePendingDeletionSiblings(
         BiometricDevice $sibling,
@@ -162,15 +177,27 @@ class BiometricTemplatePropagator
             $sibling->gym_id,
             $member,
             $sibling->id,
-            $template->biometric_type->value
+            $template->biometric_type->value,
+            $template->provenance()
         );
     }
 
     /**
      * Create or refresh the sibling's row so it tracks physical device state as `Propagated`.
      *
-     * A row in `Deleted`, `PendingDeletion` or `Superseded` is never resurrected; a fresh
-     * row is created instead so the erasure audit trail survives.
+     * A row in `Deleted`, `PendingDeletion`, `Superseded` or `DeletionUnresolvable` is never
+     * resurrected; a fresh row is created instead so the erasure audit trail survives. A row
+     * flagged `is_erasure_obligation` is excluded for the same reason: it is a machine-written
+     * erasure obligation, not an enrolment a new fan-out replaces. Repurposing it would destroy
+     * the only reference to an un-erased credential and turn a compliance record into a live
+     * template.
+     *
+     * The candidate row must also share the origin's provenance. `provider_type` and
+     * `template_ref` are copied from the origin onto the sibling, so matching a row of a
+     * different class would rewrite a live cloud reference as a hardware one — erasing the
+     * handle the provider credential is addressed by. A hardware and a cloud credential on the
+     * same PIN are two credentials (ADR-004), so the other one is left live and gets its own
+     * sibling row.
      */
     protected function upsertSiblingTemplate(
         BiometricDevice $sibling,
@@ -182,11 +209,13 @@ class BiometricTemplatePropagator
             ->where('gym_id', $sibling->gym_id)
             ->where('enrolled_by_device_id', $sibling->id)
             ->where('biometric_type', $template->biometric_type)
-            ->whereNotIn('sync_status', [
-                BiometricTemplateSyncStatusEnum::Deleted,
-                BiometricTemplateSyncStatusEnum::PendingDeletion,
-                BiometricTemplateSyncStatusEnum::Superseded,
-            ])
+            ->where('is_erasure_obligation', false)
+            ->when(
+                $template->hasCloudProvider(),
+                fn (Builder $q) => $q->cloudBacked(),
+                fn (Builder $q) => $q->hardwareBacked(),
+            )
+            ->whereIn('sync_status', BiometricTemplateSyncStatusEnum::liveCredentialStates())
             ->first();
 
         if ($existingSiblingTemplate === null) {

@@ -2,12 +2,10 @@
 
 declare(strict_types=1);
 
-// app/Services/AvatarService.php
-
 namespace App\Services;
 
+use App\Biometrics\Services\MembershipGuard;
 use App\Enums\AttendanceStatus;
-use App\Enums\PaymentStatus;
 use App\Models\Attendances;
 use App\Models\GymMember;
 use App\Models\Trainer;
@@ -19,16 +17,33 @@ use Illuminate\Support\Facades\Date;
 
 class AttendanceService
 {
-    public static $attendanceModels = [];
-
-    public function __construct()
-    {
-        self::$attendanceModels = [
-            GymMember::class,
-            Trainer::class,
-            User::class,
-        ];
-    }
+    /**
+     * The Eloquent model FQCNs an attendance row may point at.
+     *
+     * A const assigned at declaration, not a static assigned in a constructor:
+     * every consumer calls these methods statically without resolving the
+     * service, so a constructor assignment left the guard list empty for every
+     * caller and rejected each valid type as "Invalid user type." `AttendanceService`
+     * is never constructed anywhere in the app, which made that a live failure
+     * rather than a theoretical one.
+     *
+     * `GymMember`, `Trainer` and `User` are all accepted, matching
+     * {@see self::validateUserExistsInGym()}, which resolves each of the three.
+     *
+     * Every guard compares it with `in_array(..., true)`. The comparison is
+     * deliberately strict as defensive style, but note that `$userType` is typed
+     * `string` under `declare(strict_types=1)`, so a non-string argument is already
+     * rejected by the parameter type before the guard runs — the type declaration,
+     * not the third argument, is the real protection. The third argument is kept so
+     * the intent is explicit and so a future loose-typed caller cannot satisfy it.
+     *
+     * @var array<int, class-string>
+     */
+    private const ATTENDANCE_MODELS = [
+        GymMember::class,
+        Trainer::class,
+        User::class,
+    ];
 
     /**
      * Check in a user (gym member or trainer)
@@ -36,7 +51,7 @@ class AttendanceService
     public static function checkIn(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        throw_unless(in_array($userType, self::$attendanceModels), Exception::class, 'Invalid user type.');
+        throw_unless(in_array($userType, self::ATTENDANCE_MODELS, true), Exception::class, 'Invalid user type.');
 
         // Validate that the user exists and belongs to the gym
         self::validateUserExistsInGym($userId, $userType, $gymId);
@@ -45,18 +60,10 @@ class AttendanceService
         if ($userType === GymMember::class) {
             $member = GymMember::query()->find($userId);
             if ($member && ! $member->canAccessGym()) {
-                $reason = '';
-                if ($member->isFrozen()) {
-                    $reason = 'Your membership is currently frozen.';
-                    if ($member->frozen_until) {
-                        $reason .= ' It will be unfrozen on ' . $member->frozen_until->format('F j, Y') . '.';
-                    }
-                } elseif ($member->membership_end?->isPast()) {
-                    $reason = 'Your membership has expired.';
-                } elseif ($member->payment_status !== PaymentStatus::COMPLETED) {
-                    $reason = 'Your payment is not completed.';
-                }
-                throw new Exception('Cannot check in: ' . $reason);
+                // One derivation of "why denied": the guard's own reason, so the
+                // explanation cannot diverge from the predicate that denied access.
+                $guard = resolve(MembershipGuard::class);
+                throw new Exception('Cannot check in: ' . $guard->reasonMessage($member));
             }
         }
 
@@ -87,7 +94,7 @@ class AttendanceService
     public static function checkOut(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        throw_unless(in_array($userType, self::$attendanceModels), Exception::class, 'Invalid user type.');
+        throw_unless(in_array($userType, self::ATTENDANCE_MODELS, true), Exception::class, 'Invalid user type.');
 
         $attendance = Attendances::query()->where('attendanceable_id', $userId)
             ->where('attendanceable_type', $userType)
@@ -116,7 +123,7 @@ class AttendanceService
     public static function markAbsent(int $userId, string $userType, int $gymId, ?string $notes = null): Attendances
     {
         // Validate user type
-        throw_unless(in_array($userType, [GymMember::class, Trainer::class]), Exception::class, 'Invalid user type.');
+        throw_unless(in_array($userType, self::ATTENDANCE_MODELS, true), Exception::class, 'Invalid user type.');
 
         // Validate that the user exists and belongs to the gym
         self::validateUserExistsInGym($userId, $userType, $gymId);
@@ -293,7 +300,7 @@ class AttendanceService
     public static function generateUserReport(int $userId, string $userType, int $gymId, ?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         // Validate user type
-        throw_unless(in_array($userType, self::$attendanceModels), Exception::class, 'Invalid user type.');
+        throw_unless(in_array($userType, self::ATTENDANCE_MODELS, true), Exception::class, 'Invalid user type.');
 
         $startDate = $startDate ?? now()->startOfMonth();
         $endDate = $endDate ?? now()->endOfMonth();
@@ -330,7 +337,7 @@ class AttendanceService
         $startDate = $startDate ?? now()->startOfMonth();
         $endDate = $endDate ?? now()->endOfMonth();
 
-        $members = GymMember::query()->where('gym_id', $gymId)->get();
+        $members = GymMember::query()->where('gym_id', $gymId)->notArchived()->get();
         $summary = [];
 
         foreach ($members as $member) {
@@ -403,6 +410,7 @@ class AttendanceService
             ->pluck('attendanceable_id');
 
         return GymMember::query()->where('gym_id', $gymId)
+            ->notArchived()
             ->whereNotIn('id', $checkedInMemberIds)
             ->get();
     }

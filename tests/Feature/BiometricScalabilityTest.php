@@ -24,6 +24,9 @@ class BiometricScalabilityTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** Secret every webhook-capable device in this suite is provisioned with. */
+    private const WEBHOOK_SECRET = 'test-webhook-secret';
+
     protected User $user;
 
     protected Gym $gym;
@@ -44,6 +47,7 @@ class BiometricScalabilityTest extends TestCase
         $this->plainToken = 'scale-test-token-abcdef123456';
         $this->device = BiometricDevice::factory()
             ->withToken($this->plainToken)
+            ->withWebhookSecret(self::WEBHOOK_SECRET)
             ->create([
                 'gym_id' => $this->gym->id,
                 'status' => BiometricDeviceStatusEnum::Active,
@@ -163,13 +167,13 @@ class BiometricScalabilityTest extends TestCase
         ]);
 
         // First punch succeeds
-        $firstResponse = $this->postJson("/api/v1/biometric/webhook/{$this->plainToken}", [
+        $firstResponse = $this->postSignedWebhook("/api/v1/biometric/webhook/{$this->plainToken}", [
             'member_id' => $member->id,
         ]);
         $firstResponse->assertOk()->assertJson(['granted' => true]);
 
         // Rapid duplicate punch fails with anti-passback rejection
-        $duplicateResponse = $this->postJson("/api/v1/biometric/webhook/{$this->plainToken}", [
+        $duplicateResponse = $this->postSignedWebhook("/api/v1/biometric/webhook/{$this->plainToken}", [
             'member_id' => $member->id,
         ]);
         $duplicateResponse->assertStatus(429)
@@ -310,5 +314,20 @@ class BiometricScalabilityTest extends TestCase
         $result = $cacheService->getMemberAccessSummary($this->gym->id, 'CARD-ALPHANUMERIC-99');
 
         $this->assertNull($result);
+    }
+
+    /**
+     * Post a webhook payload signed the way a provisioned device signs it.
+     *
+     * The controller refuses a webhook for a device with no webhook_secret
+     * configured, so every webhook in this suite has to be signed.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function postSignedWebhook(string $uri, array $payload): \Illuminate\Testing\TestResponse
+    {
+        return $this->postJson($uri, $payload, [
+            'X-Signature' => 'sha256=' . hash_hmac('sha256', (string) json_encode($payload), self::WEBHOOK_SECRET),
+        ]);
     }
 }

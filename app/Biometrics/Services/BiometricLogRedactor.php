@@ -8,6 +8,15 @@ use App\Enums\DefaultRole;
 use App\Models\User;
 use Throwable;
 
+/**
+ * Redaction helpers for biometric log lines and operator-facing output.
+ *
+ * The boundary is correlation, not anonymisation: {@see self::mask()} deliberately reveals the
+ * first and last two characters so an operator can match a row across log lines, and for a
+ * device-native row `template_ref` IS the member id. Masking such a value therefore narrows the
+ * reference without removing it, and must not be relied on to keep a credential reference out
+ * of a log.
+ */
 class BiometricLogRedactor
 {
     /**
@@ -227,6 +236,10 @@ class BiometricLogRedactor
 
     /**
      * Mask a single string value (e.g. employee number, card number).
+     *
+     * Correlation-grade only: the first and last two characters are deliberately retained, and
+     * for a device-native row the masked `template_ref` is the member id. See the class
+     * docblock for the boundary.
      */
     public static function mask(?string $value): string
     {

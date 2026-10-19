@@ -29,6 +29,15 @@ class BiometricSchemaIntegrityTest extends TestCase
         // and the erasure-override discriminator must remain queryable.
         $this->assertTrue(Schema::hasColumn('biometric_templates', 'deleted_at'));
         $this->assertTrue(Schema::hasColumn('biometric_templates', 'superseded_reason'));
+
+        // The erasure lifecycle's discriminators and observability columns. `erasure_attempts`
+        // and `erasure_first_attempted_at` are what let a cloud obligation stop looping without
+        // being mistaken for a transient failure; `erasure_requested_at` is the Art. 17 vs
+        // machine-park discriminator.
+        $this->assertTrue(Schema::hasColumn('biometric_templates', 'is_erasure_obligation'));
+        $this->assertTrue(Schema::hasColumn('biometric_templates', 'erasure_attempts'));
+        $this->assertTrue(Schema::hasColumn('biometric_templates', 'erasure_first_attempted_at'));
+        $this->assertTrue(Schema::hasColumn('biometric_templates', 'erasure_requested_at'));
     }
 
     public function test_biometric_device_table_has_expected_schema(): void

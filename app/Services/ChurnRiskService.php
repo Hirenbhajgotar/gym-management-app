@@ -19,6 +19,7 @@ class ChurnRiskService
     {
         // Get active members
         $members = GymMember::query()->where('gym_id', $gymId)
+            ->notArchived()
             ->with(['latestPayment', 'lastAttendance'])
             ->membershipActive()
             ->get();
@@ -131,6 +132,7 @@ class ChurnRiskService
     {
         // Get all active members with necessary relationships
         $members = GymMember::query()->where('gym_id', $gymId)
+            ->notArchived()
             ->membershipActive()
             ->with(['lastAttendance', 'membershipPlan', 'latestPayment'])
             ->get();

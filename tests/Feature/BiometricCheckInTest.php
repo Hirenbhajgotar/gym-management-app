@@ -21,6 +21,9 @@ class BiometricCheckInTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** Secret every webhook-capable device in this suite is provisioned with. */
+    private const WEBHOOK_SECRET = 'test-webhook-secret';
+
     protected User $user;
 
     protected Gym $gym;
@@ -97,6 +100,7 @@ class BiometricCheckInTest extends TestCase
         $nativeToken = 'native-device-token-123456';
         $nativeDevice = BiometricDevice::factory()
             ->withToken($nativeToken)
+            ->withWebhookSecret(self::WEBHOOK_SECRET)
             ->create([
                 'gym_id' => $this->gym->id,
                 'status' => BiometricDeviceStatusEnum::Active,
@@ -120,7 +124,7 @@ class BiometricCheckInTest extends TestCase
             'consented_at' => now(),
         ]);
 
-        $response = $this->postJson("/api/v1/biometric/webhook/{$nativeToken}", [
+        $response = $this->postSignedWebhook("/api/v1/biometric/webhook/{$nativeToken}", [
             'member_id' => $member->id,
             'SN' => 'HIK-12345',
         ]);
@@ -146,6 +150,7 @@ class BiometricCheckInTest extends TestCase
         $nativeToken = 'native-device-token-expired';
         BiometricDevice::factory()
             ->withToken($nativeToken)
+            ->withWebhookSecret(self::WEBHOOK_SECRET)
             ->create([
                 'gym_id' => $this->gym->id,
                 'status' => BiometricDeviceStatusEnum::Active,
@@ -169,7 +174,7 @@ class BiometricCheckInTest extends TestCase
             'consented_at' => now(),
         ]);
 
-        $response = $this->postJson("/api/v1/biometric/webhook/{$nativeToken}", [
+        $response = $this->postSignedWebhook("/api/v1/biometric/webhook/{$nativeToken}", [
             'member_id' => $member->id,
         ]);
 
@@ -250,5 +255,59 @@ class BiometricCheckInTest extends TestCase
             ->assertJson([
                 'error' => 'Invalid payload format',
             ]);
+    }
+
+    public function test_a_device_without_a_webhook_secret_refuses_webhooks(): void
+    {
+        // $this->device has no webhook_secret configured. The URL token alone is
+        // a bearer credential that leaks through logs, proxies and referrers, so
+        // an unsigned webhook on a physical-access surface must be refused — not
+        // processed on the token alone.
+        $response = $this->postJson("/api/v1/biometric/webhook/{$this->plainToken}", [
+            'member_id' => 1,
+        ]);
+
+        $response->assertUnauthorized()
+            ->assertJson(['error' => 'Webhook signature is not configured for this device']);
+    }
+
+    public function test_a_configured_device_still_requires_a_signature(): void
+    {
+        // The control for the refusal above: with a secret present the endpoint
+        // is usable, but an UNSIGNED request is still refused for a different,
+        // specific reason. That distinguishes "no secret" from "secret but no
+        // signature" and proves the first refusal is not the generic fallback.
+        $configuredToken = 'configured-device-token-12345';
+        BiometricDevice::factory()
+            ->withToken($configuredToken)
+            ->withWebhookSecret(self::WEBHOOK_SECRET)
+            ->create([
+                'gym_id' => $this->gym->id,
+                'status' => BiometricDeviceStatusEnum::Active,
+                'provider_type' => null,
+                'purpose' => BiometricDevicePurpose::DoorAccess,
+            ]);
+
+        $response = $this->postJson("/api/v1/biometric/webhook/{$configuredToken}", [
+            'member_id' => 1,
+        ]);
+
+        $response->assertUnauthorized()
+            ->assertJson(['error' => 'Signature required']);
+    }
+
+    /**
+     * Post a webhook payload signed the way a provisioned device signs it.
+     *
+     * The controller refuses a webhook for a device with no webhook_secret
+     * configured, so every webhook in this suite has to be signed.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function postSignedWebhook(string $uri, array $payload): \Illuminate\Testing\TestResponse
+    {
+        return $this->postJson($uri, $payload, [
+            'X-Signature' => 'sha256=' . hash_hmac('sha256', (string) json_encode($payload), self::WEBHOOK_SECRET),
+        ]);
     }
 }

@@ -56,6 +56,13 @@ class CheckMissingMembersByPhone extends Command
 
         $gymId = (int) $this->option('gym');
 
+        // Deliberately NOT notArchived(). This command answers "which phone
+        // numbers from the sheet have no GymMember row at all", so the lookup is
+        // a presence test over the gym's whole ledger. An archived member is
+        // still on the books — that is what archiving means, unlike deletion —
+        // so their number must stay in $importedNumbers and count as present.
+        // Filtering archived rows out here would invert the report and tell the
+        // operator to re-import members the gym already has.
         $importedNumbers = GymMember::query()->where('gym_id', $gymId)
             ->pluck('phone')
             ->map(fn ($n) => preg_replace('/\D/', '', $n))

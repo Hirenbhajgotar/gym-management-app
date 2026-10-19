@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Filament\Admin\Actions;
 
 use App\Biometrics\Exceptions\BiometricConsentRequiredException;
+use App\Biometrics\Exceptions\MemberArchivedException;
 use App\Biometrics\Services\BiometricTemplateSuperseder;
 use App\Enums\AdmsCommandStatusEnum;
+use App\Enums\BiometricProvenanceEnum;
 use App\Enums\BiometricProvidersEnum;
 use App\Enums\BiometricTemplateSyncStatusEnum;
 use App\Enums\BiometricTypeEnum;
@@ -188,7 +190,9 @@ class EnrollBiometricAction
     /**
      * Execute the enrollment initiation logic.
      *
-     * @internal Callers must verify authorization via canAuthorize() before invoking handle().
+     * Self-authorizing: `handle()` asserts `canAuthorize()` before performing any
+     * work, so callers do not need to pre-check the policy (and a caller that
+     * forgets to cannot bypass it).
      *
      * @param  array<string, mixed>  $data
      */
@@ -196,6 +200,22 @@ class EnrollBiometricAction
     {
         // Defense-in-depth authorization check: reject unauthorized operators before performing any work
         throw_unless(static::canAuthorize($member), AuthorizationException::class, 'Unauthorized biometric enrollment initiation.');
+
+        // Archived members are access-revoked: they must never gain (or regain) a live
+        // credential, so the panel path is refused exactly like the two API
+        // endpoints (see MemberArchiveService). Without this the operator could
+        // still queue a user_add for a member whose door access had already been
+        // withdrawn. The shared predicate keeps this answer identical to every
+        // other grant-side producer.
+        if (! $member->mayHoldBiometricCredential()) {
+            Notification::make()
+                ->title('Member Archived')
+                ->body('Member ' . e($member->name) . ' is archived. Enrollment is not permitted for archived members.')
+                ->danger()
+                ->send();
+
+            return;
+        }
 
         // 1. Consent Gate: Deny if active consent is missing
         if (! $member->hasActiveBiometricConsent()) {
@@ -241,6 +261,24 @@ class EnrollBiometricAction
 
         try {
             DB::transaction(function () use ($device, $member, $biometricType): void {
+                // Lock the member row and re-assert archive eligibility inside
+                // the transaction. This is the same row lock
+                // MemberArchiveService::archive() takes, so a concurrent archive
+                // either commits before this read (and is seen here) or waits
+                // for this transaction to commit. If it fires, the transaction
+                // rolls back the placeholder template and its queued user_add,
+                // so no credential is ever delivered to the hardware.
+                $lockedMember = GymMember::query()
+                    ->whereKey($member->getKey())
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $lockedMember instanceof GymMember) {
+                    throw new MemberArchivedException();
+                }
+
+                $lockedMember->assertMayHoldBiometricCredential();
+
                 // Verify fresh database consent inside transaction without mutating caller model
                 throw_unless(
                     $member->hasActiveBiometricConsent(fresh: true),
@@ -262,22 +300,36 @@ class EnrollBiometricAction
                 $pins = array_values(array_unique($pins));
                 AdmsDeviceCommand::cancelDeleteCommands($device->id, $pins);
 
-                // Supersede older templates for this member, device and modality
+                // Supersede older templates for this member, device and modality.
+                //
+                // Restricted to terminal-held rows: this path provisions a *hardware*
+                // credential, so a cloud row sharing the same PIN is a different credential
+                // and must stay live for its own provider-side erasure. Demoting it here
+                // would strand the provider reference (see BiometricTemplate::
+                // supersedableForNewEnrolment()).
                 resolve(BiometricTemplateSuperseder::class)->supersedeForNewEnrolment(
                     $device->gym_id,
                     $member,
                     $device->id,
-                    $biometricType->value
+                    $biometricType->value,
+                    BiometricProvenanceEnum::Hardware
                 );
 
                 // Create placeholder template with sync_status = pending, enrolled_at = null
+                //
+                // The provider is the *hardware* one, not the device's configured cloud
+                // provider. This path queues an ADMS `user_add` for a PIN the operator enrols at
+                // the terminal keypad, so the credential lives on the terminal. Storing the
+                // dual-mode device's cloud `provider_type` here made `hasCloudProvider()` route
+                // the erasure to the provider, which never held this credential — the terminal
+                // kept it while the app reported the member revoked.
                 /** @var BiometricTemplate $template */
                 $template = BiometricTemplate::query()->create([
                     'gym_member_id' => $member->id,
                     'gym_id' => $device->gym_id,
                     'enrolled_by_device_id' => $device->id,
                     'biometric_type' => $biometricType,
-                    'provider_type' => $device->provider_type instanceof BiometricProvidersEnum ? $device->provider_type->value : 'device_native',
+                    'provider_type' => BiometricProvidersEnum::DeviceNative->value,
                     'template_ref' => null,
                     'is_active' => false,
                     'sync_status' => BiometricTemplateSyncStatusEnum::Pending,
@@ -328,6 +380,21 @@ class EnrollBiometricAction
                 ]);
             });
         } catch (Throwable $e) {
+            if ($e instanceof MemberArchivedException) {
+                Log::warning('EnrollBiometricAction: refused to initiate enrollment for an archived member', [
+                    'device_id' => $device->id,
+                    'member_id' => $member->id,
+                ]);
+
+                Notification::make()
+                    ->title('Member Archived')
+                    ->body('Member ' . e($member->name) . ' was archived while enrollment was being initiated. Enrollment was not created.')
+                    ->danger()
+                    ->send();
+
+                return;
+            }
+
             $isConsentRefusal = $e instanceof BiometricConsentRequiredException;
 
             if ($isConsentRefusal) {

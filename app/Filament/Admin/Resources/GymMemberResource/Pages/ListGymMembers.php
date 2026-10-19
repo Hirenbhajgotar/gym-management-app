@@ -135,10 +135,26 @@ class ListGymMembers extends ListRecords
                 ->exporter(GymMemberExporter::class)
                 ->formats([ExportFormat::Xlsx]),
 
+            // Both import entry points are gated on `import_gym_member`.
+            // Neither was authorised before, which meant any operator who could
+            // reach this page could upload a spreadsheet — and both importers
+            // derive and write a member's archive state from membership_end.
+            // The gate that stops that is now inside the importers themselves
+            // (archive/unarchive are separate permissions); this keeps the
+            // action itself from being offered to someone who cannot import at
+            // all, and fails closed on mount and on call like every other
+            // ->authorize() in Filament.
+            //
+            // Checked as a permission rather than via ->authorize('import'):
+            // there is no `import` method on the policy, so a Gate check on
+            // that ability resolves to nothing and would hide the action for
+            // everyone. This matches how every sibling import action in the app
+            // is gated.
             ImportAction::make()
                 ->label('Import Members')
                 ->importer(GymMemberImport::class)
                 ->use(GymMember::class)
+                ->authorize(fn (): bool => Auth::user()?->can('import_gym_member') ?? false)
                 ->modalHeading('Import Members')
                 ->sampleFile(
                     urlOrData: url('import/templates/xls/member-sample.xlsx'),
@@ -151,6 +167,7 @@ class ListGymMembers extends ListRecords
                 ->importer(GymMemberImporter::class)
                 ->label('Import Members')
                 ->icon('heroicon-o-arrow-down-tray')
+                ->authorize(fn (): bool => Auth::user()?->can('import_gym_member') ?? false)
                 ->options([
                     'tenantId' => $this->getGymId(),
                 ])

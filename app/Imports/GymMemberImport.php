@@ -15,7 +15,10 @@ use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Models\Trainer;
+use App\Models\User;
 use App\Services\AvatarService;
+use App\Services\MemberArchiveAuthorization;
+use App\Services\MemberArchiveService;
 use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Carbon;
@@ -42,6 +45,52 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
     public function __construct(public int $tenantId)
     {
         parent::__construct();
+    }
+
+    private function archiveService(): MemberArchiveService
+    {
+        return resolve(MemberArchiveService::class);
+    }
+
+    private function archiveAuthorization(): MemberArchiveAuthorization
+    {
+        return resolve(MemberArchiveAuthorization::class);
+    }
+
+    /**
+     * The operator who dispatched this import, if there is one.
+     *
+     * This importer is queued, and a queue worker has no session — so the
+     * gate cannot fall back to Auth::user() here. BaseImporter records
+     * `auth()->id()` against the import row at construction time, which is
+     * exactly the attribution the gate needs. The operator is resolved and
+     * passed to the gate explicitly rather than written onto the global Auth
+     * guard: setUser() is process-global state a worker shares with every
+     * other job, is never restored, and would authorise later rows of other
+     * imports against whichever operator happened to run first.
+     *
+     * Anything that genuinely cannot be attributed resolves to null and the
+     * gate fails closed, which is the correct outcome: an import nobody can
+     * be held responsible for must not be able to retire or revive a member.
+     */
+    private function resolveOperator(): ?User
+    {
+        $rawOperatorId = $this->importRecord?->user_id;
+
+        // Accept the id however the driver hands it back: a numeric string from
+        // a driver that stringifies fetches is still the same operator. The
+        // previous is_int() check tied correctness to a PDO default
+        // (ATTR_STRINGIFY_FETCHES=false), so a driver change would have turned
+        // every import-driven transition into a silent refusal.
+        $operatorId = filter_var($rawOperatorId, FILTER_VALIDATE_INT);
+
+        if ($operatorId === false) {
+            return null;
+        }
+
+        $operator = User::query()->find($operatorId);
+
+        return $operator instanceof User ? $operator : null;
     }
 
     /**
@@ -72,12 +121,27 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
 
         throw_unless($lockAcquired, RuntimeException::class, 'Could not acquire import lock. Another import is in progress for this gym.');
 
+        // Spatie team context for the whole row. A queue worker has no
+        // TeamsPermission middleware, so without this the operator's
+        // gym-scoped roles are invisible to the archive gate below and it
+        // would refuse every import-driven transition in production —
+        // inert-strict rather than merely strict. Scoped to the tenant being
+        // imported INTO deliberately: importing into a gym requires the
+        // permission in that gym, which is also what the gate's per-record
+        // tenant check asserts. Restored in the finally because a worker
+        // process is shared with every other job.
+        $previousTeamId = getPermissionsTeamId();
+
         try {
-            DB::transaction(function () use ($row) {
+            setPermissionsTeamId($this->tenantId);
+
+            DB::transaction(function () use ($row): void {
                 /** @var array<string, mixed> $row */
                 $this->processRowInTransaction($row);
             }, 3);
         } finally {
+            setPermissionsTeamId($previousTeamId);
+
             $lock->release();
         }
     }
@@ -87,8 +151,11 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
      */
     protected function processRowInTransaction(array $row): void
     {
+        $operator = $this->resolveOperator();
+
         $membershipPlan = $this->resolveMembershipPlan($row);
         $trainer = $this->resolveTrainer($row);
+        $archiveService = $this->archiveService();
 
         if (isset($row['dob'])) {
             $row['age'] = DateHelper::calculateAge($row['dob']);
@@ -109,9 +176,19 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         }
 
         $calculatedEnd = $membershipEnd ?? $row['membership_end'] ?? null;
-        $isArchived = false;
+
+        // Three-valued on purpose. null means the row states NO expiry decision
+        // at all — no plan and no membership_end cell — so an existing member's
+        // archive state must be left exactly as it is. Defaulting to "not
+        // expired" here is what silently revived an archived member on any
+        // re-import whose row omitted the end date: the lookup matches them by
+        // phone, the row claims they are live, and the member is restored —
+        // gated on `unarchive` for a row that never asked to revive anyone.
+        $wantsArchived = null;
         $archivedAt = null;
         $allowMarketing = true;
+        $marketingSnapshot = null;
+        $explicitMarketingConsent = null;
 
         if (isset($row['allow_whatsapp_marketing'])) {
             // $allowMarketing = (bool) $row['allow_whatsapp_marketing'];
@@ -121,7 +198,8 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
                 FILTER_NULL_ON_FAILURE
             );
             // Privacy-safe default: unparseable consent values are treated as opt-OUT.
-            $allowMarketing = $parsed === null ? false : $parsed;
+            $explicitMarketingConsent = $parsed === null ? false : $parsed;
+            $allowMarketing = $explicitMarketingConsent;
         }
 
         if ($calculatedEnd instanceof DateTimeInterface) {
@@ -133,11 +211,21 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         }
 
         if ($endDate) {
-            if ($endDate->lt(now()->subYears(2))) {
-                $isArchived = true;
+            // Both cutoff VALUES come from MemberArchiveService so all three
+            // derivations agree to the day; each still applies that cutoff to its
+            // own input — this importer to the row's end date, the Filament
+            // importer to its row's resolved term — so the shared cutoff is what
+            // keeps them from drifting, not a shared notion of "the" end date.
+            $archiveCutoff = $archiveService->cutoffDate()->toDateTime();
+            $marketingCutoff = $archiveService->cutoffDate(1)->toDateTime();
+
+            $wantsArchived = $endDate->lt($archiveCutoff);
+
+            if ($wantsArchived) {
+                $marketingSnapshot = $allowMarketing;
                 $archivedAt = now();
                 $allowMarketing = false;
-            } elseif ($endDate->lt(now()->subYear()) && ! isset($row['allow_whatsapp_marketing'])) {
+            } elseif ($endDate->lt($marketingCutoff) && ! isset($row['allow_whatsapp_marketing'])) {
                 $allowMarketing = false;
             }
         }
@@ -153,29 +241,46 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             'age' => $row['age'] ?? null,
             'dob' => $row['dob'] ?? null,
             'membership_start' => $membershipStart ?? $row['membership_start'] ?? now(),
+            'membership_end' => $calculatedEnd,
             'gym_membership_plan_id' => $membershipPlan->id ?? null,
             'trainer_id' => $trainer?->id ?? null,
             'user_id' => Gym::query()->find($this->tenantId)?->owner()->id ?? null,
-            'is_archived' => $isArchived,
+            'is_archived' => $wantsArchived ?? false,
             'archived_at' => $archivedAt,
             'allow_whatsapp_marketing' => $allowMarketing,
+            'whatsapp_marketing_snapshot' => $marketingSnapshot,
         ];
 
         $existingMember = GymMember::query()
             ->where('gym_id', $this->tenantId)
-            ->where('email', $memberData['email'])
             ->where('phone', $memberData['phone'])
             ->lockForUpdate()
             ->first();
 
         if ($existingMember) {
-            throw ValidationException::withMessages([
-                'phone' => 'A member with this phone number and email already exists.',
-            ]);
-        }
+            $gymMember = $this->updateExistingMember($existingMember, $memberData, $row, $wantsArchived, $explicitMarketingConsent, $operator);
+            $isNewMember = false;
+        } else {
+            if ($wantsArchived === true) {
+                $this->archiveAuthorization()->assertCanArchive($operator);
+            }
 
-        $gymMember = GymMember::query()->create($memberData);
-        $isNewMember = true;
+            $gymMember = new GymMember();
+            $gymMember->fill($memberData);
+
+            // The four archive/consent columns are guarded on GymMember (they are
+            // owned by MemberArchiveService), so the create path — the one
+            // documented exception to that ownership — sets them explicitly.
+            $gymMember->forceFill([
+                'is_archived' => $wantsArchived ?? false,
+                'archived_at' => $archivedAt,
+                'allow_whatsapp_marketing' => $allowMarketing,
+                'whatsapp_marketing_snapshot' => $marketingSnapshot,
+            ]);
+
+            $gymMember->save();
+            $isNewMember = true;
+        }
 
         if ($membershipPlan) {
             $this->handleMemberPayment($gymMember, $membershipPlan, $row, $membershipStart, $membershipEnd, $isNewMember);
@@ -187,6 +292,155 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
     }
 
     /**
+     * Apply a re-imported row to the member it resolves to.
+     *
+     * A phone number that already belongs to an archived member has to reach
+     * here: rules() lets it through precisely so the row can revive the member
+     * instead of colliding with the unique index on (gym_id, phone). The lookup
+     * that found the member is keyed on phone alone, because an archived
+     * member's email may have moved on since they were retired.
+     *
+     * Both transitions are gated, and the revive gate is not optional. Import is
+     * a permission a receptionist and a trainer hold; unarchive is not. Without
+     * the gate below, either of them could return a deliberately revoked member
+     * to the roster — restoring their WhatsApp consent from the archive
+     * snapshot and handing door access back — purely by uploading a
+     * spreadsheet.
+     *
+     * The permission is decided BEFORE any write. The DB transaction would roll
+     * the row back, but model events are not transactional —
+     * GymMemberObserver clears the biometric summary cache off every save —
+     * so an update that precedes a refusal leaves side effects the rollback
+     * never touches.
+     *
+     * @param  array<string, mixed>  $memberData
+     * @param  array<string, mixed>  $row
+     */
+    private function updateExistingMember(
+        GymMember $gymMember,
+        array $memberData,
+        array $row,
+        ?bool $wantsArchived,
+        ?bool $explicitMarketingConsent,
+        ?User $operator
+    ): GymMember {
+        $archiveService = $this->archiveService();
+
+        // The persisted flag, read before anything is written. The payload
+        // below never carries the archive columns, so this is the member's
+        // state in the database however the row found them.
+        $wasArchived = $gymMember->is_archived;
+
+        // Gate both real transitions before any write (see docblock). The
+        // record is passed to the check so the policy's per-record tenant
+        // branch runs on the import paths too, not only in the panel. A null
+        // $wantsArchived means the row expressed no expiry decision, so there
+        // is no transition to gate and the archive state is left untouched.
+        if ($wantsArchived === true && ! $wasArchived) {
+            $this->archiveAuthorization()->assertCanArchive($operator, $gymMember);
+        } elseif ($wantsArchived === false && $wasArchived) {
+            $this->archiveAuthorization()->assertCanUnarchive($operator, $gymMember);
+        }
+
+        $payload = $this->buildUpdatePayload($memberData, $row);
+
+        // A revive decided from the row's plan — no end cell, so the end came
+        // from the plan's duration — has to persist the end it was revived
+        // against. Without it the restored member comes back still expired:
+        // canAccessGym() keeps denying them and the next 23:00 archive sweep
+        // re-archives them, silently undoing the operator's instruction.
+        if ($wantsArchived === false && $wasArchived && ! array_key_exists('membership_end', $payload)) {
+            $payload['membership_end'] = $memberData['membership_end'];
+        }
+
+        $gymMember->update($payload);
+
+        // Both transitions go through MemberArchiveService, which locks and
+        // re-reads the row — so the consent snapshot it writes is the one
+        // actually persisted, archived_at is never restamped by a re-import,
+        // and a concurrent writer cannot be double-counted.
+        if ($wantsArchived === true) {
+            if (! $wasArchived) {
+                $archiveService->archive($gymMember, $operator);
+            }
+        } elseif ($wantsArchived === false) {
+            if ($wasArchived) {
+                $archiveService->unarchive($gymMember, $operator);
+            }
+        }
+
+        // The row's explicit consent is the operator's statement of the
+        // member's decision. Where the member ends up archived the flag is
+        // forced false and the snapshot is its only legitimate home — so an
+        // eventual unarchive restores the decision the operator last stated
+        // rather than silently discarding it. Where they end up (or stay) live
+        // it is an ordinary write on a live member that outranks the snapshot.
+        if ($explicitMarketingConsent !== null) {
+            $stillArchived = $wantsArchived ?? $wasArchived;
+
+            if ($stillArchived) {
+                $archiveService->recordConsentWhileArchived($gymMember, $explicitMarketingConsent);
+            } else {
+                $gymMember->forceFill(['allow_whatsapp_marketing' => $explicitMarketingConsent])->save();
+            }
+        }
+
+        return $gymMember->refresh();
+    }
+
+    /**
+     * Build the column updates a re-imported row is allowed to write.
+     *
+     * Each column is written only when the row carried the matching key, so a
+     * sparse CSV cannot blank out fields it never supplied. The four archive
+     * columns are deliberately absent — is_archived, archived_at,
+     * allow_whatsapp_marketing and whatsapp_marketing_snapshot belong to
+     * MemberArchiveService alone, which is what makes the consent snapshot
+     * round-trip safely.
+     *
+     * membership_end is present and is what makes the revive path hold. The
+     * decision to revive is taken from the row's end date, so the end date has
+     * to be persisted with it: without it a revived member comes back still
+     * expired, canAccessGym() keeps denying them, and the next 23:00 archive
+     * sweep re-archives the member the import just restored — silently undoing
+     * the operator's explicit instruction on the very next run.
+     *
+     * @param  array<string, mixed>  $memberData
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function buildUpdatePayload(array $memberData, array $row): array
+    {
+        // gym_membership_plan_id and trainer_id are named by the CSV keys that
+        // feed them rather than by their own column names.
+        $rowKeysByColumn = [
+            'name' => 'name',
+            'email' => 'email',
+            'weight' => 'weight',
+            'height' => 'height',
+            'age' => 'age',
+            'dob' => 'dob',
+            'membership_start' => 'membership_start',
+            'membership_end' => 'membership_end',
+            'gym_membership_plan_id' => 'membership_plan',
+            'trainer_id' => 'trainer_email',
+        ];
+
+        $payload = [];
+
+        foreach ($rowKeysByColumn as $column => $rowKey) {
+            if (array_key_exists($rowKey, $row)) {
+                // $memberData carries every column this map can name, so a
+                // silent ?? null here would only ever hide a future key typo
+                // by writing null over a column the row never spoke about.
+                $payload[$column] = $memberData[$column];
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
      * @param  array<string, mixed>  $row
      */
     protected function resolveMembershipPlan(array $row): ?MembershipPlan
@@ -195,7 +449,13 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             return null;
         }
 
-        $membershipPlan = MembershipPlan::query()->where('name', $row['membership_plan'])->first();
+        // Scoped to the tenant: matching on name alone lets a row bind another
+        // gym's plan, and its duration and price feed this member's payment
+        // ledger — the same cross-tenant leak resolveTrainer() already closes.
+        $membershipPlan = MembershipPlan::query()
+            ->where('gym_id', $this->tenantId)
+            ->where('name', $row['membership_plan'])
+            ->first();
 
         if (! $membershipPlan) {
             throw ValidationException::withMessages(['membership_plan' => 'Membership plan not found.']);
@@ -213,7 +473,12 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             return null;
         }
 
-        return Trainer::query()->where('email', $row['trainer_email'])->first();
+        // Scoped to the tenant: without the gym_id predicate a row could
+        // assign a trainer belonging to another gym to this gym's member.
+        return Trainer::query()
+            ->where('gym_id', $this->tenantId)
+            ->where('email', $row['trainer_email'])
+            ->first();
     }
 
     /**
@@ -505,12 +770,27 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
         }
     }
 
+    /**
+     * Validation rules applied to every CSV row before it is processed.
+     *
+     * The phone rule only rejects a number still held by a member on the
+     * current roster. An archived member keeps the number reserved through the
+     * unique index on (gym_id, phone), so failing the row here as a duplicate
+     * would make that member impossible to re-import — and re-importing them
+     * with a current membership_end is exactly how a retired member is revived.
+     */
     public function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'string', 'email', 'max:255'],
-            'phone' => ['required', 'max:20', Rule::unique('gym_members', 'phone')->where('gym_id', $this->tenantId)],
+            'phone' => [
+                'required',
+                'max:20',
+                Rule::unique('gym_members', 'phone')
+                    ->where('gym_id', $this->tenantId)
+                    ->where('is_archived', false),
+            ],
             'address' => ['nullable', 'string'],
             'weight' => ['nullable', 'numeric'],
             'height' => ['nullable', 'numeric'],
@@ -525,7 +805,7 @@ class GymMemberImport extends BaseImporter implements ShouldQueue, WithColumnFor
             'payment_amount_paid' => ['nullable', 'numeric', 'min:0'],
             'pending_payment' => ['nullable', 'numeric', 'min:0'],
             'membership_plan' => ['nullable', 'string'],
-            'trainer_email' => ['nullable', 'string', 'exists:trainers,email'],
+            'trainer_email' => ['nullable', 'string', Rule::exists('trainers', 'email')->where('gym_id', $this->tenantId)],
         ];
     }
 }

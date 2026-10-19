@@ -72,8 +72,8 @@ class TrainerReports extends BasePage implements ShareableReport
             $activeTrainers = Trainer::query()->where('gym_id', $gymId)->where('is_available', true)->count();
 
             // Total members with trainers
-            $membersWithTrainer = GymMember::query()->where('gym_id', $gymId)->membershipActive()->whereNotNull('trainer_id')->count();
-            $totalActiveMembers = GymMember::query()->where('gym_id', $gymId)->membershipActive()->count();
+            $membersWithTrainer = GymMember::query()->where('gym_id', $gymId)->notArchived()->membershipActive()->whereNotNull('trainer_id')->count();
+            $totalActiveMembers = GymMember::query()->where('gym_id', $gymId)->notArchived()->membershipActive()->count();
 
             // Average clients per trainer
             $avgClients = $activeTrainers > 0 ? round($membersWithTrainer / $activeTrainers, 1) : 0;
@@ -93,7 +93,7 @@ class TrainerReports extends BasePage implements ShareableReport
 
             // Top trainer by client count
             $topTrainer = Trainer::query()->where('gym_id', $gymId)
-                ->withCount(['members' => fn (Builder $q) => $q->membershipActive()])
+                ->withCount(['members' => fn (Builder $q) => $q->notArchived()->membershipActive()])
                 ->orderByDesc('members_count')
                 ->first();
 
@@ -121,7 +121,7 @@ class TrainerReports extends BasePage implements ShareableReport
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             return Trainer::query()->where('gym_id', $gymId)
-                ->withCount(['members' => fn ($q) => $q->membershipActive()])
+                ->withCount(['members' => fn ($q) => $q->notArchived()->membershipActive()])
                 ->orderByDesc('members_count')
                 ->get()
                 ->map(fn ($trainer) => [

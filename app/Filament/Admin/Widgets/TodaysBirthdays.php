@@ -62,6 +62,7 @@ class TodaysBirthdays extends BaseTableWidget
         return $table
             ->query(
                 GymMember::query()
+                    ->notArchived()
                     ->with('gym')
                     ->whereHas('gym')
                     ->birthdayToday()

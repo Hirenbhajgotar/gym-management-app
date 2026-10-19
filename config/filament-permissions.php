@@ -47,9 +47,17 @@ return [
     | Resource Actions
     |--------------------------------------------------------------------------
     |
-    | Default action list used when a Resource does NOT override
-    | getPermissionActions(). Each action is combined with the resource
-    | slug to form: {action}_{resource_slug}
+    | The single shared list of resource actions. Each action is combined with
+    | the resource slug to form {action}_{resource_slug}. This file is the ONLY
+    | place that list is written down — RolesAndPermissionsService and
+    | PermissionDescriptionSeeder both read it rather than keeping their own
+    | copy, which is what stops them drifting apart.
+    |
+    | Bespoke abilities that belong to ONE resource do not belong here. A
+    | resource implements {@see \App\Contracts\DeclaresPermissionActions} to
+    | add its own; listing them globally instead is what previously minted
+    | archive_ and unarchive_ permissions for every resource on the platform,
+    | almost none of which had a policy consuming them.
     |
     */
     'resource_actions' => [
@@ -92,17 +100,6 @@ return [
     |
     */
     'guard_name' => 'web',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Full-Access Roles
-    |--------------------------------------------------------------------------
-    |
-    | Roles that automatically receive ALL discovered permissions.
-    | These roles bypass any per-role default permission lists.
-    |
-    */
-    'full_access_roles' => ['super_admin', 'gym_owner'],
 
     /*
     |--------------------------------------------------------------------------

@@ -37,9 +37,10 @@ class MemberStatusChart extends BaseChartWidget
         $cacheKey = ReportCacheService::WIDGET_MEMBER_STATUS . $gymId . ':' . md5(json_encode($this->filters));
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $active = GymMember::query()->where('gym_id', $gymId)->membershipActive()->count();
-            $expired = GymMember::query()->where('gym_id', $gymId)->membershipExpired()->count();
+            $active = GymMember::query()->where('gym_id', $gymId)->notArchived()->membershipActive()->count();
+            $expired = GymMember::query()->where('gym_id', $gymId)->notArchived()->membershipExpired()->count();
             $expiringSoon = GymMember::query()->where('gym_id', $gymId)
+                ->notArchived()
                 ->where('membership_end', '>=', now())
                 ->where('membership_end', '<=', now()->addDays(7))
                 ->count();

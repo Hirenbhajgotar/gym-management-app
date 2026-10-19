@@ -20,7 +20,9 @@ class MembersExport implements FromCollection, WithHeadings, WithMapping
 
     public function collection()
     {
-        $query = GymMember::with(['gym', 'membershipPlan']);
+        // Current-roster export: matches the Members tab. Archived members
+        // are history (access revoked) and are excluded.
+        $query = GymMember::query()->notArchived()->with(['gym', 'membershipPlan']);
 
         if ($this->gymId) {
             $query->where('gym_id', $this->gymId);

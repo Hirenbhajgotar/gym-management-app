@@ -22377,12 +22377,6 @@ parameters:
 			path: app/Services/AttendanceService.php
 
 		-
-			message: '#^Property App\\Services\\AttendanceService\:\:\$attendanceModels has no type specified\.$#'
-			identifier: missingType.property
-			count: 1
-			path: app/Services/AttendanceService.php
-
-		-
 			message: '#^Binary operation "\." between mixed and int\<1, max\> results in an error\.$#'
 			identifier: binaryOp.invalid
 			count: 1

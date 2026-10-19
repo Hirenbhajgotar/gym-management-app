@@ -57,17 +57,24 @@ class ReconcileBiometricEnrollmentsCommand extends Command
         }
 
         $query = BiometricTemplate::query()
-            ->whereIn('sync_status', [
-                BiometricTemplateSyncStatusEnum::Synced,
-                BiometricTemplateSyncStatusEnum::Propagated,
-            ])
+            ->whereIn('sync_status', BiometricTemplateSyncStatusEnum::terminalCredentialStates())
             ->where('is_active', true)
             ->whereNotNull('enrolled_by_device_id')
             ->when($gymId, fn (Builder $q): Builder => $q->where('gym_id', $gymId))
             ->with(['gymMember', 'enrolledByDevice']);
 
+        $terminalStateLabels = array_map(
+            static fn (BiometricTemplateSyncStatusEnum $status): string => $status->getLabel(),
+            BiometricTemplateSyncStatusEnum::terminalCredentialStates()
+        );
+
+        // Sorted rather than read in enum case order: the banner text is a stable contract, so
+        // it must not silently flip when the enum's case order changes.
+        sort($terminalStateLabels);
+        $terminalStateLabels = implode('/', $terminalStateLabels);
+
         $totalCount = (clone $query)->count();
-        $this->info("Examining {$totalCount} active template(s) (Synced/Propagated)...");
+        $this->info("Examining {$totalCount} active template(s) ({$terminalStateLabels})...");
 
         $reconciledCount = 0;
         $skippedConsentCount = 0;
@@ -97,8 +104,9 @@ class ReconcileBiometricEnrollmentsCommand extends Command
                     continue;
                 }
 
-                // Skip archived members or members with expired memberships
-                if ($member->is_archived || ($member->membership_end !== null && $member->membership_end->isPast())) {
+                // Skip archived members (via the shared grant-side predicate) or
+                // members with expired memberships
+                if (! $member->mayHoldBiometricCredential() || ($member->membership_end !== null && $member->membership_end->isPast())) {
                     $skippedMembershipCount++;
 
                     continue;

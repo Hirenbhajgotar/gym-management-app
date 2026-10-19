@@ -38,6 +38,7 @@ class MemberPlanDistributionChart extends BaseChartWidget
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $distribution = GymMember::query()->where('gym_id', $gymId)
+                ->notArchived()
                 ->with('membershipPlan')
                 ->get()
                 ->groupBy('gym_membership_plan_id')

@@ -32,7 +32,7 @@ class BirthdayNotificationCommand extends Command
      */
     public function handle(): int
     {
-        GymMember::query()->birthdayToday()
+        GymMember::query()->notArchived()->birthdayToday()
             ->with(['gym'])
             ->chunkById(200, function ($members) {
                 foreach ($members as $member) {

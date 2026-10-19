@@ -143,7 +143,7 @@ class BiometricTemplateDeliveredScopeTest extends TestCase
     }
 
     #[Test]
-    public function a_nightly_reconciler_requeue_for_this_template_counts_as_delivery(): void
+    public function a_daily_reconciler_requeue_for_this_template_counts_as_delivery(): void
     {
         $placeholder = $this->pendingPlaceholder();
 

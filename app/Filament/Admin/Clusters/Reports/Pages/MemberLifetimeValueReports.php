@@ -56,6 +56,7 @@ class MemberLifetimeValueReports extends BasePage implements ShareableReport
                 ->sum('amount');
 
             $activeMembers = GymMember::query()->where('gym_id', $gymId)
+                ->notArchived()
                 ->membershipActive()
                 ->count();
 

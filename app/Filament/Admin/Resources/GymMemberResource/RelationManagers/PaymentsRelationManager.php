@@ -13,6 +13,7 @@ use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Observers\MemberPaymentObserver;
+use App\Traits\GuardsArchivedOwner;
 use App\Traits\HasTenantAccess;
 use Closure;
 use DB;
@@ -42,13 +43,34 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * Payments for a gym member.
+ *
+ * handleCreatePayment()/handleUpdatePayment() write payment_status,
+ * membership_start, membership_end and the plan straight back onto the member, so
+ * an unguarded write here is how a revoked record quietly becomes live again
+ * without anyone restoring it. Reads stay open (no getRelationship() filter)
+ * because archived payments still have to resolve to a person for revenue
+ * reporting; {@see GuardsArchivedOwner} closes mutation only.
+ */
 class PaymentsRelationManager extends RelationManager
 {
+    use GuardsArchivedOwner;
     use HasTenantAccess;
 
     protected static string $relationship = 'payments';
 
     protected static ?string $icon = 'heroicon-o-credit-card';
+
+    protected function archivedOwnerSubject(): string
+    {
+        return 'Payments';
+    }
+
+    protected function archivedOwnerNoticeBody(): string
+    {
+        return 'Payments stay visible as a record of what was billed and collected, but nothing here can be added, edited or deleted until the member is restored.';
+    }
 
     public function form(Form $form): Form
     {
@@ -83,6 +105,7 @@ class PaymentsRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('id')
+            ->header(fn () => $this->archivedOwnerHeader())
             ->columns([
                 TextColumn::make('membershipPlan.name')
                     ->label('Plan')
@@ -171,7 +194,7 @@ class PaymentsRelationManager extends RelationManager
                     ->label('Record Payment')
                     ->icon('heroicon-o-plus-circle')
                     ->color('success')
-                    ->visible(fn (MemberPayment $record) => ! $record->is_fully_paid)
+                    ->visible(fn (MemberPayment $record) => ! $this->isOwnerArchived() && ! $record->is_fully_paid)
                     ->form([
                         TextInput::make('amount')
                             ->numeric()
@@ -191,6 +214,8 @@ class PaymentsRelationManager extends RelationManager
                             ->rows(2),
                     ])
                     ->action(function (array $data, MemberPayment $record) {
+                        $this->guardArchivedOwner();
+
                         DB::transaction(function () use ($data, $record) {
                             $record = MemberPayment::query()->lockForUpdate()->findOrFail($record->id);
 
@@ -260,11 +285,13 @@ class PaymentsRelationManager extends RelationManager
                     ->modalHeading('Delete Member Payment')
                     ->modalDescription('Are you sure you want to delete this payment? This action requires password confirmation.')
                     ->modalSubmitActionLabel('Confirm Delete')
+                    ->before(fn () => $this->guardArchivedOwner())
                     ->form([$this->getPasswordField()]),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->before(fn () => $this->guardArchivedOwner()),
                 ]),
             ])
             ->modifyQueryUsing(fn (Builder $query) => $this->sortPayments($query));
@@ -299,6 +326,8 @@ class PaymentsRelationManager extends RelationManager
      */
     protected function handleCreatePayment(array $data): void
     {
+        $this->guardArchivedOwner();
+
         DB::transaction(function () use ($data) {
             /** @var GymMember $member */
             $member = $this->ownerRecord;
@@ -350,6 +379,8 @@ class PaymentsRelationManager extends RelationManager
      */
     protected function handleUpdatePayment(array $data, MemberPayment $record): void
     {
+        $this->guardArchivedOwner();
+
         DB::transaction(function () use ($data, $record) {
             $record = MemberPayment::query()->lockForUpdate()->findOrFail($record->id);
 
