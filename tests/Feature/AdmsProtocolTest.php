@@ -36,6 +36,9 @@ class AdmsProtocolTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** Secret every webhook-capable device in this suite is provisioned with. */
+    private const WEBHOOK_SECRET = 'test-webhook-secret';
+
     protected User $user;
 
     protected Gym $gym;
@@ -340,6 +343,7 @@ class AdmsProtocolTest extends TestCase
             ->deviceNative()
             ->withToken($token)
             ->admsEnabled('DUAL-SN-001')
+            ->withWebhookSecret(self::WEBHOOK_SECRET)
             ->create([
                 'gym_id' => $this->gym->id,
                 'status' => BiometricDeviceStatusEnum::Active,
@@ -380,7 +384,7 @@ class AdmsProtocolTest extends TestCase
             'consented_at' => now(),
         ]);
 
-        $webhookResponse = $this->postJson("/api/v1/biometric/webhook/{$token}", [
+        $webhookResponse = $this->postSignedWebhook("/api/v1/biometric/webhook/{$token}", [
             'member_id' => $secondMember->id,
             'SN' => 'DUAL-SN-001',
         ]);
@@ -719,5 +723,20 @@ XML;
             now()->subDays(31)->format('Y-m-d H:i:s'),
             $this->device
         );
+    }
+
+    /**
+     * Post a webhook payload signed the way a provisioned device signs it.
+     *
+     * The controller refuses a webhook for a device with no webhook_secret
+     * configured, so the webhook in this suite has to be signed.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function postSignedWebhook(string $uri, array $payload): \Illuminate\Testing\TestResponse
+    {
+        return $this->postJson($uri, $payload, [
+            'X-Signature' => 'sha256=' . hash_hmac('sha256', (string) json_encode($payload), self::WEBHOOK_SECRET),
+        ]);
     }
 }

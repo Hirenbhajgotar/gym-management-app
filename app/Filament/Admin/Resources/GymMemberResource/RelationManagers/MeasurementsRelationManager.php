@@ -6,6 +6,7 @@ namespace App\Filament\Admin\Resources\GymMemberResource\RelationManagers;
 
 use App\Helpers\BmiHelper;
 use App\Models\MemberMeasurement;
+use App\Traits\GuardsArchivedOwner;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
@@ -20,13 +21,35 @@ use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
+/**
+ * Body measurements — the clinical history behind a member's BMI trend.
+ *
+ * Archiving the member freezes the record but must not let the trend be
+ * rewritten underneath it: a re-measurement added, or an old weight edited,
+ * after archiving silently changes every chart, report and progress percentage
+ * that reads from this table. Reads stay open because archived measurements
+ * are exactly what a trainer or accountant still needs;
+ * {@see GuardsArchivedOwner} closes mutation only.
+ */
 class MeasurementsRelationManager extends RelationManager
 {
+    use GuardsArchivedOwner;
+
     protected static string $relationship = 'measurements';
 
     protected static ?string $title = '(BMI) Progress Tracking';
 
     protected static ?string $icon = 'heroicon-o-chart-bar';
+
+    protected function archivedOwnerSubject(): string
+    {
+        return 'Measurements';
+    }
+
+    protected function archivedOwnerNoticeBody(): string
+    {
+        return 'Measurements stay visible as the record behind this member\'s progress history, but nothing here can be added, edited or deleted until the member is restored.';
+    }
 
     public function form(Form $form): Form
     {
@@ -107,6 +130,7 @@ class MeasurementsRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('measured_at')
+            ->header(fn () => $this->archivedOwnerHeader())
             ->columns([
                 TextColumn::make('measured_at')
                     ->date()
@@ -139,19 +163,23 @@ class MeasurementsRelationManager extends RelationManager
                 CreateAction::make()
                     ->label('Record Measurement')
                     ->successNotificationTitle('Measurement Added')
+                    ->before(fn () => $this->guardArchivedOwner())
                     ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
             ])
             ->actions([
                 EditAction::make()
                     ->successNotificationTitle('Measurement Updated')
+                    ->before(fn () => $this->guardArchivedOwner())
                     ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
                 DeleteAction::make()
                     ->successNotificationTitle('Measurement Deleted')
+                    ->before(fn () => $this->guardArchivedOwner())
                     ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
+                        ->before(fn () => $this->guardArchivedOwner())
                         ->after(fn ($livewire) => $livewire->dispatch('member-measurement-updated')),
                 ]),
             ])

@@ -45,7 +45,7 @@ class AdmsCommandKeyTest extends TestCase
     }
 
     #[Test]
-    public function a_nightly_reconciler_key_round_trips_and_is_not_a_sibling_fan_out(): void
+    public function a_daily_reconciler_key_round_trips_and_is_not_a_sibling_fan_out(): void
     {
         $key = AdmsCommandKey::buildUserAdd(7, 3, 42, 11, AdmsCommandKey::STAGE_RECONCILE);
         $parsed = AdmsCommandKey::tryParse($key);

@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Biometrics\Services\BiometricDataDeletionService;
 use App\Biometrics\Services\BiometricTemplatePropagator;
+use App\Biometrics\ValueObjects\AdmsCommandKey;
 use App\Enums\AdmsCommandStatusEnum;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
@@ -24,6 +25,7 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\Permission;
 use App\Models\User;
+use App\Services\MemberArchiveService;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Tables\Table;
@@ -34,6 +36,7 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -204,6 +207,94 @@ class BiometricEnrollmentSyncTest extends TestCase
             'gym_id' => $this->gym->id,
             'device_id' => $this->deviceA->id,
         ]);
+    }
+
+    public function test_panel_enrollment_refuses_an_archived_member_and_queues_nothing(): void
+    {
+        // The two API endpoints were archive-gated but the
+        // Filament action was not, so an operator could queue a user_add for a
+        // member whose door access had already been withdrawn. The member holds
+        // active consent and a live membership, so the archive flag is the only
+        // variable — and the gate must fire before any placeholder template or
+        // ADMS command is written.
+        $this->grantConsent($this->member);
+
+        $this->member->forceFill(['is_archived' => true, 'archived_at' => now()])->save();
+
+        EnrollBiometricAction::handle($this->member, [
+            'device_id' => $this->deviceA->id,
+            'biometric_type' => BiometricTypeEnum::Fingerprint->value,
+        ]);
+
+        $this->assertDatabaseMissing('biometric_templates', [
+            'gym_member_id' => $this->member->id,
+        ]);
+
+        $this->assertDatabaseMissing('adms_device_commands', [
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->deviceA->id,
+        ]);
+
+        // This arm is the pre-check, proven by *its* message rather than the shared title.
+        $notifications = collect(session('filament.notifications', []));
+        $this->assertTrue(
+            $notifications->pluck('body')
+                ->contains(fn (string $body): bool => str_contains($body, 'is archived. Enrollment is not permitted')),
+            'The pre-check arm must have fired.'
+        );
+    }
+
+    public function test_panel_enrollment_refuses_when_the_member_is_archived_after_the_gate_but_before_the_lock(): void
+    {
+        // The pre-check reads the caller's in-memory member; the real guard is the
+        // in-transaction lock re-assert. Passing a *stale* instance whose stored
+        // row is archived is the only way to reach that arm: the stale copy
+        // passes the pre-check, the locked read sees the archive and rolls the
+        // placeholder back. Without the lock re-assert the row would be written.
+        $this->grantConsent($this->member);
+
+        $staleMember = GymMember::query()->findOrFail($this->member->id);
+        $this->assertFalse((bool) $staleMember->is_archived);
+
+        // Archive through a *separate* instance: archiveAsSystem() syncs the
+        // instance it is handed to the persisted (archived) state, so reusing
+        // $staleMember here would leave the caller's copy carrying
+        // is_archived = true and the pre-check — not the lock arm — would fire.
+        $archivedElsewhere = GymMember::query()->findOrFail($this->member->id);
+        resolve(MemberArchiveService::class)->archiveAsSystem($archivedElsewhere);
+
+        $this->assertTrue((bool) $staleMember->fresh()?->is_archived);
+        $this->assertFalse(
+            (bool) $staleMember->is_archived,
+            'The passed instance must stay stale, or the pre-check would fire instead of the lock arm.'
+        );
+
+        EnrollBiometricAction::handle($staleMember, [
+            'device_id' => $this->deviceA->id,
+            'biometric_type' => BiometricTypeEnum::Fingerprint->value,
+        ]);
+
+        // The catch arm ran: nothing was written and the operator was told why.
+        $this->assertDatabaseMissing('biometric_templates', [
+            'gym_member_id' => $this->member->id,
+        ]);
+
+        $this->assertDatabaseMissing('adms_device_commands', [
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->deviceA->id,
+        ]);
+
+        // The lock arm, proven by *its* message. Both archive arms share the
+        // 'Member Archived' title, so asserting the title alone would also pass if
+        // the pre-check arm had fired and would hide the regression this test
+        // exists to catch.
+        $notifications = collect(session('filament.notifications', []));
+        $this->assertContains('Member Archived', $notifications->pluck('title')->all());
+        $this->assertTrue(
+            $notifications->pluck('body')
+                ->contains(fn (string $body): bool => str_contains($body, 'was archived while enrollment was being initiated')),
+            'The in-transaction lock arm must have fired, not the pre-check arm.'
+        );
     }
 
     public function test_enroll_sync_updates_placeholder_and_auto_syncs_to_sibling_devices(): void
@@ -578,6 +669,43 @@ class BiometricEnrollmentSyncTest extends TestCase
         ]);
     }
 
+    public function test_relation_manager_deprovision_action_is_available_for_an_archived_owner(): void
+    {
+        // De-provisioning only removes access, so it must remain the operator's
+        // manual erasure escape hatch after archiving — the read-only gate must
+        // not hide it.
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($this->owner);
+        Filament::setTenant($this->gym);
+
+        $this->member->forceFill(['is_archived' => true, 'archived_at' => now()])->save();
+        $this->member->refresh();
+
+        $template = BiometricTemplate::factory()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $this->member->id,
+            'enrolled_by_device_id' => $this->deviceA->id,
+            'provider_type' => 'device_native',
+            'is_active' => true,
+            'sync_status' => BiometricTemplateSyncStatusEnum::Synced,
+            'template_ref' => (string) $this->member->id,
+        ]);
+
+        Livewire::test(BiometricTemplatesRelationManager::class, ['ownerRecord' => $this->member, 'pageClass' => EditGymMember::class])
+            ->assertTableActionVisible('deprovision', $template)
+            ->callTableAction('deprovision', $template);
+
+        $template->refresh();
+        $this->assertFalse((bool) $template->is_active);
+        $this->assertSame(BiometricTemplateSyncStatusEnum::PendingDeletion, $template->sync_status);
+
+        $this->assertDatabaseHas('adms_device_commands', [
+            'device_id' => $this->deviceA->id,
+            'command_type' => 'user_delete',
+            'status' => AdmsCommandStatusEnum::PENDING->value,
+        ]);
+    }
+
     public function test_relation_manager_deprovision_action_does_not_queue_hardware_deletion_for_pending_placeholder(): void
     {
         Filament::setCurrentPanel(Filament::getPanel('admin'));
@@ -617,6 +745,133 @@ class BiometricEnrollmentSyncTest extends TestCase
         // Prior pending user_add command must be cancelled
         $pendingAddCmd->refresh();
         $this->assertSame(AdmsCommandStatusEnum::CANCELLED, $pendingAddCmd->status);
+    }
+
+    public function test_relation_manager_retry_erasure_is_hidden_for_a_blank_reference_cloud_row(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($this->owner);
+        Filament::setTenant($this->gym);
+
+        // A cloud row with no provider reference has nothing to erase with, so retrying it
+        // could only report a green success for an erasure the action cannot attempt.
+        $template = BiometricTemplate::factory()->cloudBacked('unconfigured_cloud_provider')->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $this->member->id,
+            'enrolled_by_device_id' => null,
+            'biometric_type' => BiometricTypeEnum::Face,
+            'template_ref' => null,
+            'sync_status' => BiometricTemplateSyncStatusEnum::DeletionUnresolvable,
+            'is_active' => false,
+        ]);
+
+        $this->assertTrue($template->requiresOperatorAttention());
+
+        Livewire::test(BiometricTemplatesRelationManager::class, ['ownerRecord' => $this->member, 'pageClass' => EditGymMember::class])
+            ->assertTableActionHidden('retry_erasure', $template)
+            // Positive control: the row is still surfaced to the operator through the
+            // De-provision action, only the retry that cannot erase anything is hidden.
+            ->assertTableActionVisible('deprovision', $template);
+    }
+
+    public function test_relation_manager_retry_erasure_re_drives_a_reference_present_unresolvable_row_and_records_an_activity(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($this->owner);
+        Filament::setTenant($this->gym);
+
+        // A reference-present row: the provider outlasted its cooldown but the reference it
+        // needs to erase with is still there, so an operator retry must genuinely re-drive it.
+        $template = BiometricTemplate::factory()->deviceNative()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $this->member->id,
+            'enrolled_by_device_id' => $this->deviceA->id,
+            'biometric_type' => BiometricTypeEnum::Fingerprint,
+            'template_ref' => (string) $this->member->id,
+            'sync_status' => BiometricTemplateSyncStatusEnum::DeletionUnresolvable,
+            'is_active' => false,
+            'erasure_attempts' => 2,
+        ]);
+
+        // `erasure_first_attempted_at` is not mass-assignable: it records when the provider
+        // first refused, so the fixture writes it explicitly.
+        $template->forceFill(['erasure_first_attempted_at' => now()->subDay()])->save();
+
+        Livewire::test(BiometricTemplatesRelationManager::class, ['ownerRecord' => $this->member, 'pageClass' => EditGymMember::class])
+            ->assertTableActionVisible('retry_erasure', $template)
+            ->callTableAction('retry_erasure', $template);
+
+        // The terminal owns the obligation again instead of the row sitting unreachable.
+        $template->refresh();
+        $this->assertSame(BiometricTemplateSyncStatusEnum::PendingDeletion, $template->sync_status);
+        $this->assertSame(0, $template->erasure_attempts);
+        $this->assertNull($template->erasure_first_attempted_at);
+        $this->assertNotNull($template->erasure_requested_at, 'The re-drive is an explicit erasure request.');
+
+        $this->assertDatabaseHas('adms_device_commands', [
+            'device_id' => $this->deviceA->id,
+            'command_type' => 'user_delete',
+            'status' => AdmsCommandStatusEnum::PENDING->value,
+        ]);
+
+        $this->assertTrue(
+            Activity::query()
+                ->where('log_name', 'biometric')
+                ->where('description', 'Biometric erasure re-driven by operator')
+                ->where('subject_type', BiometricTemplate::class)
+                ->where('subject_id', $template->id)
+                ->exists(),
+            'Re-driving an erasure by hand must leave an auditable event.'
+        );
+
+        Notification::assertNotified('Erasure Re-driven');
+    }
+
+    public function test_relation_manager_retry_erasure_clears_a_cap_exhausted_hardware_delivery_budget(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($this->owner);
+        Filament::setTenant($this->gym);
+
+        $template = BiometricTemplate::factory()->deviceNative()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $this->member->id,
+            'enrolled_by_device_id' => $this->deviceA->id,
+            'biometric_type' => BiometricTypeEnum::Fingerprint,
+            'template_ref' => (string) $this->member->id,
+            'sync_status' => BiometricTemplateSyncStatusEnum::PendingDeletion,
+            'is_active' => false,
+        ]);
+
+        $deleteCommand = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->deviceA->id,
+            'command_type' => 'user_delete',
+            'command_payload' => ['Pin' => (string) $this->member->id],
+            'status' => AdmsCommandStatusEnum::FAILED,
+            'attempt_count' => AdmsCommandKey::maxAttempts(),
+            'idempotency_key' => AdmsDeviceCommand::deleteIdempotencyKeyFor($this->deviceA->id, (string) $this->member->id),
+        ]);
+
+        $this->assertTrue($template->requiresOperatorAttention());
+
+        Livewire::test(BiometricTemplatesRelationManager::class, ['ownerRecord' => $this->member, 'pageClass' => EditGymMember::class])
+            ->assertTableActionVisible('retry_erasure', $template)
+            ->callTableAction('retry_erasure', $template);
+
+        // The delivery budget lives on the command log, so the retry has to clear it there
+        // and hand the re-driven obligation back to the terminal.
+        $deleteCommand->refresh();
+        $this->assertSame(0, $deleteCommand->attempt_count);
+        $this->assertSame(AdmsCommandStatusEnum::PENDING, $deleteCommand->status);
+
+        $this->assertTrue(
+            Activity::query()
+                ->where('log_name', 'biometric')
+                ->where('description', 'Biometric erasure re-driven by operator')
+                ->where('subject_id', $template->id)
+                ->exists()
+        );
     }
 
     public function test_sibling_fanout_failure_persists_failed_command_and_reports_shortfall(): void
@@ -1223,14 +1478,14 @@ class BiometricEnrollmentSyncTest extends TestCase
             'template_ref' => (string) $this->member->id,
         ]);
 
-        $pendingDeletion = BiometricTemplate::factory()->create([
+        // The row was parked by the member's own Art. 17 request, not a machine park,
+        // so it carries the request marker the GDPR deletion service writes.
+        $pendingDeletion = BiometricTemplate::factory()->memberErasureRequest()->create([
             'gym_id' => $this->gym->id,
             'gym_member_id' => $this->member->id,
             'enrolled_by_device_id' => $this->deviceB->id,
             'provider_type' => 'adms',
             'template_ref' => (string) $this->member->id,
-            'sync_status' => BiometricTemplateSyncStatusEnum::PendingDeletion,
-            'is_active' => false,
         ]);
 
         resolve(BiometricTemplatePropagator::class)

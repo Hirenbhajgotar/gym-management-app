@@ -6,6 +6,7 @@ namespace App\Permissions;
 
 use Illuminate\Cache\CacheManager;
 use Illuminate\Database\Eloquent\Collection;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -84,6 +85,43 @@ class TeamPermissionRegistrar extends PermissionRegistrar
         $cacheKey = "{$this->baseCacheKey}.gym.{$gymId}";
 
         return $this->getCacheStore()->forget($cacheKey);
+    }
+
+    /**
+     * Flush the global permission cache and every per-gym variant of it.
+     *
+     * Permission NAMES are platform-global, but the CACHE is not: this
+     * registrar keys it per gym ("<base>.gym.<id>") so a request only ever
+     * loads its own tenant's permissions. Flushing only the base key leaves
+     * every tenant serving its stale set until the key expires on its own.
+     *
+     * @return int The number of per-gym cache keys that were flushed.
+     */
+    public function forgetAllCachedPermissions(): int
+    {
+        // forgetCachedPermissions() forgets $this->cacheKey — but this subclass
+        // reassigns that to the per-gym key whenever a team id is set, so under
+        // a team context the base/global key would never be flushed. Flush it
+        // explicitly before delegating.
+        $this->getCacheStore()->forget($this->baseCacheKey);
+
+        $this->forgetCachedPermissions();
+
+        /** @var array<int, int> $gymIds */
+        $gymIds = Role::query()
+            ->whereNotNull('gym_id')
+            ->distinct()
+            ->pluck('gym_id')
+            ->map(fn (mixed $gymId): int => is_numeric($gymId) ? (int) $gymId : 0)
+            ->filter(fn (int $gymId): bool => $gymId > 0)
+            ->values()
+            ->all();
+
+        foreach ($gymIds as $gymId) {
+            $this->forgetCachedPermissionsForGym($gymId);
+        }
+
+        return count($gymIds);
     }
 
     /**

@@ -32,7 +32,7 @@ class MembershipExpiryAlerts extends BaseTableWidget
 
     protected static ?int $sort = 3;
 
-    public static function canAccess(): bool
+    public static function canView(): bool
     {
         $user = Auth::user();
 
@@ -69,8 +69,11 @@ class MembershipExpiryAlerts extends BaseTableWidget
         return $table
             ->query(
                 GymMember::query()
+                    ->notArchived()
                     ->with(['gym'])
-                    ->where('membership_end', '<=', now()->addDays(15)) // Expired or expiring within 15 days
+                    // notArchived() keeps archived (access-revoked) members out
+                    // of the table and off the Send Alert action.
+                    ->where('membership_end', '<=', now()->addDays(15))
                     ->orderBy('membership_end', 'asc')
             )
             ->columns([

@@ -219,6 +219,56 @@ class CleanupSupersededTemplatesCommandTest extends TestCase
         ]);
     }
 
+    public function test_a_sent_but_unacknowledged_user_add_is_parked_for_erasure_not_retired(): void
+    {
+        $oldPending = BiometricTemplate::factory()->pending()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $this->member->id,
+            'enrolled_by_device_id' => $this->device->id,
+            'created_at' => now()->subDays(10),
+            'updated_at' => now()->subDays(10),
+        ]);
+
+        // A SENT user_add means the terminal has dequeued the profile and may already
+        // hold the credential. Capturing delivery before the cancellation is what makes
+        // the placeholder possibly-delivered rather than a retired non-delivery.
+        AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => (string) $this->member->id, 'Name' => $this->member->name],
+            'status' => AdmsCommandStatusEnum::SENT,
+            'idempotency_key' => AdmsDeviceCommand::idempotencyKeyFor(
+                $this->gym->id,
+                $this->device->id,
+                $this->member->id,
+                $oldPending->id,
+            ),
+        ]);
+
+        $this->artisan('biometrics:cleanup-superseded-templates')
+            ->expectsOutputToContain('Retired 0 template(s). (0 superseded, 0 undelivered pending)')
+            ->expectsOutputToContain('1 pending placeholder(s) were hardware-delivered and remain pending erasure.')
+            ->expectsOutputToContain('1 pending placeholder(s) handed to hardware de-provisioning.')
+            ->assertSuccessful();
+
+        // Parked at PendingDeletion rather than delete()d as an undelivered placeholder.
+        $this->assertNotSoftDeleted('biometric_templates', ['id' => $oldPending->id]);
+        $this->assertDatabaseHas('biometric_templates', [
+            'id' => $oldPending->id,
+            'sync_status' => BiometricTemplateSyncStatusEnum::PendingDeletion->value,
+            'is_active' => false,
+        ]);
+
+        // A user_delete was queued for the placeholder's PIN (GDPR Art. 17).
+        $this->assertDatabaseHas('adms_device_commands', [
+            'device_id' => $this->device->id,
+            'command_type' => 'user_delete',
+            'command_payload->Pin' => (string) $this->member->id,
+            'status' => AdmsCommandStatusEnum::PENDING->value,
+        ]);
+    }
+
     public function test_retires_superseded_templates_without_emitting_a_device_delete_and_retains_the_audit_row(): void
     {
         $oldSuperseded = BiometricTemplate::factory()->create([

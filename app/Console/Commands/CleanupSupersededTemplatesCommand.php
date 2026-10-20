@@ -42,6 +42,10 @@ class CleanupSupersededTemplatesCommand extends Command
         $pendingCutoff = now()->subDays($pendingDays);
 
         $query = BiometricTemplate::query()
+            // The de-provisioner resolves the device it must drive the erase through, so the
+            // relation has to be eager-loaded; a lazy load throws outside production and would
+            // leave the credential on the terminal.
+            ->with(['enrolledByDevice'])
             ->where(function ($q) use ($cutoff, $pendingCutoff): void {
                 $q->where(function (Builder $sub) use ($cutoff): void {
                     $sub->where('sync_status', BiometricTemplateSyncStatusEnum::Superseded)
@@ -76,18 +80,31 @@ class CleanupSupersededTemplatesCommand extends Command
                         continue;
                     }
 
-                    AdmsDeviceCommand::cancelInFlightFor(
-                        $template->enrolled_by_device_id,
-                        $template->resolvedCommandPin()
-                    );
+                    // Capture delivery BEFORE cancelling anything: a `SENT` `user_add` means the
+                    // terminal has dequeued the profile and may already hold the credential, so
+                    // the row must be handed to hardware erasure rather than retired as
+                    // undelivered.
+                    $delivered = $template->wasDeliveredToHardware();
 
-                    if (! $template->wasDeliveredToHardware()) {
+                    if (! $delivered) {
+                        // Never dequeued: cancel the queued `user_add` so the terminal cannot
+                        // create the credential after the row is retired, then retire it.
+                        AdmsDeviceCommand::cancelInFlightFor(
+                            $template->enrolled_by_device_id,
+                            $template->resolvedCommandPin()
+                        );
+
                         $retiredUndeliveredPending++;
                         $template->delete();
 
                         continue;
                     }
 
+                    // Possibly delivered: hand it to the de-provisioner. The cancel must NOT be
+                    // done here. `deprovision()` performs its own capture-before-cancel, so
+                    // cancelling first would null the `user_add` idempotency key and make its
+                    // re-derived delivery check false — which is how a live credential got
+                    // written off as never delivered.
                     if ($deProvisioner->deprovision($template) === BiometricDeProvisionOutcome::DeferredToSibling) {
                         $deferredPending++;
 

@@ -24,6 +24,8 @@ Stores server-to-device commands queued for biometric hardware terminals operati
 | `command_type` | varchar(255) | NO | — | Command creation | Type of command: `user_add`, `user_delete`, `user_update`, `reboot`, `clear_log` |
 | `command_payload` | json | YES | null | Command creation | Key-value arguments needed to format the command (e.g., `{"Pin": "42", "Name": "John"}`) |
 | `status` | varchar(255) | NO | pending | Command lifecycle | `AdmsCommandStatusEnum`: `pending`, `sent`, `acknowledged`, `failed` |
+| `attempt_count` | unsigned int | NO | 0 | Command lease/delivery | Delivery attempt counter, capped at max attempts |
+| `epoch_credential_user_add_id` | bigint unsigned | YES | null | BiometricDeProvisioner | ID of the `user_add` command that established the credential epoch |
 | `sent_at` | timestamp | YES | null | Device polling | Timestamp when the terminal fetched the command via `getrequest` |
 | `acknowledged_at` | timestamp | YES | null | Device execution | Timestamp when the terminal reported execution result via `devicecmd` |
 | `device_return_code` | varchar(255) | YES | null | Device execution | Raw return code string from device (`0` = success, non-zero = error) |
@@ -80,7 +82,8 @@ The ADMS push protocol uses colon-delimited string commands returned in response
 
 | Feature | Reads | Writes | Notes |
 |---|---|---|---|
-| [Biometric ADMS Push Protocol](../feature/biometric-adms-push-protocol.md) | `device_id`, `status`, `command_type`, `command_payload` | `status`, `sent_at`, `acknowledged_at`, `device_return_code` | Serves commands to polling terminals & handles execution ACKs |
+| [Biometric ADMS Push Protocol](../feature/biometric-adms-push-protocol.md) | `device_id`, `status`, `command_type`, `command_payload` | `status`, `sent_at`, `acknowledged_at`, `device_return_code`, `attempt_count` | Serves commands to polling terminals & handles execution ACKs |
+| [Member Archival Lifecycle](../../adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md) | `epoch_credential_user_add_id`, `idempotency_key` | `epoch_credential_user_add_id`, `status` | Re-drives dead-lettered user_delete commands across credential epochs |
 | Expired Member Cleanup Command | `device_id`, `command_type`, `command_payload`, `status` | Inserts new command | Queues user deletion when membership expires beyond grace window |
 | Filament Admin Resource (`AdmsDeviceCommandResource`) | All fields | `status`, `sent_at`, `acknowledged_at`, `device_return_code` | Allows gym admins to audit and resend failed commands |
 
@@ -89,3 +92,4 @@ The ADMS push protocol uses colon-delimited string commands returned in response
 | Migration | Change |
 |---|---|
 | `2026_09_23_133303_create_adms_device_commands_table` | Initial table creation with compound index on `(device_id, status)` |
+| `2026_10_18_000000_add_epoch_credential_to_adms_device_commands_table` | Added `epoch_credential_user_add_id` column to track credential epochs |

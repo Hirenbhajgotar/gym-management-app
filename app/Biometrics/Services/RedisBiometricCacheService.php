@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Biometrics\Services;
 
-use App\Enums\PaymentStatus;
 use App\Models\GymMember;
 use Illuminate\Redis\Connections\PhpRedisConnection;
 use Illuminate\Redis\Connections\PredisConnection;
@@ -201,18 +200,20 @@ class RedisBiometricCacheService
         $canAccess = true;
         $denialReason = null;
 
-        if ($member->isFrozen()) {
+        // Denial is delegated to the guard so this summary cannot fork from the
+        // predicate that denies: MembershipGuard::resolveReason() walks
+        // GymMember::canAccessGym()'s clauses in the same order, archive first.
+        // Resolving the denial BEFORE the consent check mirrors the guard's own
+        // precedence — archiving is a deliberate revocation and outranks the
+        // incidental states an archived member often also happens to be in, so
+        // "this person was archived" is what the summary reports. Clearing
+        // can_access here is also what keeps the in-memory membership_end
+        // re-check in getMemberAccessSummary() from overwriting denial_reason
+        // with 'membership_expired' on a cache hit — it only rewrites while
+        // can_access is still true.
+        if (! $member->canAccessGym()) {
             $canAccess = false;
-            $denialReason = 'membership_frozen';
-        } elseif ($member->membership_end?->isPast()) {
-            $canAccess = false;
-            $denialReason = 'membership_expired';
-        } elseif (! in_array($member->payment_status, [PaymentStatus::COMPLETED, PaymentStatus::PARTIAL], true)) {
-            $canAccess = false;
-            $denialReason = 'payment_pending';
-        } elseif (! $member->canAccessGym()) {
-            $canAccess = false;
-            $denialReason = 'access_denied';
+            $denialReason = resolve(MembershipGuard::class)->resolveReason($member);
         } elseif (! $member->hasActiveBiometricConsent()) {
             $canAccess = false;
             $denialReason = 'no_biometric_consent';
@@ -229,6 +230,19 @@ class RedisBiometricCacheService
             'membership_end' => $member->membership_end?->toISOString(),
             'has_consent' => $member->hasActiveBiometricConsent(),
         ];
+    }
+
+    /**
+     * The cache key a member's access summary is stored under.
+     *
+     * Public so that callers which need to inspect or invalidate the entry —
+     * chiefly tests asserting whether a read was served from cache — name the
+     * same key the service writes, rather than duplicating the format and
+     * silently drifting from it when the layout changes.
+     */
+    public function memberAccessSummaryKey(int $gymId, int|string $identifier): string
+    {
+        return $this->buildMemberKey($gymId, $identifier);
     }
 
     private function buildMemberKey(int $gymId, int|string $identifier): string

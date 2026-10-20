@@ -340,7 +340,8 @@ class BiometricDeadLetterReconciliationTest extends TestCase
             'hardware_confirmed_at' => now()->subDay(),
         ]);
 
-        // Prior user_delete command exhausted retries 5 minutes ago, inside the cooldown window
+        // Prior user_delete command exhausted retries 5 minutes ago, inside the cooldown window.
+        // It carries the real PIN-scoped key so the dedupe path is exercised, not bypassed.
         AdmsDeviceCommand::query()->create([
             'gym_id' => $this->gym->id,
             'device_id' => $this->device->id,
@@ -349,13 +350,114 @@ class BiometricDeadLetterReconciliationTest extends TestCase
             'status' => AdmsCommandStatusEnum::FAILED,
             'attempt_count' => 3,
             'updated_at' => now()->subMinutes(5),
-            'idempotency_key' => null,
+            'idempotency_key' => AdmsDeviceCommand::deleteIdempotencyKeyFor($this->device->id, (string) $this->member->id),
         ]);
 
         $this->artisan('biometrics:reconcile-pending-deletions')
+            ->expectsOutputToContain('DEAD-LETTERED')
             ->assertSuccessful();
 
         // No new user_delete command should be queued during cooldown
         $this->assertSame(1, AdmsDeviceCommand::query()->where('command_type', 'user_delete')->count());
+    }
+
+    /**
+     * A re-enrolment the terminal accepted after an exhausted delete is a fresh obligation: the
+     * reconciler must re-drive it rather than dead-letter it during the cooldown. The credit is
+     * consumed by the re-drive, so the same acknowledgement cannot start a second epoch — the
+     * next exhaustion dead-letters durably instead of spinning hardware writes.
+     */
+    #[Test]
+    public function reconciler_re_drives_a_re_enrolment_then_dead_letters_once_the_credit_is_consumed(): void
+    {
+        $pin = '880010';
+
+        $template = BiometricTemplate::query()->create([
+            'gym_member_id' => $this->member->id,
+            'gym_id' => $this->gym->id,
+            'enrolled_by_device_id' => $this->device->id,
+            'biometric_type' => BiometricTypeEnum::Fingerprint,
+            'provider_type' => 'device_native',
+            'template_ref' => $pin,
+            'is_active' => false,
+            'sync_status' => BiometricTemplateSyncStatusEnum::PendingDeletion,
+            'enrolled_at' => now()->subDay(),
+            'hardware_confirmed_at' => now()->subDay(),
+        ]);
+
+        // A delete the terminal answered and rejected up to the delivery cap, still inside the
+        // cooldown (its `updated_at` is now). The explicit past `acknowledged_at` keeps the
+        // first-epoch anchor deterministic: without a fresh credential this would be
+        // dead-lettered.
+        $delete = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_delete',
+            'command_payload' => ['Pin' => $pin],
+            'idempotency_key' => AdmsDeviceCommand::deleteIdempotencyKeyFor($this->device->id, $pin),
+            'status' => AdmsCommandStatusEnum::FAILED,
+            'attempt_count' => AdmsCommandKey::maxAttempts(),
+            'acknowledged_at' => now()->subMinutes(10),
+            'sent_at' => now()->subMinutes(10),
+        ]);
+
+        // A fresh credential on the same PIN, accepted by the terminal after the delete last
+        // failed — driven through the real `user_add` lifecycle.
+        $userAdd = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => $pin, 'Name' => $this->member->name],
+            'status' => AdmsCommandStatusEnum::PENDING,
+            'idempotency_key' => AdmsDeviceCommand::idempotencyKeyFor(
+                $this->gym->id,
+                $this->device->id,
+                $pin
+            ),
+        ]);
+
+        $this->assertTrue($userAdd->markSent());
+        $this->assertTrue($userAdd->markAcknowledged('0'));
+
+        $this->artisan('biometrics:reconcile-pending-deletions')
+            ->doesntExpectOutputToContain('DEAD-LETTERED')
+            ->expectsOutputToContain('1 command(s) queued')
+            ->assertSuccessful();
+
+        $delete->refresh();
+        $this->assertSame(AdmsCommandStatusEnum::PENDING, $delete->status);
+        $this->assertSame(0, $delete->attempt_count);
+        $this->assertSame($userAdd->id, $delete->epoch_credential_user_add_id);
+
+        // Exhaust the re-driven delete again. The consumed acknowledgement must not keep
+        // resetting the cap, so every intermediate failure preserves the delivery counter...
+        for ($attempt = 1; $attempt <= AdmsCommandKey::maxAttempts(); $attempt++) {
+            $this->assertTrue($delete->refresh()->markSent());
+            $this->assertTrue($delete->markAcknowledged('rejected'));
+
+            if ($attempt < AdmsCommandKey::maxAttempts()) {
+                $this->artisan('biometrics:reconcile-pending-deletions')
+                    ->doesntExpectOutputToContain('DEAD-LETTERED')
+                    ->assertSuccessful();
+
+                $delete->refresh();
+                $this->assertSame(AdmsCommandStatusEnum::PENDING, $delete->status);
+                $this->assertSame($attempt, $delete->attempt_count);
+            }
+        }
+
+        // ...and at the cap the reconciler dead-letters instead of writing to the hardware.
+        $this->artisan('biometrics:reconcile-pending-deletions')
+            ->expectsOutputToContain('DEAD-LETTERED')
+            ->assertSuccessful();
+
+        $delete->refresh();
+        $this->assertSame(AdmsCommandStatusEnum::FAILED, $delete->status);
+        $this->assertSame(AdmsCommandKey::maxAttempts(), $delete->attempt_count);
+        $this->assertSame(
+            $userAdd->id,
+            $delete->epoch_credential_user_add_id,
+            'The same acknowledgement must not start a second epoch.'
+        );
     }
 }

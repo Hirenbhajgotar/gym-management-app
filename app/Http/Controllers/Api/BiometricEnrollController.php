@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Biometrics\BiometricProviderRegistry;
+use App\Biometrics\Contracts\BiometricProvider;
 use App\Biometrics\DTOs\BiometricSample;
+use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\Exceptions\BiometricConsentRequiredException;
+use App\Biometrics\Exceptions\MemberArchivedException;
 use App\Biometrics\Services\BiometricDataDeletionService;
 use App\Biometrics\Services\BiometricTemplatePropagator;
 use App\Biometrics\Services\BiometricTemplateSuperseder;
 use App\Biometrics\ValueObjects\BiometricPropagationResult;
+use App\Enums\BiometricProvenanceEnum;
+use App\Enums\BiometricProvidersEnum;
 use App\Enums\BiometricTemplateSyncStatusEnum;
 use App\Enums\BiometricTypeEnum;
 use App\Http\Controllers\Controller;
@@ -46,6 +51,12 @@ class BiometricEnrollController extends Controller
         $gymMember = GymMember::query()->where('gym_id', $device->gym_id)
             ->findOrFail($request->validated('gym_member_id'));
 
+        // Archived members are access-revoked: they must never gain (or regain) a live
+        // credential, so enrollment is refused outright (see MemberArchiveService).
+        if (! $gymMember->mayHoldBiometricCredential()) {
+            return response()->json($this->archivedMemberRefusalPayload(), 422);
+        }
+
         // Enforce that active consent exists - do not auto-create
         if (! $gymMember->hasActiveBiometricConsent(fresh: true)) {
             return response()->json([
@@ -79,49 +90,94 @@ class BiometricEnrollController extends Controller
             metadata: $metadata
         );
 
+        // The remote template a cloud provider creates is NOT transactional: a
+        // rollback of the local row does not un-provision it. Captured here so
+        // every failure path can compensate the provider-side side effect.
+        $createdRef = null;
+
+        // "A remote template may exist" is a distinct fact from "we hold its
+        // reference". $createdRef is only assigned when enroll() RETURNS, so a
+        // provider that creates the template and then throws (AzureFaceProvider's
+        // trainPersonGroup flow) leaves the side effect with no handle. This flag
+        // is what keeps the refusal from being silent about that case.
+        $enrolmentAttempted = false;
+
         try {
-            $templateRef = $provider->enroll($gymMember, $sample);
+            $template = DB::transaction(function () use ($device, $gymMember, $biometricType, $sample, $provider, &$createdRef, &$enrolmentAttempted): BiometricTemplate {
+                // Acquire the archive truth BEFORE the side effect and hold it.
+                // lockForUpdate() takes the same row lock that
+                // MemberArchiveService::archive() takes, so a concurrent archive
+                // either commits before this read (and is seen here) or waits
+                // for this transaction to commit. The previous refresh() was a
+                // plain, non-locking SELECT whose read view — under MySQL's
+                // default REPEATABLE READ — is fixed at first read, so an
+                // archive committing after it was invisible.
+                $locked = $this->lockAndAssertNotArchived($gymMember);
 
-            // Resolve command PINs (both member ID and any existing template refs)
-            $existingTemplates = BiometricTemplate::query()
-                ->where('gym_id', $device->gym_id)
-                ->where('gym_member_id', $gymMember->id)
-                ->where('enrolled_by_device_id', $device->id)
-                ->get();
-
-            $pins = [(string) $gymMember->id];
-            foreach ($existingTemplates as $existingTemplate) {
-                $pins[] = $existingTemplate->resolvedCommandPin();
-            }
-            $pins = array_values(array_unique($pins));
-
-            $template = DB::transaction(function () use ($device, $gymMember, $pins, $templateRef, $biometricType): BiometricTemplate {
-                // Re-check fresh consent inside transaction to prevent TOCTOU race
+                // Re-check fresh consent inside the transaction (same TOCTOU).
                 throw_unless(
-                    $gymMember->hasActiveBiometricConsent(fresh: true),
+                    $locked->hasActiveBiometricConsent(fresh: true),
                     BiometricConsentRequiredException::class
                 );
+
+                // Provider-side enrolment, performed while the row lock is held
+                // so the member cannot be archived between the check above and
+                // the credential being created. The attempt flag is set BEFORE
+                // the call: if the provider creates the template and then throws,
+                // the catch arms must still know a remote credential may exist.
+                $enrolmentAttempted = true;
+                $createdRef = $provider->enroll($locked, $sample);
+
+                // Belt-and-braces: nothing may have flipped the row archived
+                // while the credential was being created. A cross-connection
+                // archive is blocked by the lock, but a writer running inside
+                // this same transaction would be visible here; if so, roll the
+                // local row back and let the catch compensate the remote one.
+                if (! $locked->refresh()->mayHoldBiometricCredential()) {
+                    throw new MemberArchivedException();
+                }
+
+                // Resolve command PINs (both member ID and any existing template refs)
+                $existingTemplates = BiometricTemplate::query()
+                    ->where('gym_id', $device->gym_id)
+                    ->where('gym_member_id', $gymMember->id)
+                    ->where('enrolled_by_device_id', $device->id)
+                    ->get();
+
+                $pins = [(string) $gymMember->id];
+                foreach ($existingTemplates as $existingTemplate) {
+                    $pins[] = $existingTemplate->resolvedCommandPin();
+                }
+                $pins = array_values(array_unique($pins));
 
                 // Cancel any pending or in-flight delete commands on this device for this member
                 AdmsDeviceCommand::cancelDeleteCommands($device->id, $pins);
 
-                // Supersede older templates for this member, device and modality
+                // Supersede older templates for this member, device and modality.
+                //
+                // This path is gated above to cloud-capable devices and provisions a
+                // provider credential, so it may only demote cloud rows. The terminal
+                // credential on a dual-mode device is a different credential and stays live
+                // for its own hardware erasure.
                 $this->superseder->supersedeForNewEnrolment(
                     $device->gym_id,
                     $gymMember,
                     $device->id,
-                    $biometricType->value
+                    $biometricType->value,
+                    BiometricProvenanceEnum::Cloud
                 );
 
-                // Create BiometricTemplate record
+                // Create BiometricTemplate record. The provider is stored as its backing value:
+                // `provider_type` is string-cast on the model, and assigning the enum instance
+                // here would defeat the cast and the strict `hasCloudProvider()` comparison.
                 return BiometricTemplate::query()->create([
                     'gym_member_id' => $gymMember->id,
                     'gym_id' => $device->gym_id,
                     'enrolled_by_device_id' => $device->id,
                     'biometric_type' => $biometricType->value,
-                    'provider_type' => $device->provider_type,
-                    'template_ref' => $templateRef->toJson(),
-                    'quality_score' => $templateRef->meta['quality_score'] ?? null,
+                    'provider_type' => $device->provider_type->value,
+                    'template_ref' => $createdRef->toJson(),
+                    'quality_score' => $createdRef->meta['quality_score'] ?? null,
                     'is_active' => true,
                     'enrolled_at' => now(),
                 ]);
@@ -133,7 +189,18 @@ class BiometricEnrollController extends Controller
                 'quality_score' => $template->quality_score,
                 'enrolled_at' => $template->enrolled_at !== null ? $template->enrolled_at->toISOString() : now()->toISOString(),
             ]);
+        } catch (MemberArchivedException $e) {
+            $this->compensateRemoteEnrolment($provider, $createdRef, $device, $gymMember, $biometricType, $enrolmentAttempted);
+
+            Log::warning('BiometricEnrollController::enroll aborted: member archived during enrollment', [
+                'device_id' => $device->id,
+                'member_id' => $gymMember->id,
+            ]);
+
+            return response()->json($this->archivedMemberRefusalPayload(), 422);
         } catch (BiometricConsentRequiredException $e) {
+            $this->compensateRemoteEnrolment($provider, $createdRef, $device, $gymMember, $biometricType, $enrolmentAttempted);
+
             Log::warning('BiometricEnrollController::enroll aborted: consent revoked during enrollment', [
                 'device_id' => $device->id,
                 'member_id' => $gymMember->id,
@@ -144,7 +211,9 @@ class BiometricEnrollController extends Controller
                 'error' => 'Biometric consent required',
                 'message' => 'Member must have an active biometric consent on file',
             ], 422);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
+            $this->compensateRemoteEnrolment($provider, $createdRef, $device, $gymMember, $biometricType, $enrolmentAttempted);
+
             Log::error('BiometricEnrollController::enroll failed', [
                 'device_id' => $device->id,
                 'member_id' => $gymMember->id,
@@ -194,6 +263,12 @@ class BiometricEnrollController extends Controller
             ->where('gym_id', $device->gym_id)
             ->find($gymMemberId);
 
+        // Archived members are access-revoked: they must never gain (or regain) a live
+        // credential, so enrollment is refused outright (see MemberArchiveService).
+        if ($gymMember && ! $gymMember->mayHoldBiometricCredential()) {
+            return response()->json($this->archivedMemberRefusalPayload(), 422);
+        }
+
         // Consent check — deny if absent
         if (! $gymMember || ! $gymMember->hasActiveBiometricConsent(fresh: true)) {
             return response()->json([
@@ -205,9 +280,17 @@ class BiometricEnrollController extends Controller
         try {
             /** @var array{confirmedTemplate: BiometricTemplate, propagation: BiometricPropagationResult} $enrollment */
             $enrollment = DB::transaction(function () use ($gymMemberId, $device, $validated, $templateRef, $gymMember): array {
+                // Lock the member row and re-assert archive eligibility inside the
+                // transaction. This is the same row lock MemberArchiveService::archive()
+                // takes, so a concurrent archive either commits before this read (and is
+                // seen here) or waits for this transaction to commit — it cannot slip
+                // between this check and the credential writes below. The previous
+                // refresh() was a plain, non-locking SELECT.
+                $locked = $this->lockAndAssertNotArchived($gymMember);
+
                 // Re-check fresh consent inside transaction to prevent TOCTOU race
                 throw_unless(
-                    $gymMember->hasActiveBiometricConsent(fresh: true),
+                    $locked->hasActiveBiometricConsent(fresh: true),
                     BiometricConsentRequiredException::class
                 );
 
@@ -232,6 +315,7 @@ class BiometricEnrollController extends Controller
                     ->where('enrolled_by_device_id', $device->id)
                     ->where('biometric_type', $biometricType)
                     ->where('sync_status', BiometricTemplateSyncStatusEnum::Pending)
+                    ->hardwareBacked()
                     ->lockForUpdate()
                     ->latest('id')
                     ->first();
@@ -239,7 +323,7 @@ class BiometricEnrollController extends Controller
                 if ($template) {
                     $template->update([
                         'biometric_type' => $biometricType,
-                        'provider_type' => $device->provider_type ? $device->provider_type->value : 'device_native',
+                        'provider_type' => BiometricProvidersEnum::DeviceNative->value,
                         'template_ref' => $templateRef,
                         'quality_score' => $validated['quality_score'] ?? null,
                         'is_active' => true,
@@ -248,19 +332,27 @@ class BiometricEnrollController extends Controller
                         'hardware_confirmed_at' => now(),
                     ]);
                 } else {
+                    // Only a row this device authored may be updated in place. The selection
+                    // deliberately asks for a hardware-backed row: a device-reported sync
+                    // must never change the provenance of a row it did not create. Matching
+                    // on member + modality alone let an ADMS `enroll-sync` claim the
+                    // `is_active` cloud row `enroll()` had created on a dual-mode device,
+                    // overwriting its `provider_type` and its `template_ref` and orphaning
+                    // the provider credential while the app reported the member revoked.
                     $existingActive = BiometricTemplate::query()
                         ->where('gym_member_id', $gymMemberId)
                         ->where('gym_id', $device->gym_id)
                         ->where('enrolled_by_device_id', $device->id)
                         ->where('biometric_type', $biometricType)
                         ->where('is_active', true)
+                        ->hardwareBacked()
                         ->lockForUpdate()
                         ->first();
 
                     if ($existingActive) {
                         $existingActive->update([
                             'biometric_type' => $biometricType,
-                            'provider_type' => $device->provider_type ? $device->provider_type->value : 'device_native',
+                            'provider_type' => BiometricProvidersEnum::DeviceNative->value,
                             'template_ref' => $templateRef,
                             'quality_score' => $validated['quality_score'] ?? null,
                             'sync_status' => BiometricTemplateSyncStatusEnum::Synced,
@@ -274,7 +366,7 @@ class BiometricEnrollController extends Controller
                             'gym_id' => $device->gym_id,
                             'enrolled_by_device_id' => $device->id,
                             'biometric_type' => $biometricType,
-                            'provider_type' => $device->provider_type ? $device->provider_type->value : 'device_native',
+                            'provider_type' => BiometricProvidersEnum::DeviceNative->value,
                             'template_ref' => $templateRef,
                             'quality_score' => $validated['quality_score'] ?? null,
                             'is_active' => true,
@@ -287,15 +379,16 @@ class BiometricEnrollController extends Controller
 
                 $this->superseder->supersedeForNewEnrolment(
                     $device->gym_id,
-                    $gymMember,
+                    $locked,
                     $device->id,
                     $biometricType instanceof BiometricTypeEnum ? $biometricType->value : $biometricType,
+                    BiometricProvenanceEnum::Hardware,
                     $template->id
                 );
 
                 // Fan out inside the caller's transaction so a consent revocation racing this
                 // request cannot slip between the re-check above and the sibling writes (OpenSpec §4).
-                $propagation = $this->propagator->propagateToSiblingDevices($device, $gymMember, $template);
+                $propagation = $this->propagator->propagateToSiblingDevices($device, $locked, $template);
 
                 return [
                     'confirmedTemplate' => $template,
@@ -316,6 +409,15 @@ class BiometricEnrollController extends Controller
                 ])
                 ->log('Biometric enrollment confirmed by device');
         } catch (Throwable $e) {
+            if ($e instanceof MemberArchivedException) {
+                Log::warning('syncFromDevice: enrollment rejected because member is archived', [
+                    'device_id' => $device->id,
+                    'member_id' => $gymMemberId,
+                ]);
+
+                return response()->json($this->archivedMemberRefusalPayload(), 422);
+            }
+
             $isConsentRefusal = $e instanceof BiometricConsentRequiredException;
 
             if ($isConsentRefusal) {
@@ -370,8 +472,11 @@ class BiometricEnrollController extends Controller
         /** @var BiometricDevice $device */
         $device = $request->attributes->get('device');
 
-        // Verify template belongs to this device's gym
-        if ($template->gym_id !== $device->gym_id) {
+        // Verify the template belongs to this device's gym AND was enrolled by this
+        // device. A device token must not drive a sibling device's erasure — that
+        // credential lives on hardware this caller does not own — nor stamp the
+        // Art. 17 request marker (`deleteSingleTemplate()`) on another device's row.
+        if ($template->gym_id !== $device->gym_id || $template->enrolled_by_device_id !== $device->id) {
             return response()->json([
                 'error' => 'Forbidden',
                 'message' => 'Template does not belong to this device',
@@ -418,5 +523,194 @@ class BiometricEnrollController extends Controller
                 'message' => 'An error occurred while deleting the biometric template.',
             ], 422);
         }
+    }
+
+    /**
+     * The refusal both enrollment entry points return for an archived member.
+     *
+     * `member_archived` is the same reason string MembershipGuard names and the
+     * device-facing webhook maps, so one archived member reads the same way at
+     * every decision point that can touch their credential — and an operator
+     * reading a device log can tell an access revocation apart from a consent
+     * problem without needing to know which endpoint answered.
+     *
+     * @return array<string, mixed>
+     */
+    private function archivedMemberRefusalPayload(): array
+    {
+        return [
+            'success' => false,
+            'error' => 'member_archived',
+            'message' => 'Member is archived. Enrollment is not permitted for archived members.',
+        ];
+    }
+
+    /**
+     * Lock the member row and re-assert archive eligibility inside the enrollment transaction.
+     *
+     * The initial gate reads the member outside the transaction, so an archiving
+     * write landing in between would otherwise enroll against the stale copy — the
+     * same TOCTOU the consent re-check beside it exists to close. `lockForUpdate()`
+     * takes the same row lock MemberArchiveService::archive() takes, so the archive
+     * either commits before this read (and is seen here) or waits for this
+     * transaction to commit; unlike a plain refresh(), it cannot be satisfied by a
+     * snapshot fixed before the concurrent write landed. The freshly-read row is
+     * returned so callers act on the locked truth rather than the stale copy they
+     * arrived with, and the exception is caught by the caller, which turns it into
+     * the same 422 the initial gate returns.
+     *
+     * @throws MemberArchivedException
+     */
+    private function lockAndAssertNotArchived(GymMember $member): GymMember
+    {
+        $locked = GymMember::query()
+            ->whereKey($member->getKey())
+            ->lockForUpdate()
+            ->first();
+
+        if (! $locked instanceof GymMember) {
+            throw new MemberArchivedException();
+        }
+
+        $locked->assertMayHoldBiometricCredential();
+
+        return $locked;
+    }
+
+    /**
+     * Undo a provider-side enrolment that no local row will record.
+     *
+     * A cloud provider's enroll() is not transactional: rolling back the local
+     * template row leaves the remote credential live, so every failure path calls
+     * this to erase the template that was created. The compensation is best-effort
+     * — a provider outage must not mask the original failure or turn the device's
+     * error response into a 500 — but it is never silent: when the erase cannot be
+     * confirmed (the provider returned false, threw, or never handed back a
+     * reference), a durable orphan marker is written so the credential can be
+     * reconciled instead of surviving invisibly behind a refusal.
+     *
+     * `$enrolmentAttempted` matters because `$ref` is only set when enroll()
+     * returns. A provider that creates the template and then throws — the flow
+     * AzureFaceProvider's trainPersonGroup step can reach — yields a live
+     * credential with no reference, and the flag is the only thing that
+     * distinguishes that from "nothing was ever created".
+     */
+    private function compensateRemoteEnrolment(
+        BiometricProvider $provider,
+        ?TemplateRef $ref,
+        BiometricDevice $device,
+        GymMember $member,
+        BiometricTypeEnum $biometricType,
+        bool $enrolmentAttempted
+    ): void {
+        if (! $enrolmentAttempted) {
+            return;
+        }
+
+        // A create-then-throw leaves a possible remote template with no handle.
+        // There is nothing to erase with, so the attempt itself is recorded.
+        if (! $ref instanceof TemplateRef) {
+            $this->recordOrphanedRemoteTemplate(
+                $device,
+                $member,
+                $biometricType,
+                null,
+                'provider threw after creating, before returning a template reference'
+            );
+
+            return;
+        }
+
+        try {
+            if ($provider->deleteTemplate($ref) === true) {
+                return;
+            }
+        } catch (Throwable $e) {
+            Log::error('BiometricEnrollController::compensateRemoteEnrolment failed to erase orphaned remote template', [
+                'device_id' => $device->id,
+                'member_id' => $member->id,
+                'provider' => $ref->provider,
+                'external_id' => $ref->externalId,
+                'error_type' => $e::class,
+            ]);
+
+            $this->recordOrphanedRemoteTemplate($device, $member, $biometricType, $ref, 'provider erase threw ' . $e::class);
+
+            return;
+        }
+
+        // Every shipped provider reports a failed erase by RETURNING false
+        // (AzureFaceProvider, BioIDProvider, CustomApiProvider). Ignoring that
+        // return value is what silently treated a failed erase as success.
+        $this->recordOrphanedRemoteTemplate(
+            $device,
+            $member,
+            $biometricType,
+            $ref,
+            'provider did not confirm the erase (deleteTemplate returned false)'
+        );
+    }
+
+    /**
+     * Record a remote template a refused enrolment may have left behind.
+     *
+     * The row is a durable erasure obligation, flagged `is_erasure_obligation` so no later
+     * enrolment can supersede it (that would cancel the obligation and write a false
+     * "erasure overridden" audit line for an erasure the member never withdrew).
+     *
+     * With a reference it is `PendingDeletion`, so
+     * `biometrics:reconcile-pending-deletions` retries the erase against the provider. Without
+     * one — a create-then-throw — nothing can ever erase it, so it is `DeletionUnresolvable`:
+     * a terminal state the reconciler does not re-select, surfaced to operators, rather than an
+     * hourly retry loop that permanently blocks the member's own GDPR erasure.
+     */
+    private function recordOrphanedRemoteTemplate(
+        BiometricDevice $device,
+        GymMember $member,
+        BiometricTypeEnum $biometricType,
+        ?TemplateRef $ref,
+        string $reason
+    ): void {
+        $status = $ref instanceof TemplateRef
+            ? BiometricTemplateSyncStatusEnum::PendingDeletion
+            : BiometricTemplateSyncStatusEnum::DeletionUnresolvable;
+
+        try {
+            // `is_erasure_obligation` is a compliance discriminator and is deliberately not
+            // mass-assignable, so the marker row is forced rather than filled.
+            BiometricTemplate::query()->forceCreate([
+                'gym_member_id' => $member->id,
+                'gym_id' => $device->gym_id,
+                'enrolled_by_device_id' => $device->id,
+                'biometric_type' => $biometricType->value,
+                // `??` is itself null-safe: a null `$ref` or a never-configured device falls
+                // through to the next operand instead of raising, so the nullsafe operators are
+                // redundant here.
+                'provider_type' => $ref->provider ?? $device->provider_type->value ?? 'unknown',
+                'template_ref' => $ref?->toJson(),
+                'is_active' => false,
+                'is_erasure_obligation' => true,
+                'sync_status' => $status,
+                'enrolled_at' => null,
+            ]);
+        } catch (Throwable $e) {
+            // Losing the marker is worse than losing the log line, so both are
+            // attempted and the failure to persist is recorded loudly.
+            Log::error('BiometricEnrollController::recordOrphanedRemoteTemplate could not persist the orphan marker', [
+                'device_id' => $device->id,
+                'member_id' => $member->id,
+                'provider' => $ref?->provider,
+                'error_type' => $e::class,
+            ]);
+        }
+
+        Log::warning('BiometricEnrollController: refused enrolment left an unconfirmed remote template; recorded for reconciliation', [
+            'device_id' => $device->id,
+            'member_id' => $member->id,
+            'provider' => $ref?->provider,
+            'external_id' => $ref?->externalId,
+            'reason' => $reason,
+            'sync_status' => $status->value,
+        ]);
     }
 }

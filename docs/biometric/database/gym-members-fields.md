@@ -39,6 +39,10 @@ Stores gym members/participants. This is the primary entity for biometric operat
 | `frozen_until` | timestamp | YES | null | freeze() | Auto-unfreeze date |
 | `frozen_reason` | text | YES | null | freeze() | Reason for freeze |
 | `frozen_by` | bigint unsigned | YES | null | freeze() | User who froze |
+| `is_archived` | tinyint(1) | NO | 0 | MemberArchiveService | Whether member is archived (access revoked) |
+| `archived_at` | timestamp | YES | null | MemberArchiveService | Timestamp when member was archived |
+| `allow_whatsapp_marketing` | tinyint(1) | NO | 1 | toggleWhatsappMarketing() | WhatsApp marketing consent (forced false while archived) |
+| `whatsapp_marketing_snapshot` | tinyint(1) | YES | null | MemberArchiveService | Preserved marketing consent value during archival |
 | `created_at` | timestamp | NO | CURRENT_TIMESTAMP | — | Creation timestamp |
 | `updated_at` | timestamp | NO | CURRENT_TIMESTAMP | — | Update timestamp |
 
@@ -67,16 +71,23 @@ Stores gym members/participants. This is the primary entity for biometric operat
 |---|---|---|---|
 | [Biometric Check-in Flow](../feature/biometric-checkin-flow.md) | All fields | — | Uses canAccessGym(), isFrozen(), isCurrentlyCheckedIn() |
 | [Biometric Consent System](../feature/biometric-consent-system.md) | `email`, `gym` | — | Triggers consent email on creation |
-| [Door Access Control](../feature/door-access-control.md) | — | — | Referenced in door events |
+| [Member Archival Lifecycle](../../adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md) | `is_archived`, `archived_at`, `allow_whatsapp_marketing` | `is_archived`, `archived_at`, `allow_whatsapp_marketing`, `whatsapp_marketing_snapshot` | Handled by MemberArchiveService & MemberArchiveAuthorization |
+| [Door Access Control](../feature/door-access-control.md) | `is_archived` | — | Referenced in door events, denied if is_archived = true |
 
-## Key Methods
+## Key Methods & Scopes
 
-| Method | Purpose |
+| Method / Scope | Purpose |
 |---|---|
-| `canAccessGym()` | Returns bool — checks membership_end, payment_status, is_frozen |
+| `canAccessGym()` | Returns bool — evaluates `is_archived` FIRST; then checks membership_end, payment_status, is_frozen |
+| `mayHoldBiometricCredential()` | Returns bool — true only when `! $this->is_archived` |
+| `assertMayHoldBiometricCredential()` | Throws `MemberArchivedException` if member is archived |
+| `archive(?User $operator)` | Explicitly gated archival via `MemberArchiveService` |
+| `unarchive(?User $operator)` | Explicitly gated restoration via `MemberArchiveService` (restores marketing snapshot) |
+| `toggleWhatsappMarketing(bool $allowed)` | Writes consent; if archived, routes through `recordConsentWhileArchived()` |
 | `isFrozen()` | Returns bool — checks is_frozen and auto-unfreezes if frozen_until passed |
 | `isCurrentlyCheckedIn()` | Returns bool — checks for active attendance today |
 | `currentAttendance()` | Returns active attendance or null |
+| `scopeNotArchived(Builder $query)` | Opt-in query scope to filter out archived members without breaking relationships |
 | `biometricTemplates()` | HasMany relationship to BiometricTemplate |
 | `biometricConsents()` | HasMany relationship to BiometricConsent |
 | `activeBiometricConsent()` | Returns active consent or null |
@@ -87,9 +98,11 @@ Stores gym members/participants. This is the primary entity for biometric operat
 |---|---|
 | `2024_xx_xx_create_gym_members_table` | Initial table creation |
 | `2026_03_23_120002_create_biometric_consents_table` | Added FK constraints (biometric_consents references gym_members) |
+| `2026_10_13_000000_create_gym_member_archive_permissions` | Added permissions and role grants for member archive/unarchive |
 
 ## Notes
 
 - **NOT** the same as `User` model — gym members may not have login access
 - Biometric operations use this model, not User
 - Consent system uses email from this table
+- Archiving is an access revocation; archived members cannot hold live biometric credentials and cannot check in. Child relations are mutation-frozen via `GuardsArchivedOwner`.

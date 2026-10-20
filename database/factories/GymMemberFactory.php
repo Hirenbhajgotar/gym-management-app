@@ -33,4 +33,27 @@ class GymMemberFactory extends Factory
             'user_id' => null,
         ];
     }
+
+    /**
+     * State: archived member with WhatsApp marketing disabled.
+     *
+     * $marketingAllowedBeforeArchive is the member's consent immediately before
+     * archiving, which archive() copies into whatsapp_marketing_snapshot so
+     * unarchive() can put it back. It has to be a parameter rather than read
+     * out of the incoming $attributes: those only carry a value when the
+     * definition or an earlier chained state put one there, and otherwise
+     * yield null — the column's default — not false, so the consent cannot be
+     * inferred from what was handed over. The parameter keeps control of the
+     * pre-archive consent explicit and deterministic, which is what the
+     * snapshot round-trip needs to prove.
+     */
+    public function archived(bool $marketingAllowedBeforeArchive = false): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_archived' => true,
+            'archived_at' => now(),
+            'allow_whatsapp_marketing' => false,
+            'whatsapp_marketing_snapshot' => $marketingAllowedBeforeArchive,
+        ]);
+    }
 }

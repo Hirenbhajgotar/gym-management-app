@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Enums\DefaultRole;
 use App\Models\Permission;
+use App\Permissions\TeamPermissionRegistrar;
 use App\Services\RolesAndPermissionsService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -61,20 +62,43 @@ class SyncPermissionsCommand extends Command
         // Step 4: Sync other tenant roles (manager, receptionist, trainer)
         $otherRolesStats = $this->syncOtherTenantRoles($gymId, $dryRun, $force);
 
-        // Clear permission cache — always flush globally since permission names are unique
-        // and the cache is not team-scoped. The setPermissionsTeamId() approach was removed
-        // because it mutates global state, which is unsafe under concurrent execution
+        // Clear permission cache — the cache IS per-gym (TeamPermissionRegistrar
+        // keys "<base>.gym.<id>"), so the global key plus every per-gym one must
+        // be flushed. The setPermissionsTeamId() approach was removed because it
+        // mutates global state, which is unsafe under concurrent execution
         // (Octane, queue workers) and leaks team context across requests.
         if (! $dryRun) {
-            $registrar = resolve(PermissionRegistrar::class);
-            $registrar->forgetCachedPermissions();
-            $this->info('   🗑️ Cleared global permission cache');
+            $this->flushPermissionCaches();
         }
 
         $this->newLine();
         $this->displaySummary($newPermissions, $superAdminSynced, $gymOwnerStats, $otherRolesStats);
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Drop every cached permission set, not just the base one.
+     *
+     * Permission NAMES are platform-global, but the CACHE is not:
+     * TeamPermissionRegistrar keys it per gym ("<base>.gym.<id>") so a
+     * request only ever loads its own tenant's permissions. Flushing
+     * only the base key would leave every tenant serving the stale set
+     * it had before this run until that key expired on its own, so the
+     * registrar forgets the global key plus every per-gym one.
+     */
+    private function flushPermissionCaches(): void
+    {
+        // No instanceof guard: AppServiceProvider binds PermissionRegistrar to
+        // TeamPermissionRegistrar unconditionally, so the check could only ever
+        // be true. Calling the per-gym flusher directly means that swapping the
+        // binding is a static analysis failure rather than a silent return to
+        // leaving every tenant on its stale permission set.
+        /** @var TeamPermissionRegistrar $registrar Bound by AppServiceProvider. */
+        $registrar = resolve(PermissionRegistrar::class);
+        $gymCount = $registrar->forgetAllCachedPermissions();
+
+        $this->info('   🗑️ Cleared global + ' . $gymCount . ' per-gym permission caches');
     }
 
     protected function createMissingPermissions(bool $dryRun): int
@@ -202,7 +226,7 @@ class SyncPermissionsCommand extends Command
             $permissionsAdded += count($missingPermissionIds);
 
             if ($dryRun) {
-                $this->line("      - Gym #{$role->gym_id}: +{}" . count($missingPermissionIds) . ' permissions');
+                $this->line("      - Gym #{$role->gym_id}: +" . count($missingPermissionIds) . ' permissions');
 
                 continue;
             }

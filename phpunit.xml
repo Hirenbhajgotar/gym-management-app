@@ -24,12 +24,17 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
+        <!-- DB_CONNECTION and DB_DATABASE are the values the DB-safety rules
+             genuinely require: tests must never resolve to the main `gym_app`
+             database, whatever the ambient environment inherited, so both are
+             forced. Host, port and credentials are deliberately NOT pinned here —
+             a forced phpunit env overrides real environment variables, so pinning
+             them broke every environment that is not `docker-compose exec app`
+             (CI's service container exports its own DB_HOST/DB_PASSWORD). They
+             resolve from `.env.testing` locally and from the ambient environment
+             wherever one already defines them. -->
         <env name="DB_CONNECTION" value="mysql" force="true"/>
         <env name="DB_DATABASE" value="gym_app_test" force="true"/>
-        <env name="DB_HOST" value="127.0.0.1" force="true"/>
-        <env name="DB_PORT" value="3306" force="true"/>
-        <env name="DB_USERNAME" value="root" force="true"/>
-        <env name="DB_PASSWORD" value="password" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="BROADCAST_CONNECTION" value="log" force="true"/>

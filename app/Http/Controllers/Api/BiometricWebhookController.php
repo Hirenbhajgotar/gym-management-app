@@ -40,8 +40,25 @@ class BiometricWebhookController extends Controller
         // If device has webhook_secret configured, signature is required
         $hasWebhookSecret = filled($device->provider_config['webhook_secret'] ?? '');
 
+        // A webhook that cannot be cryptographically verified is refused. With
+        // no webhook_secret configured the request would otherwise be accepted
+        // on the URL token alone — a bearer credential that leaks through logs,
+        // proxies and referrers — and anyone holding it could forge check-ins
+        // and door events on a physical-access surface. Fail closed, and make it
+        // loud so the device is re-provisioned with a secret rather than quietly
+        // running unverified.
+        if (! $hasWebhookSecret) {
+            Log::error('BiometricWebhook: refusing webhook for a device with no webhook_secret configured', [
+                'device_id' => $device->id,
+                'device_name' => $device->device_name,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json(['error' => 'Webhook signature is not configured for this device'], 401);
+        }
+
         // If signature is required but not provided, reject
-        if ($hasWebhookSecret && ! $signature) {
+        if (! $signature) {
             Log::warning('BiometricWebhook: Signature required but not provided', [
                 'device_id' => $device->id,
                 'device_name' => $device->device_name,
@@ -53,7 +70,7 @@ class BiometricWebhookController extends Controller
         }
 
         // If signature is provided but invalid
-        if ($signature && ! $this->verifySignature($request, $signature, $device)) {
+        if (! $this->verifySignature($request, $signature, $device)) {
             Log::warning('BiometricWebhook: Invalid signature', [
                 'device_id' => $device->id,
                 'device_name' => $device->device_name,
@@ -175,22 +192,20 @@ class BiometricWebhookController extends Controller
         return null;
     }
 
+    /**
+     * Verify the device's HMAC signature over the raw request body.
+     *
+     * Replay protection is deliberately NOT implemented here. Binding the signature to a
+     * timestamp or nonce is the correct fix for a captured-request replay, but the deployed
+     * device firmware does not send one, so a strict check would reject every webhook from every
+     * device until the whole fleet is cut over to firmware that does. That cutover is an
+     * operational change in its own right; this gap is knowingly accepted until then, and the
+     * signature still prevents a forged body from an attacker who does not hold the secret.
+     */
     protected function verifySignature(Request $request, string $signature, BiometricDevice $device): bool
     {
         $rawSecret = is_array($device->provider_config) ? ($device->provider_config['webhook_secret'] ?? '') : '';
         $secret = is_scalar($rawSecret) ? (string) $rawSecret : '';
-
-        // If no secret is configured, reject the request for security
-        // This prevents processing unverified webhooks
-        if (blank($secret)) {
-            Log::warning('BiometricWebhook: Webhook secret not configured for device', [
-                'device_id' => $device->id,
-                'device_name' => $device->device_name,
-                'ip' => $request->ip(),
-            ]);
-
-            return false;
-        }
 
         $payload = $request->getContent();
         $rawSignature = str_starts_with($signature, 'sha256=') ? substr($signature, 7) : $signature;
@@ -289,6 +304,8 @@ class BiometricWebhookController extends Controller
     {
         return match ($reason) {
             'anti_passback', 'anti_passback_rejection' => 'Anti-passback: duplicate punch detected. Please wait.',
+            'member_archived' => 'Membership archived. Please contact reception.',
+            'no_membership' => 'No active membership. Please contact reception.',
             'membership_expired' => 'Membership expired. Please contact reception.',
             'payment_pending' => 'Payment pending. Please pay at reception.',
             'membership_frozen' => 'Membership is on hold.',

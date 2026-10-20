@@ -21,10 +21,12 @@ Comprehensive technical documentation for the biometric hardware integration, ac
 - **[ADR-0001: Biometric System Architecture](../adr/adr-0001-biometric-implementation.md)**
 - **[ADR-0002: Biometric Enrollment & Device Reconciliation](../adr/adr-0002-biometric-enrollment-and-device-reconciliation.md)**
 - **[ADR-0003: Multi-Channel Biometric Consent Distribution & Dual-Gate Architecture](../adr/adr-0003-biometric-consent-distribution-and-dual-gate-architecture.md)**
+- **[ADR-0004: Member Archival Lifecycle, Cryptographic Biometric Credential Erasure, and Access Revocation Architecture](../adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md)**
 
 ### 3. Database Schema & Field References (`docs/biometric/database/`)
 - **[`biometric_devices`](database/biometric-devices-fields.md)**: Hardware devices, provider configurations, serial numbers, door zones, and ADMS toggle.
 - **[`adms_device_commands`](database/adms-device-commands-fields.md)**: Queued server-to-device commands, payload parameters, execution status lifecycle, and device return codes.
+- **[`biometric_templates`](database/biometric-templates-fields.md)**: Physical & cloud biometric credentials, sync statuses, erasure tracking, and deletion obligations.
 - **[`attendances`](database/attendances-fields.md)**: Member check-in and check-out records, biometric confidence scores, verification methods, and door unlock statuses.
 - **[`door_events`](database/door-events-fields.md)**: Physical door unlock audit trail, controller responses, and latency metrics.
-- **[`gym_members`](database/gym-members-fields.md)**: Member profile fields and biometric consent relations.
+- **[`gym_members`](database/gym-members-fields.md)**: Member profile fields, archive lifecycle status, and biometric consent relations.

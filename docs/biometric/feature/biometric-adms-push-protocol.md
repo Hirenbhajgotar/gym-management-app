@@ -5,8 +5,10 @@ last_updated: 2026-09-23
 author: docs-agent
 related_docs:
   - ../architecture/ADR-004-adms-push-protocol-and-lifecycle.md
+  - ../../adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md
   - ../architecture/ADR-002-door-access-attendance-integrity.md
   - ../database/adms-device-commands-fields.md
+  - ../database/biometric-templates-fields.md
   - ../database/biometric-devices-fields.md
   - ../database/attendances-fields.md
   - ./biometric-checkin-flow.md
@@ -200,6 +202,18 @@ Server-to-device commands are managed via the [AdmsDeviceCommand](file:///c:/xam
 
 ### Command Pruning Lifecycle
 Old executed commands (`ACKNOWLEDGED` and `FAILED`) are pruned automatically using Laravel's `Prunable` trait based on `config('biometrics.adms.command_retention_days')` (default 90 days), evaluated on `acknowledged_at` (falling back to `updated_at`).
+
+### Member Archival Deprovisioning & Hardware Credential Epoch Tracking
+When an operator archives a member (or when `app:archive-inactive-gym-members` executes the 2-year inactivity sweep), [MemberArchiveService](file:///c:/xampp/htdocs/projects/gym-app/app/Services/MemberArchiveService.php) immediately initiates physical credential revocation via [BiometricDeProvisioner](file:///c:/xampp/htdocs/projects/gym-app/app/Biometrics/Services/BiometricDeProvisioner.php):
+- **Synchronous Command Queuing**: Queues a `DATA DELETE user Pin={memberId}` command for all active and pending templates across assigned hardware terminals.
+- **Hardware Credential Epoch Tracking**: To prevent dead-letter loops where a previous deletion command failed at the maximum attempt cap, [AdmsDeviceCommand](file:///c:/xampp/htdocs/projects/gym-app/app/Models/AdmsDeviceCommand.php) tracks `epoch_credential_user_add_id`. When a restored member re-enrolls, the subsequent `user_add` establishes a new credential epoch. If the member is later archived again, `BiometricDeProvisioner::hasUnconsumedHardwareCredential()` recognizes the newer epoch and safely re-drives the terminal deletion without getting blocked by previous attempt caps.
+- **Biometric Operator Attention**: Stuck or unresolvable deletions that reach the attempt cap are automatically surfaced to operators via the `BiometricOperatorAttentionWidget` and the "Needs Operator" filter on `BiometricTemplatesRelationManager`.
+
+### Fail-Closed Webhook HMAC Authentication
+In dual-channel mode, biometric devices dispatch instant door-unlock requests to `/api/v1/biometric/webhook/{token}`:
+- **Mandatory HMAC-SHA256**: [BiometricWebhookController](file:///c:/xampp/htdocs/projects/gym-app/app/Http/Controllers/Api/BiometricWebhookController.php) mandates that incoming webhook requests must be cryptographically signed via `X-Hub-Signature-256` or `X-Signature`.
+- **Fail-Closed Stance**: Devices lacking a configured `webhook_secret` in their `provider_config` are immediately refused with HTTP 401, completely eliminating bearer-token vulnerability over raw URLs.
+- **Secret Provisioning**: Gym operators can generate and reveal device signing secrets using `php artisan biometrics:provision-webhook-secrets --gym={id} --reveal`.
 
 ---
 

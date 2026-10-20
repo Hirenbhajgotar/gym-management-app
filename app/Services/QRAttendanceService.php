@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Biometrics\Services\MembershipGuard;
 use App\Enums\AttendanceStatus;
 use App\Models\Attendances;
 use App\Models\GymMember;
@@ -127,16 +128,17 @@ class QRAttendanceService
      */
     public function getAccessDeniedReason(GymMember $member): string
     {
-        if ($member->isFrozen()) {
-            $reason = 'Your membership is currently frozen.';
-            if ($member->frozen_until) {
-                $reason .= ' It will be unfrozen on ' . $member->frozen_until->format('F j, Y') . '.';
-            }
+        // One derivation of "why denied": the guard walks GymMember::canAccessGym()'s
+        // clauses in the same order, so the operator-facing sentence names the clause
+        // that actually denied instead of a third cascade that can drift from both.
+        $guard = resolve(MembershipGuard::class);
 
-            return $reason;
-        }
-
-        return 'Your membership has expired. Please renew to check in.';
+        return match ($guard->resolveReason($member)) {
+            'member_archived' => 'Your membership has been archived. Please contact reception.',
+            'no_membership' => 'No active membership is on record. Please contact reception.',
+            'membership_expired' => 'Your membership has expired. Please renew to check in.',
+            default => $guard->reasonMessage($member),
+        };
     }
 
     /**
