@@ -45,17 +45,19 @@ class TrainerUtilizationWidget extends BaseChartWidget
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
             $totalTrainers = Trainer::query()->where('gym_id', $gymId)->count();
             $trainersWithClients = Trainer::query()->where('gym_id', $gymId)
-                ->whereHas('members', fn (Builder $q) => $q->membershipActive())
+                ->whereHas('members', fn (Builder $q) => $q->notArchived()->membershipActive())
                 ->count();
             $trainersWithoutClients = $totalTrainers - $trainersWithClients;
 
             // Member coverage
             $membersWithTrainer = GymMember::query()->where('gym_id', $gymId)
+                ->notArchived()
                 ->membershipActive()
                 ->whereNotNull('trainer_id')
                 ->count();
 
             $membersWithoutTrainer = GymMember::query()->where('gym_id', $gymId)
+                ->notArchived()
                 ->membershipActive()
                 ->whereNull('trainer_id')
                 ->count();

@@ -141,6 +141,7 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
 
         return GymMember::query()
             ->where('gym_id', $gym?->id)
+            ->notArchived()
             ->when($this->filters['start_date'] ?? null, fn ($q) => $q->whereDate('created_at', '>=', $this->filters['start_date']))
             ->when($this->filters['end_date'] ?? null, fn ($q) => $q->whereDate('created_at', '<=', $this->filters['end_date']))
             ->when(($this->filters['status'] ?? null) === 'active', fn ($q) => $q->membershipActive())
@@ -173,6 +174,7 @@ class MemberReports extends BasePage implements HasForms, ShareableReport
 
             // Retention rate (members who renewed at least once)
             $membersWithMultiplePayments = GymMember::query()->where('gym_id', $gymId)
+                ->notArchived()
                 ->whereHas('payments', function (Builder $q) {
                     $q->where('status', PaymentStatus::COMPLETED);
                 }, '>', 1)

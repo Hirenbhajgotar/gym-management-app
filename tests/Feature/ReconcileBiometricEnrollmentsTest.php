@@ -50,6 +50,15 @@ class ReconcileBiometricEnrollmentsTest extends TestCase
             'guard_name' => 'web',
         ]);
         $gymOwnerRole->givePermissionTo($updatePerm);
+
+        // `GymMember::archive()` is itself authorised, so the operator
+        // used to seed an archived member must hold the archive permission the
+        // panel would require.
+        $archivePerm = Permission::query()->firstOrCreate([
+            'name' => 'archive_gym_member',
+            'guard_name' => 'web',
+        ]);
+        $gymOwnerRole->givePermissionTo($archivePerm);
         resolve(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->owner = User::factory()->create();
@@ -304,7 +313,7 @@ class ReconcileBiometricEnrollmentsTest extends TestCase
     #[Test]
     public function reconciler_skips_archived_or_expired_members(): void
     {
-        $this->member->update(['is_archived' => true]);
+        $this->assertTrue($this->member->archive($this->owner), 'Precondition: the member must be archived.');
 
         BiometricTemplate::query()->create([
             'gym_member_id' => $this->member->id,
@@ -321,6 +330,130 @@ class ReconcileBiometricEnrollmentsTest extends TestCase
         Artisan::call('biometrics:reconcile-enrollments', ['--gym' => $this->gym->id]);
 
         $this->assertSame(0, AdmsDeviceCommand::query()->count());
+    }
+
+    #[Test]
+    public function acknowledging_a_user_add_for_an_archived_member_parks_the_template_instead_of_activating_it(): void
+    {
+        // The member is archived while the user_add
+        // is still in flight, so the hardware ACK is the last thing that could
+        // hand the archived member a live credential back. The flag is set
+        // directly rather than through the archive service on purpose: this is
+        // the reconciler's own defence-in-depth guard, reached precisely when
+        // the synchronous revocation could not complete and the template is
+        // still Pending.
+        $template = BiometricTemplate::query()->create([
+            'gym_member_id' => $this->member->id,
+            'gym_id' => $this->gym->id,
+            'enrolled_by_device_id' => $this->device->id,
+            'biometric_type' => BiometricTypeEnum::Fingerprint,
+            'provider_type' => 'device_native',
+            'template_ref' => null,
+            'is_active' => false,
+            'sync_status' => BiometricTemplateSyncStatusEnum::Pending,
+            'enrolled_at' => null,
+            'hardware_confirmed_at' => null,
+        ]);
+
+        $this->member->forceFill(['is_archived' => true, 'archived_at' => now()])->save();
+
+        $command = AdmsDeviceCommand::factory()->sent()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => (string) $this->member->id, 'Name' => $this->member->name],
+            'idempotency_key' => AdmsDeviceCommand::idempotencyKeyFor(
+                $this->gym->id,
+                $this->device->id,
+                $this->member->id,
+                $template->id
+            ),
+        ]);
+
+        $this->assertTrue($command->markAcknowledged('0'));
+
+        $template->refresh();
+
+        $this->assertFalse(
+            (bool) $template->is_active,
+            'A hardware ACK must not hand an archived member a live credential back.'
+        );
+        $this->assertSame(
+            BiometricTemplateSyncStatusEnum::PendingDeletion,
+            $template->sync_status,
+            'The acknowledged template must be parked for erasure instead of activated.'
+        );
+
+        // The park is only half the claim: the reconciler must own the follow-up.
+        Artisan::call('biometrics:reconcile-pending-deletions', ['--gym' => $this->gym->id]);
+
+        $this->assertSame(
+            1,
+            AdmsDeviceCommand::query()
+                ->where('command_type', 'user_delete')
+                ->where('status', AdmsCommandStatusEnum::PENDING)
+                ->count(),
+            'The reconciler must queue exactly one pending erase for the parked PIN.'
+        );
+    }
+
+    #[Test]
+    public function acknowledging_a_user_add_for_an_archived_member_on_a_non_adms_device_leaves_no_delete_command(): void
+    {
+        // Negative control for the test above: with no ADMS transport there is
+        // nothing to drive the erase, so the row stays parked and no command is
+        // queued — the reconciler must not fabricate one.
+        $device = BiometricDevice::factory()->create([
+            'gym_id' => $this->gym->id,
+            'adms_enabled' => false,
+            'status' => BiometricDeviceStatusEnum::Active,
+        ]);
+
+        $template = BiometricTemplate::query()->create([
+            'gym_member_id' => $this->member->id,
+            'gym_id' => $this->gym->id,
+            'enrolled_by_device_id' => $device->id,
+            'biometric_type' => BiometricTypeEnum::Fingerprint,
+            'provider_type' => 'device_native',
+            'template_ref' => null,
+            'is_active' => false,
+            'sync_status' => BiometricTemplateSyncStatusEnum::Pending,
+            'enrolled_at' => null,
+            'hardware_confirmed_at' => null,
+        ]);
+
+        $this->member->forceFill(['is_archived' => true, 'archived_at' => now()])->save();
+
+        $command = AdmsDeviceCommand::factory()->sent()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $device->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => (string) $this->member->id, 'Name' => $this->member->name],
+            'idempotency_key' => AdmsDeviceCommand::idempotencyKeyFor(
+                $this->gym->id,
+                $device->id,
+                $this->member->id,
+                $template->id
+            ),
+        ]);
+
+        $this->assertTrue($command->markAcknowledged('0'));
+
+        $this->assertSame(
+            BiometricTemplateSyncStatusEnum::PendingDeletion,
+            $template->refresh()->sync_status
+        );
+
+        Artisan::call('biometrics:reconcile-pending-deletions', ['--gym' => $this->gym->id]);
+
+        $this->assertDatabaseMissing('adms_device_commands', [
+            'device_id' => $device->id,
+            'command_type' => 'user_delete',
+        ]);
+        $this->assertSame(
+            BiometricTemplateSyncStatusEnum::PendingDeletion,
+            $template->refresh()->sync_status
+        );
     }
 
     #[Test]

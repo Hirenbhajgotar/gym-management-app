@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Biometrics\Exceptions\MemberArchivedException;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Notifications\MembershipExpiryNotification;
 use App\Observers\GymMemberObserver;
+use App\Services\MemberArchiveService;
 use App\Services\MemberFreezeService;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -158,6 +160,21 @@ class GymMember extends Model
         'frozen_reason',
         'frozen_by',
         'extend_membership',
+    ];
+
+    /**
+     * The archive and consent columns are deliberately NOT mass-assignable.
+     *
+     * The enforcement is their ABSENCE FROM $fillable above, not this array:
+     * with a non-empty $fillable, Eloquent ignores $guarded entirely, so the
+     * list below changes no behaviour and removing it would be safe. It is
+     * retained only as an explicit, greppable marker of the four columns the
+     * archive invariant owns, owned and written by
+     * {@see \App\Services\MemberArchiveService} through forceFill() — so a
+     * future `update($request->validated())` / `fill($request->all())` cannot
+     * flip archive state or the consent round-trip without the gate.
+     */
+    protected $guarded = [
         'is_archived',
         'archived_at',
         'allow_whatsapp_marketing',
@@ -171,6 +188,7 @@ class GymMember extends Model
      *     dob: 'date',
      *     membership_start: 'date',
      *     membership_end: 'date',
+     *     gym_id: 'integer',
      *     age: 'integer',
      *     latest_payment_at: 'date',
      *     payment_status: 'App\Enums\PaymentStatus',
@@ -190,6 +208,7 @@ class GymMember extends Model
             'dob' => 'date',
             'membership_start' => 'date',
             'membership_end' => 'date',
+            'gym_id' => 'integer',
             'age' => 'integer',
             'latest_payment_at' => 'date',
             'payment_status' => PaymentStatus::class,
@@ -522,6 +541,18 @@ class GymMember extends Model
     /**
      * Scope to get non-archived members.
      *
+     * Deliberately opt-in rather than a global scope. Archived members are
+     * history, not rubbish: their payments, invoices, attendance and consent
+     * records all still have to resolve to a person, and a global scope hid
+     * them from every relationship eager-load as well as every query — silently
+     * blanking revenue-export identity, inverting invoice ownership checks and
+     * under-counting lifetime value. A caller that means "the current roster"
+     * says so here; a caller that means "this member's history" is left alone.
+     *
+     * The security consequence of archiving is enforced at the decision points
+     * (see canAccessGym()), not by hiding rows, so it cannot be bypassed by
+     * whichever query happened to load the model.
+     *
      * @param  Builder<static>  $query
      */
     #[Scope]
@@ -676,10 +707,23 @@ class GymMember extends Model
 
     /**
      * Check if member can access gym facilities
-     * Combines membership status, payment status, and freeze status
+     * Combines archive status, membership status, payment status, and freeze status
+     *
+     * Archive is checked first and on the model rather than being left to the
+     * caller's query. This is the predicate that opens a door, so revoking access
+     * has to be a property of the member and not of whichever query happened to
+     * hydrate them — a check-in resolved through a relation, a raw report query or
+     * an operator restoring a record must all land on the same answer. Archived
+     * first also matters for the reason reported: an archived member with a live
+     * membership is revoked *because they were archived*, and saying "membership
+     * expired" would send the operator looking in the wrong place.
      */
     public function canAccessGym(): bool
     {
+        if ($this->is_archived) {
+            return false;
+        }
+
         $membershipEnd = $this->membership_end;
         /** @var Carbon|null $membershipEnd */
         if ($membershipEnd === null || $membershipEnd->isPast()) {
@@ -815,41 +859,87 @@ class GymMember extends Model
     }
 
     /**
-     * Archive member record and disable WhatsApp marketing.
+     * Whether the member is permitted to hold a live biometric credential.
+     *
+     * The grant-side statement of the archive invariant: an archived member is
+     * access-revoked, so no producer of a biometric credential may act on them.
+     * The predicate is declared once here so every producer asks the same
+     * question, the way {@see \App\Biometrics\Services\BiometricDeProvisioner}
+     * is the single erase-side authority.
      */
-    public function archive(): bool
+    public function mayHoldBiometricCredential(): bool
     {
-        return $this->update([
-            'whatsapp_marketing_snapshot' => $this->allow_whatsapp_marketing,
-            'is_archived' => true,
-            'archived_at' => now(),
-            'allow_whatsapp_marketing' => false,
-        ]);
+        return ! $this->is_archived;
+    }
+
+    /**
+     * Refuse a grant-side biometric write when the member is archived.
+     *
+     * Prefer this over reading the `is_archived` column at each producer: a
+     * producer that forgets the check quietly hands an archived member a live
+     * credential, which is exactly the state the archive policy forbids.
+     *
+     * @throws MemberArchivedException
+     */
+    public function assertMayHoldBiometricCredential(): void
+    {
+        throw_unless($this->mayHoldBiometricCredential(), MemberArchivedException::class);
+    }
+
+    /**
+     * Archive member record and disable WhatsApp marketing.
+     *
+     * The transition, the row lock and the permission check all live in
+     * {@see MemberArchiveService} — the single owner of a member's archive state.
+     * This helper deliberately does NOT read the ambient guard: on a shared
+     * worker the guard holds whatever identity the previous job left logged in,
+     * so reading it here would authorise an unattributable write as the previous
+     * operator. The operator is passed in explicitly by the caller, and a caller
+     * that cannot name one is refused rather than silently attributed.
+     *
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    public function archive(?User $operator = null): bool
+    {
+        return resolve(MemberArchiveService::class)->archive($this, $operator);
     }
 
     /**
      * Restore member record from archive.
+     *
+     * Guarded for the same reason as archive(): unarchiving is the more
+     * dangerous direction — it reinstates consent from the snapshot and returns
+     * the member to the roster — so it must not be reachable without an explicit
+     * operator either. Delegates to {@see MemberArchiveService}, which owns the
+     * gate and the row lock.
+     *
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function unarchive(): bool
+    public function unarchive(?User $operator = null): bool
     {
-        $snapshot = $this->whatsapp_marketing_snapshot;
-
-        return $this->update([
-            'is_archived' => false,
-            'archived_at' => null,
-            'allow_whatsapp_marketing' => $snapshot ?? $this->allow_whatsapp_marketing,
-            'whatsapp_marketing_snapshot' => null,
-        ]);
+        return resolve(MemberArchiveService::class)->unarchive($this, $operator);
     }
 
     /**
      * Toggle WhatsApp marketing preference.
+     *
+     * On a live member this is an ordinary consent write. An archived member's
+     * consent lives in the archive snapshot — the column is forced false for as
+     * long as they are archived — so the toggle is routed through
+     * MemberArchiveService rather than writing the column directly, which would
+     * corrupt the snapshot round-trip. That makes the "owned by the service
+     * while archived" invariant hold by construction instead of relying on the
+     * caller to pre-filter archived members.
      */
     public function toggleWhatsappMarketing(bool $allowed): bool
     {
-        return $this->update([
+        if ($this->is_archived) {
+            return resolve(MemberArchiveService::class)->recordConsentWhileArchived($this, $allowed);
+        }
+
+        return $this->forceFill([
             'allow_whatsapp_marketing' => $allowed,
-        ]);
+        ])->save();
     }
 
     public function memberResourceUrl(self|int $member, ?string $type = 'index'): string

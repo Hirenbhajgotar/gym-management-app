@@ -96,7 +96,7 @@ class BiometricActiveSiblingDeletionTest extends TestCase
         $this->assertSame(0, AdmsDeviceCommand::query()->where('command_type', 'user_delete')->count());
 
         // `Deleted` asserts the terminal confirmed removal, which has not happened. The
-        // obligation stays open so the nightly reconciler revisits it.
+        // obligation stays open so the hourly reconciler revisits it.
         $fingerprint->refresh();
         $this->assertFalse($fingerprint->is_active);
         $this->assertSame(BiometricTemplateSyncStatusEnum::PendingDeletion, $fingerprint->sync_status);

@@ -67,6 +67,7 @@ class CheckMembershipExpiry extends Command
     private function autoUnfreezeExpiredFreezes(): int
     {
         $query = GymMember::query()
+            ->notArchived()
             ->where('is_frozen', true)
             ->whereNotNull('frozen_until')
             ->where('frozen_until', '<', now());
@@ -109,6 +110,7 @@ class CheckMembershipExpiry extends Command
     private function markExpiredGymMembers(): int
     {
         $query = GymMember::query()
+            ->notArchived()
             ->membershipExpired()
             ->where(function ($q) {
                 $q->where('payment_status', '!=', PaymentStatus::EXPIRED)

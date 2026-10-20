@@ -87,9 +87,9 @@ return [
         'max_attempts' => (int) env('ADMS_MAX_ATTEMPTS', 3),
 
         /**
-         * Hours an exhausted `user_delete` is left alone before the nightly reconciler
+         * Hours an exhausted `user_delete` is left alone before the hourly reconciler
          * will re-drive it. Prevents a deterministic firmware fault from producing
-         * hardware writes every night, while keeping the obligation self-healing.
+         * hardware writes every run, while keeping the obligation self-healing.
          */
         'retry_cooldown_hours' => (int) env('ADMS_RETRY_COOLDOWN_HOURS', 24),
 
@@ -98,22 +98,36 @@ return [
          *
          * These converge to ACKNOWLEDGED because the terminal no longer holds the credential,
          * which satisfies the GDPR Art. 17 erasure obligation. ZKTeco and eSSL firmware use
-         * different conventions, so the list is operator-configurable. Every convergence
-         * decision is logged with the raw code by `markAcknowledged()`.
+         * different conventions, so the list is operator-configurable. It ships EMPTY by
+         * default: a code that is not the terminal's actual "absent" convention would convert
+         * a failed delete into a fabricated erasure, so the safe default is to treat every
+         * non-zero code as a failure and require an operator to opt their firmware in. Every
+         * convergence decision is logged with the raw code by `markAcknowledged()`.
          *
          * @var array<int, string>
          */
         'deletion_convergence_codes' => array_values(array_filter(
             array_map(
                 'strval',
-                explode(',', (string) env(
-                    'ADMS_DELETION_CONVERGENCE_CODES',
-                    '-101,not_exist,user_not_found,not_found'
-                ))
+                explode(',', (string) env('ADMS_DELETION_CONVERGENCE_CODES', ''))
             ),
             fn (string $code): bool => $code !== ''
         )),
     ],
+
+    /**
+     * Cooldown before a permanently-refusing cloud provider reaches the terminal state.
+     *
+     * The budget is measured in TIME, not in retries. Every writer shares one erasure
+     * obligation — the hourly reconciler and the consent-revoked queue listener (`$tries = 3`
+     * with a 60/180/300s backoff) — so a raw retry count lets the listener exhaust the whole
+     * budget in about four minutes and drive a transient provider outage terminal, while the
+     * member's own erasure is reported complete and no automated retry is left armed. Within
+     * the cooldown a failing provider always stays retryable; once it has been failing for
+     * longer than this, the row reaches the terminal `DeletionUnresolvable` state and needs an
+     * operator.
+     */
+    'cloud_erasure_cooldown_hours' => max(1, (int) env('BIOMETRIC_CLOUD_ERASURE_COOLDOWN_HOURS', 24)),
 
     'device_throttle' => filter_var(env('BIOMETRIC_DEVICE_THROTTLE', 120), FILTER_VALIDATE_INT, ['options' => ['default' => 120, 'min_range' => 0]]),
 ];

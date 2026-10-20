@@ -88,6 +88,7 @@ class SendMembershipExpiryAlerts extends Command
         $notified = 0;
 
         GymMember::query()
+            ->notArchived()
             ->notFrozen()
             ->membershipEndingOn($targetDate)
             ->with(['gym'])

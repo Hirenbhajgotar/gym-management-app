@@ -159,15 +159,33 @@ class EnrollBiometricActionTenantIsolationTest extends TestCase
         $this->actingAs($this->userA);
         Filament::setTenant($this->gymA);
 
-        // Pre-existing pending placeholder
+        // Pre-existing pending placeholder. `provider_type` is the *hardware* one, because that
+        // is the only shape a placeholder ever has: this action, the one producer of a
+        // `Pending` row, writes `device_native`. The factory default is a cloud provider, which
+        // models a credential the terminal does not hold — see the cloud row below.
         $oldTemplate = BiometricTemplate::factory()->create([
             'gym_id' => $this->gymA->id,
             'gym_member_id' => $this->memberA->id,
             'enrolled_by_device_id' => $this->deviceA->id,
             'biometric_type' => 'fingerprint',
+            'provider_type' => BiometricProvidersEnum::DeviceNative->value,
             'template_ref' => null,
             'sync_status' => BiometricTemplateSyncStatusEnum::Pending,
             'is_active' => false,
+        ]);
+
+        // A *cloud-held* credential on the same member, device and modality is a different
+        // credential sharing only the PIN, so a hardware enrolment must leave it live: demoting
+        // it to `Superseded` would exclude it from every live-credential predicate and from the
+        // erasure reconciler, stranding the reference its provider erase is addressed by.
+        $cloudTemplate = BiometricTemplate::factory()->cloudBacked('rekognition')->create([
+            'gym_id' => $this->gymA->id,
+            'gym_member_id' => $this->memberA->id,
+            'enrolled_by_device_id' => $this->deviceA->id,
+            'biometric_type' => 'fingerprint',
+            'template_ref' => '{"provider":"rekognition","externalId":"face-1","meta":[]}',
+            'sync_status' => BiometricTemplateSyncStatusEnum::Synced,
+            'is_active' => true,
         ]);
 
         // Pre-existing delete commands
@@ -208,7 +226,18 @@ class EnrollBiometricActionTenantIsolationTest extends TestCase
         $oldTemplate->refresh();
         $this->assertSame(BiometricTemplateSyncStatusEnum::Superseded, $oldTemplate->sync_status);
 
-        // Delete commands must be cancelled and idempotency_key nulled (SF12)
+        // The cloud credential is untouched: still live, still referencing its provider template.
+        $cloudTemplate->refresh();
+        $this->assertSame(BiometricTemplateSyncStatusEnum::Synced, $cloudTemplate->sync_status);
+        $this->assertTrue((bool) $cloudTemplate->is_active);
+        $this->assertTrue($cloudTemplate->hasCloudProvider());
+        $this->assertSame(
+            '{"provider":"rekognition","externalId":"face-1","meta":[]}',
+            $cloudTemplate->template_ref,
+            'A terminal-held enrolment must not demote or rewrite a provider-held credential.'
+        );
+
+        // Delete commands must be cancelled and idempotency_key nulled
         $pendingCmd->refresh();
         $sentCmd->refresh();
         $this->assertSame(AdmsCommandStatusEnum::CANCELLED, $pendingCmd->status);
@@ -216,7 +245,7 @@ class EnrollBiometricActionTenantIsolationTest extends TestCase
         $this->assertNull($pendingCmd->idempotency_key);
         $this->assertNull($sentCmd->idempotency_key);
 
-        // Prior user_add command must be cancelled and idempotency_key nulled (SF12)
+        // Prior user_add command must be cancelled and idempotency_key nulled
         $pendingAddCmd->refresh();
         $this->assertSame(AdmsCommandStatusEnum::CANCELLED, $pendingAddCmd->status);
         $this->assertNull($pendingAddCmd->idempotency_key);

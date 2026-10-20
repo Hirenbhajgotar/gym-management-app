@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Log;
  * @property string $command_type
  * @property array<string, mixed>|null $command_payload
  * @property AdmsCommandStatusEnum $status
+ * @property int|null $epoch_credential_user_add_id
  * @property Carbon|null $sent_at
  * @property Carbon|null $acknowledged_at
  * @property string|null $device_return_code
@@ -97,6 +99,7 @@ class AdmsDeviceCommand extends Model
      *     status: 'App\Enums\AdmsCommandStatusEnum',
      *     command_payload: 'array',
      *     attempt_count: 'integer',
+     *     epoch_credential_user_add_id: 'integer',
      *     leased_at: 'datetime',
      *     sent_at: 'datetime',
      *     acknowledged_at: 'datetime',
@@ -109,6 +112,7 @@ class AdmsDeviceCommand extends Model
             'status' => AdmsCommandStatusEnum::class,
             'command_payload' => 'array',
             'attempt_count' => 'integer',
+            'epoch_credential_user_add_id' => 'integer',
             'leased_at' => 'datetime',
             'sent_at' => 'datetime',
             'acknowledged_at' => 'datetime',
@@ -325,6 +329,20 @@ class AdmsDeviceCommand extends Model
                 'treated_as_erasure_complete' => $isDeletionConvergence,
                 'accepted_codes' => $this->deletionConvergenceCodes(),
             ]);
+
+            // The list ships empty, so a real terminal's "no such user" reply is a FAILED
+            // delete: re-driven to the delivery cap and then dead-lettered, with the template
+            // never converging to `Deleted`. That is the fail-safe direction — a wrong entry
+            // would fabricate an erasure — but it makes the codes a mandatory per-firmware
+            // configuration step, so the run that needs them is told about it.
+            if (! $isSuccess && $this->deletionConvergenceCodes() === []) {
+                Log::warning('ADMS: user_delete rejected and no deletion_convergence_codes are configured; add the codes this firmware returns for an absent user', [
+                    'command_id' => $this->id,
+                    'device_id' => $this->device_id,
+                    'gym_id' => $this->gym_id,
+                    'device_return_code' => substr($code, 0, 255),
+                ]);
+            }
         }
 
         return DB::transaction(function () use ($isSuccess, $code): bool {
@@ -404,6 +422,12 @@ class AdmsDeviceCommand extends Model
      * that PIN, so every template sharing the PIN and awaiting deletion converges to
      * `Deleted` together. A member with both a fingerprint and a face template on one device
      * holds a single PIN and therefore a single hardware credential.
+     *
+     * Scoped to hardware-backed rows via {@see BiometricTemplate::hardwareBacked()}. A
+     * cloud/provider-backed row on the same device shares the PIN but not the credential — the
+     * terminal never held it — so a terminal ACK proves nothing about it and must not converge
+     * it. Doing so was how a cloud credential whose provider erase was never attempted got
+     * marked `Deleted`, leaving the app reporting an erasure that had not happened.
      */
     protected function reconcileUserDelete(): void
     {
@@ -415,6 +439,7 @@ class AdmsDeviceCommand extends Model
 
         $templates = BiometricTemplate::query()
             ->where('gym_id', $this->gym_id)
+            ->hardwareBacked()
             ->where('enrolled_by_device_id', $this->device_id)
             ->where('sync_status', BiometricTemplateSyncStatusEnum::PendingDeletion)
             ->get();
@@ -438,6 +463,11 @@ class AdmsDeviceCommand extends Model
      * promoted to `Synced` and activated in the same transaction. Leaving it `Pending` would
      * let the abandoned-placeholder cleanup revoke a credential the terminal is holding.
      *
+     * The promotion is conditional on the member still being live. A member archived after the
+     * `user_add` was queued must not be handed a live credential back by this reconciliation,
+     * so their template is parked at `PendingDeletion` for the erasure reconciler instead of
+     * being activated (see MemberArchiveService).
+     *
      * For a sibling fan-out command the key carries the *origin* template id, which belongs to
      * a different device's row. The target is therefore resolved by member, device and sync
      * status rather than by that id.
@@ -455,10 +485,7 @@ class AdmsDeviceCommand extends Model
         $query = BiometricTemplate::query()
             ->where('gym_id', $this->gym_id)
             ->where('enrolled_by_device_id', $this->device_id)
-            ->whereIn('sync_status', [
-                BiometricTemplateSyncStatusEnum::Pending,
-                BiometricTemplateSyncStatusEnum::Propagated,
-            ]);
+            ->whereIn('sync_status', BiometricTemplateSyncStatusEnum::awaitingHardwareConfirmationStates());
 
         if ($key?->isSiblingSync() === true && $key->memberId !== null) {
             $templates = $query
@@ -476,8 +503,43 @@ class AdmsDeviceCommand extends Model
             $templates = $query->get();
         }
 
+        if ($templates->isEmpty()) {
+            return;
+        }
+
+        // A member archived between queueing a user_add and the terminal
+        // acknowledging it must not be handed a live credential back. Refusing
+        // the promotion alone would leave the row Pending and inactive while the
+        // hardware really is holding the credential — the "door honours a
+        // revoked member" state MemberArchiveService forbids — so the row is
+        // parked at PendingDeletion for the erasure reconciler instead of being
+        // activated.
+        $memberIds = self::normalisedIntIds($templates->pluck('gym_member_id'));
+
+        // The predicate is "may not hold a biometric credential", not "is archived": naming the
+        // set after the rule it carries keeps the next widening from assuming a different one.
+        // `gym_id` is explicit so a member id from another tenant cannot be resolved here.
+        $memberIdsBlockedFromHoldingCredentials = self::normalisedIntIds(
+            GymMember::query()
+                ->where('gym_id', $this->gym_id)
+                ->whereIn('id', $memberIds)
+                ->get()
+                ->reject(fn (GymMember $member): bool => $member->mayHoldBiometricCredential())
+                ->pluck('id')
+        );
+
         foreach ($templates as $template) {
             if (! self::templateMatchesPin($template, $pinStr, $key?->memberId)) {
+                continue;
+            }
+
+            // @phpstan-ignore cast.useless (gym_member_id may hydrate as a string on some drivers; the strict in_array() needs a real int, so the cast is defensive.)
+            if (in_array((int) $template->gym_member_id, $memberIdsBlockedFromHoldingCredentials, true)) {
+                $template->update([
+                    'is_active' => false,
+                    'sync_status' => BiometricTemplateSyncStatusEnum::PendingDeletion,
+                ]);
+
                 continue;
             }
 
@@ -493,6 +555,21 @@ class AdmsDeviceCommand extends Model
 
             $template->update($updates);
         }
+    }
+
+    /**
+     * Normalise id values to a list of ints for strict comparison. Some drivers hydrate integer
+     * columns as strings; a non-numeric value becomes 0, which can never match a persisted id.
+     *
+     * @param  \Illuminate\Support\Collection<int, mixed>  $ids
+     * @return array<int, int>
+     */
+    private static function normalisedIntIds(Collection $ids): array
+    {
+        return $ids->map(static fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
@@ -674,12 +751,7 @@ class AdmsDeviceCommand extends Model
         $template = BiometricTemplate::query()
             ->where('gym_id', $this->gym_id)
             ->where('enrolled_by_device_id', $this->device_id)
-            ->whereIn('sync_status', [
-                BiometricTemplateSyncStatusEnum::Pending,
-                BiometricTemplateSyncStatusEnum::Synced,
-                BiometricTemplateSyncStatusEnum::Propagated,
-                BiometricTemplateSyncStatusEnum::PendingDeletion,
-            ])
+            ->whereIn('sync_status', BiometricTemplateSyncStatusEnum::liveOrPendingCredentialStates())
             ->get()
             ->first(fn (BiometricTemplate $candidate): bool => $candidate->resolvedCommandPin() === $pinStr);
 

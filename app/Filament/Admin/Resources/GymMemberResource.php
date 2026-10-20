@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Contracts\DeclaresPermissionActions;
 use App\Enums\DefaultRole;
 use App\Enums\PaymentStatus;
 use App\Events\BiometricConsentRevoked;
@@ -63,13 +64,30 @@ use Illuminate\Validation\Rules\Unique;
 use libphonenumber\PhoneNumberType;
 use Ysfkaya\FilamentPhoneInput\Forms\PhoneInput;
 
-class GymMemberResource extends BaseResource
+class GymMemberResource extends BaseResource implements DeclaresPermissionActions
 {
     protected static ?string $model = GymMember::class;
 
     protected static ?string $navigationLabel = 'Gym Members';
 
     protected static ?string $navigationGroup = 'Users';
+
+    /**
+     * Abilities this resource owns beyond the shared action list.
+     *
+     * Archiving is gated on its own permission rather than folded into
+     * update(): a receptionist who may edit a phone number is not thereby
+     * authorised to retire the member, and restoring one rewrites WhatsApp
+     * consent from the archive snapshot. Declared here rather than in the
+     * global list so `archive_*`/`unarchive_*` are generated for this resource
+     * and nowhere else.
+     *
+     * @return array<int, string>
+     */
+    public function getPermissionActions(): array
+    {
+        return ['archive', 'unarchive'];
+    }
 
     public static function getNavigationBadge(): ?string
     {
@@ -83,7 +101,7 @@ class GymMemberResource extends BaseResource
         $tenantKey = $tenant->getKey();
 
         return Cache::flexible(GymMember::NAVIGATION_BADGE_CACHE_KEY . $tenantKey, [21600, 604800], function () {
-            return (string) GymMember::query()->notFrozen()->membershipActive()->count();
+            return (string) GymMember::query()->notArchived()->notFrozen()->membershipActive()->count();
         }) ?: null;
     }
 
@@ -97,11 +115,12 @@ class GymMemberResource extends BaseResource
                 'delete',
                 'delete_any',
                 'update',
-                'restore',
                 'replicate',
                 'reorder',
                 'export',
                 'import',
+                'archive',
+                'unarchive',
             ],
 
             DefaultRole::RECEPTIONIST->value => ['view', 'view_any', 'create', 'update', 'replicate', 'reorder', 'export', 'import'],
@@ -504,6 +523,7 @@ class GymMemberResource extends BaseResource
                             ->icon('heroicon-o-x-circle')
                             ->color('danger')
                             ->visible(fn (GymMember $record) => $record->hasActiveBiometricConsent())
+                            ->authorize(fn (GymMember $record): bool => RequestBiometricConsentAction::canAuthorize($record))
                             ->requiresConfirmation()
                             ->modalHeading('Revoke Biometric Consent')
                             ->modalDescription(
@@ -511,6 +531,16 @@ class GymMemberResource extends BaseResource
                             )
                             ->modalSubmitActionLabel('Yes, Revoke and Delete')
                             ->action(function (GymMember $record) {
+                                // Defence in depth — see ListGymMembers: Filament
+                                // already refuses to call an action whose
+                                // authorization fails. This handler triggers an
+                                // irreversible GDPR erasure, so it re-checks.
+                                throw_unless(
+                                    RequestBiometricConsentAction::canAuthorize($record),
+                                    AuthorizationException::class,
+                                    'Unauthorized biometric consent revocation.'
+                                );
+
                                 $record->activeBiometricConsent()?->update([
                                     'revoked_at' => now(),
                                 ]);
@@ -528,12 +558,27 @@ class GymMemberResource extends BaseResource
                     Action::make('quick_measure')
                         ->label('Body Measurements')
                         ->icon('heroicon-o-clipboard-document-list')
+                        ->authorize(fn (GymMember $record): bool => Auth::user()?->can('update', $record) ?? false)
+                        // Same reason MeasurementsRelationManager is read-only for
+                        // an archived owner: a measurement written after the
+                        // record was closed rewrites the BMI trend behind it.
+                        ->visible(fn (GymMember $record): bool => ! $record->is_archived)
                         ->form([
                             Section::make(fn (GymMember $record) => 'Add Body Measurement for ' . $record->name)
                                 ->schema(MeasurementsRelationManager::getMeasurementsFormSchema())
                                 ->columns(2),
                         ])
                         ->action(function (GymMember $record, array $data) {
+                            // Defence in depth: ->visible() hides the button and
+                            // ->authorize() folds into isDisabled(), which
+                            // mountAction()/callAction() refuse — but the guard
+                            // is cheap and this is a clinical record.
+                            throw_unless(
+                                ! $record->is_archived,
+                                AuthorizationException::class,
+                                'Measurements cannot be recorded while the member is archived. Restore the member first.'
+                            );
+
                             $record->measurements()->create([
                                 'weight' => $data['weight'],
                                 'height' => $data['height'],
@@ -720,14 +765,20 @@ class GymMemberResource extends BaseResource
                         })
                         ->deselectRecordsAfterCompletion(),
 
+                    // Marketing consent on an archived member is owned by MemberArchiveService:
+                    // archiving forces it false and preserves the real prior decision in
+                    // whatsapp_marketing_snapshot, which unarchive() restores from.
+                    // Writing the column directly here would overwrite a decision the
+                    // service is holding, so archived members are skipped and reported
+                    // rather than silently toggled.
                     BulkAction::make('enableWhatsappMarketing')
                         ->label('Enable WhatsApp Marketing')
                         ->tooltip('Enable WhatsApp Marketing for selected members')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
+                        ->authorize(fn (): bool => Auth::user()?->can('update_gym_member') ?? false)
                         ->action(function (EloquentCollection $records): void {
-                            /** @var EloquentCollection<int, GymMember> $records */
-                            $records->each(fn (GymMember $member) => $member->toggleWhatsappMarketing(true));
+                            self::setWhatsappMarketingForBulk($records, true);
                         })
                         ->deselectRecordsAfterCompletion(),
 
@@ -736,9 +787,9 @@ class GymMemberResource extends BaseResource
                         ->tooltip('Disable WhatsApp Marketing for selected members')
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
+                        ->authorize(fn (): bool => Auth::user()?->can('update_gym_member') ?? false)
                         ->action(function (EloquentCollection $records): void {
-                            /** @var EloquentCollection<int, GymMember> $records */
-                            $records->each(fn (GymMember $member) => $member->toggleWhatsappMarketing(false));
+                            self::setWhatsappMarketingForBulk($records, false);
                         })
                         ->deselectRecordsAfterCompletion(),
 
@@ -748,9 +799,66 @@ class GymMemberResource extends BaseResource
                         ->icon('heroicon-o-archive-box')
                         ->color('warning')
                         ->requiresConfirmation()
+                        ->modalHeading('Archive Selected Members')
+                        ->modalDescription(
+                            'Archiving removes these members from the active roster and switches off their WhatsApp marketing. Their current marketing preference is snapshotted so it can be restored later.'
+                        )
+                        ->modalSubmitActionLabel('Yes, Archive')
+                        // ->authorize('archive') resolves against GymMemberPolicy::archive().
+                        // Note what Filament actually puts in front of the gate:
+                        // BulkAction::parseAuthorizationArguments() unshifts
+                        // $this->getTable()->getModel(), which is the model CLASS
+                        // STRING — and Gate::callPolicyMethod() then shifts a
+                        // leading string back off again. The policy is therefore
+                        // called as archive($user) with $member defaulting to
+                        // null, so this gate answers only "does this operator
+                        // hold archive_gym_member at all" and the policy's
+                        // per-record gym-ownership branch cannot run off it.
+                        //
+                        // Visibility is still sound: isHidden() folds in
+                        // isAuthorized(), isDisabled() folds in isHidden(), and
+                        // both mountTableBulkAction() and
+                        // callMountedTableBulkAction() refuse a disabled action,
+                        // so the permission is enforced server-side on mount and
+                        // again on call. The handler below re-checks with the
+                        // record in hand, which is the only way to reach the
+                        // tenant branch on this path.
+                        ->authorize('archive')
                         ->action(function (EloquentCollection $records): void {
+                            $archived = 0;
+                            $refused = 0;
+
                             /** @var EloquentCollection<int, GymMember> $records */
-                            $records->each(fn (GymMember $member) => $member->archive());
+                            $records->each(function (GymMember $member) use (&$archived, &$refused): void {
+                                // Re-checked with the record in hand, which is what
+                                // actually lets the policy's tenant branch run. The
+                                // table query is already scoped to the current gym,
+                                // so this is defence in depth rather than the
+                                // primary boundary — but it is the only place the
+                                // record-aware check is reachable on this path.
+                                //
+                                // The operator is resolved once and handed to the
+                                // service explicitly: the model helper deliberately
+                                // does not read the ambient guard, so a caller that
+                                // does not name its operator is refused.
+                                $operator = Auth::user();
+
+                                if (! $operator instanceof User || ! $operator->can('archive', $member)) {
+                                    $refused++;
+
+                                    return;
+                                }
+
+                                if ($member->archive($operator)) {
+                                    $archived++;
+
+                                    return;
+                                }
+
+                                $refused++;
+                            });
+
+                            self::notifyBulkArchiveOutcome('archived', $archived, $refused, 'already archived');
                         })
                         ->deselectRecordsAfterCompletion(),
 
@@ -759,15 +867,119 @@ class GymMemberResource extends BaseResource
                         ->tooltip('Restore selected archived members')
                         ->icon('heroicon-o-arrow-path')
                         ->color('info')
+                        ->requiresConfirmation()
+                        ->modalHeading('Restore Archived Members')
+                        ->modalDescription(
+                            'Restoring returns these members to the active roster and reinstates their WhatsApp marketing consent from the snapshot taken at archive time — members archived while marketing was off stay off.'
+                        )
+                        ->modalSubmitActionLabel('Yes, Restore')
+                        // Same chain as archiveMembers above.
+                        ->authorize('unarchive')
                         ->action(function (EloquentCollection $records): void {
+                            $restored = 0;
+                            $refused = 0;
+
                             /** @var EloquentCollection<int, GymMember> $records */
-                            $records->each(fn (GymMember $member) => $member->unarchive());
+                            $records->each(function (GymMember $member) use (&$restored, &$refused): void {
+                                // Resolved once and passed explicitly, for the same
+                                // reason as the archive action above: the model
+                                // helper has no ambient-guard fallback.
+                                $operator = Auth::user();
+
+                                if (! $operator instanceof User || ! $operator->can('unarchive', $member)) {
+                                    $refused++;
+
+                                    return;
+                                }
+
+                                if ($member->unarchive($operator)) {
+                                    $restored++;
+
+                                    return;
+                                }
+
+                                $refused++;
+                            });
+
+                            self::notifyBulkArchiveOutcome('restored', $restored, $refused, 'not archived');
                         })
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ])
             ->defaultSort('id', 'desc')
             ->striped();
+    }
+
+    /**
+     * Set WhatsApp marketing on a bulk selection, skipping archived members.
+     *
+     * Archived members are not an error, so they are counted and reported rather
+     * than written to or turned into an exception: a receptionist selecting a
+     * whole page should not have the action blow up because one member on it
+     * happens to be archived.
+     *
+     * @param  EloquentCollection<int, GymMember>  $records
+     */
+    private static function setWhatsappMarketingForBulk(EloquentCollection $records, bool $allowed): void
+    {
+        $changed = 0;
+        $skipped = 0;
+
+        $records->each(function (GymMember $member) use ($allowed, &$changed, &$skipped): void {
+            if ($member->is_archived) {
+                $skipped++;
+
+                return;
+            }
+
+            $member->toggleWhatsappMarketing($allowed);
+            $changed++;
+        });
+
+        $verb = $allowed ? 'enabled' : 'disabled';
+
+        if ($skipped === 0) {
+            Notification::make()
+                ->title(number_format($changed) . ' member(s) ' . $verb)
+                ->success()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title(number_format($changed) . ' ' . $verb . ', ' . number_format($skipped) . ' skipped')
+            ->body(number_format($skipped) . ' archived member(s) were skipped. Their marketing preference belongs to the archive record until they are restored.')
+            ->warning()
+            ->send();
+    }
+
+    /**
+     * Report the outcome of an archive or unarchive bulk action.
+     *
+     * One place for both, because the two shapes of "it did not happen" differ
+     * and the operator needs to be told which one occurred: a member the
+     * operator may not touch, versus a member already in the target state.
+     */
+    private static function notifyBulkArchiveOutcome(string $pastTense, int $changed, int $refused, string $unchangedReason): void
+    {
+        if ($refused === 0) {
+            Notification::make()
+                ->title(number_format($changed) . ' member(s) ' . $pastTense)
+                ->body($pastTense === 'archived'
+                    ? 'Archived members leave the active roster and stop receiving WhatsApp marketing until they are restored.'
+                    : 'Restored members are back on the active roster, with WhatsApp marketing reinstated from their archive snapshot.')
+                ->success()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title(number_format($changed) . ' ' . $pastTense . ', ' . number_format($refused) . ' skipped')
+            ->body(number_format($refused) . ' member(s) were ' . $unchangedReason . ', or the operator is not authorised to act on them. Nothing else changed for them.')
+            ->warning()
+            ->send();
     }
 
     public static function getRelations(): array

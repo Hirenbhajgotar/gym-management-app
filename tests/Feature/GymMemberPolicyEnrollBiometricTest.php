@@ -55,6 +55,40 @@ class GymMemberPolicyEnrollBiometricTest extends TestCase
     }
 
     #[Test]
+    public function super_admin_bypass_is_scoped_to_the_no_team_context(): void
+    {
+        // super_admin is a GLOBAL role: production grants it with no team
+        // context (roles.gym_id IS NULL), which is the context the SuperAdmin
+        // panel runs in. Spatie scopes hasRole() to the active team, so the
+        // bypass is reliable there. It deliberately does NOT extend into a
+        // foreign tenant's team context — the policy then fails closed instead
+        // of leaking cross-tenant access. (setPermissionsTeamId() does not
+        // reload an already-loaded roles relation, so it is reset explicitly to
+        // model what TeamsPermission middleware does after a tenant switch.)
+        $superAdmin = User::factory()->create();
+
+        // Role::findOrCreate() stamps roles.gym_id from the active team id, so a
+        // global grant has to be created (and assigned) with no team context.
+        setPermissionsTeamId(null);
+        $superAdminRole = Role::findOrCreate(DefaultRole::SUPER_ADMIN->value, 'web');
+        $superAdmin->assignRole($superAdminRole);
+        $superAdmin->unsetRelation('roles');
+
+        $this->assertTrue(
+            $this->policy->enrollBiometric($superAdmin, $this->memberA),
+            'The bypass holds in the no-team context the SuperAdmin panel uses.'
+        );
+
+        setPermissionsTeamId($this->gymB->id);
+        $superAdmin->unsetRelation('roles');
+
+        $this->assertFalse(
+            $this->policy->enrollBiometric($superAdmin, $this->memberA),
+            'A foreign team context must not inherit the global super_admin grant.'
+        );
+    }
+
+    #[Test]
     public function gym_owner_can_enroll_for_own_gym_member_but_not_other_gym(): void
     {
         $ownerRole = Role::findOrCreate(DefaultRole::GYM_OWNER->value, 'web');

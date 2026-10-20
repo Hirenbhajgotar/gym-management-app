@@ -67,9 +67,9 @@ class ReportsDashboard extends BasePage implements ShareableReport
         $cacheKey = ReportCacheService::MEMBER_STATS . $gymId;
 
         return Cache::flexible($cacheKey, ReportCacheService::getCacheTtl(), function () use ($gymId) {
-            $totalMembers = GymMember::query()->where('gym_id', $gymId)->count();
-            $activeMembers = GymMember::query()->where('gym_id', $gymId)->membershipActive()->count();
-            $expiredMembers = GymMember::query()->where('gym_id', $gymId)->membershipExpired()->count();
+            $totalMembers = GymMember::query()->where('gym_id', $gymId)->notArchived()->count();
+            $activeMembers = GymMember::query()->where('gym_id', $gymId)->notArchived()->membershipActive()->count();
+            $expiredMembers = GymMember::query()->where('gym_id', $gymId)->notArchived()->membershipExpired()->count();
 
             // New members this month vs last month
             $newThisMonth = GymMember::query()->where('gym_id', $gymId)
@@ -216,7 +216,7 @@ class ReportsDashboard extends BasePage implements ShareableReport
             $totalTrainers = Trainer::query()->where('gym_id', $gymId)->count();
 
             $averageClients = $totalTrainers > 0
-                ? round(GymMember::query()->where('gym_id', $gymId)->whereNotNull('trainer_id')->count() / $totalTrainers, 1)
+                ? round(GymMember::query()->where('gym_id', $gymId)->notArchived()->whereNotNull('trainer_id')->count() / $totalTrainers, 1)
                 : 0;
 
             $trainersWithClients = Trainer::query()->where('gym_id', $gymId)

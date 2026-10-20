@@ -118,8 +118,13 @@ Schedule::command('notification:send-membership-expiry-alerts')
     ->withoutOverlapping()
     ->onOneServer();
 
+// 30 min lock comfortably exceeds a worst-case run: the batch archives in
+// chunks of 100 with a row lock per member, so a very large gym roster can
+// outlive the default expiry and must not be overlapped by a second start.
 Schedule::command('app:archive-inactive-gym-members')
-    ->dailyAt('23:00');
+    ->dailyAt('23:00')
+    ->withoutOverlapping(30)
+    ->onOneServer();
 
 // Monitor biometric device heartbeats and detect offline deadman switches
 Schedule::command('biometrics:check-health')

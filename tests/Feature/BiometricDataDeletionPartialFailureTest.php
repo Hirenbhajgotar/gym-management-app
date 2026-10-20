@@ -17,6 +17,8 @@ use App\Models\BiometricTemplate;
 use App\Models\Gym;
 use App\Models\GymMember;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
@@ -35,6 +37,9 @@ class BiometricDataDeletionPartialFailureTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The cloud branch must never reach a real provider endpoint.
+        Http::preventStrayRequests();
 
         $this->gym = Gym::factory()->create();
         setPermissionsTeamId($this->gym->id);
@@ -255,5 +260,74 @@ class BiometricDataDeletionPartialFailureTest extends TestCase
         $this->assertDatabaseHas('biometric_consents', [
             'gym_member_id' => $this->member->id,
         ]);
+    }
+
+    #[Test]
+    public function unresolvable_cloud_template_is_reported_as_residual_and_does_not_block_erasure(): void
+    {
+        BiometricConsent::query()->create([
+            'gym_member_id' => $this->member->id,
+            'gym_id' => $this->gym->id,
+            'consented_at' => now(),
+            'ip_address' => '127.0.0.1',
+            'version' => '1.0',
+            'revoked_at' => null,
+        ]);
+
+        $attendance = Attendances::query()->create([
+            'gym_id' => $this->gym->id,
+            'attendanceable_type' => GymMember::class,
+            'attendanceable_id' => $this->member->id,
+            'check_in_time' => now(),
+            'check_in_method' => 'biometric',
+            'device_id' => $this->device->id,
+            'liveness_score' => 0.95,
+        ]);
+
+        // A provider-backed row with no provider reference: the system can never
+        // erase it through the API, so it must be recorded as a residual rather
+        // than re-selected forever or allowed to gate the erasure the app can do.
+        $template = BiometricTemplate::query()->create([
+            'gym_member_id' => $this->member->id,
+            'gym_id' => $this->gym->id,
+            'biometric_type' => BiometricTypeEnum::Face,
+            'provider_type' => 'unconfigured_cloud',
+            'template_ref' => null,
+            'is_active' => true,
+            'sync_status' => BiometricTemplateSyncStatusEnum::Synced,
+            'enrolled_at' => now(),
+        ]);
+
+        $service = resolve(BiometricDataDeletionService::class);
+
+        // Must not throw: an unresolvable row is an outstanding residual, not a
+        // retryable failure that should block the whole erasure.
+        $service->deleteForGymMember($this->member);
+
+        $template->refresh();
+        $this->assertSame(BiometricTemplateSyncStatusEnum::DeletionUnresolvable, $template->sync_status);
+        $this->assertFalse($template->is_active);
+
+        // The erasure the app can complete is unconditional.
+        $attendance->refresh();
+        $this->assertNull($attendance->device_id);
+        $this->assertNull($attendance->liveness_score);
+        $this->assertDatabaseMissing('biometric_consents', [
+            'gym_member_id' => $this->member->id,
+        ]);
+
+        $activity = DB::table('activity_log')
+            ->where('log_name', 'biometric')
+            ->where('subject_id', $this->member->id)
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($activity, 'Expected a biometric activity log entry for the erasure');
+
+        $properties = json_decode((string) $activity->properties, true);
+
+        $this->assertCount(1, $properties['unresolvable_erasures']);
+        $this->assertSame($template->id, $properties['unresolvable_erasures'][0]['template_id']);
+        $this->assertSame('unconfigured_cloud', $properties['unresolvable_erasures'][0]['provider']);
     }
 }

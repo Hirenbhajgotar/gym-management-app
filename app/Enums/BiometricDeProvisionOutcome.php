@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Enums;
 
 /**
- * Outcome of requesting hardware erasure of a biometric template.
+ * Outcome of requesting erasure of a biometric template, wherever its credential lives.
  *
- * `Deleted` is written only when the terminal confirms `DATA DELETE user Pin=N`, or when the
- * template provably never reached the hardware and so has no credential to erase. Every other
- * outcome leaves the obligation outstanding, and an outstanding obligation always has a row
- * state (`PendingDeletion`) that the nightly reconciler revisits.
+ * `Deleted` is written only when a terminal confirms `DATA DELETE user Pin=N`, a provider
+ * confirms the API erase, or the template provably never reached the hardware and so has no
+ * credential to erase. Every other outcome leaves the obligation outstanding, and an
+ * outstanding obligation always has a row state (`PendingDeletion`) that the hourly reconciler
+ * revisits — except `CloudUnresolvable`, which is terminal and needs an operator.
  */
 enum BiometricDeProvisionOutcome: string
 {
@@ -34,4 +35,18 @@ enum BiometricDeProvisionOutcome: string
 
     /** Device row is missing or is not ADMS-enabled, so no command can be emitted yet. */
     case DeviceUnavailable = 'device_unavailable';
+
+    /** A cloud/provider-backed credential was confirmed erased through the provider API. */
+    case CloudErased = 'cloud_erased';
+
+    /**
+     * A cloud-backed obligation cannot be discharged by the system: it has no provider
+     * reference, or its provider has exhausted the erasure attempt budget. The row is
+     * parked at `DeletionUnresolvable` for an operator rather than being retried forever
+     * or falsely reported as erased.
+     */
+    case CloudUnresolvable = 'cloud_unresolvable';
+
+    /** The provider declined to confirm the erase; the obligation stays retryable. */
+    case CloudRetry = 'cloud_retry';
 }

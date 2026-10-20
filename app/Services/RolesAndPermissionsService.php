@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\DeclaresPermissionActions;
 use App\Contracts\HasFilamentPermissions;
 use App\Enums\DefaultRole;
 use App\Enums\PermissionCategory;
@@ -14,6 +15,7 @@ use App\Traits\DerivesPermissionsSlug;
 use Exception;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
+use ReflectionClass;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -25,6 +27,13 @@ class RolesAndPermissionsService
     use DerivesPermissionsSlug;
 
     protected ?PermissionDiscoveryService $discoveryService = null;
+
+    /**
+     * Memoized result of bespokeActionsByResourceName().
+     *
+     * @var array<string, array<int, string>>|null
+     */
+    protected ?array $bespokeActionsByResource = null;
 
     protected function getDiscoveryService(): PermissionDiscoveryService
     {
@@ -138,19 +147,23 @@ class RolesAndPermissionsService
     {
         $permissions = [];
 
-        // 1. Define standard actions
-        $actions = [
-            'view_any', 'view', 'create', 'update', 'delete',
-            'delete_any', 'force_delete', 'force_delete_any',
-            'restore', 'replicate', 'reorder', 'export', 'import',
-        ];
+        // Read the shared list from config rather than repeating it. This was
+        // the second copy of the action names and the reason approve, archive
+        // and unarchive silently vanished from this fallback while still
+        // existing in the config and in every Filament resource.
+        /** @var array<int, string> $actions */
+        $actions = (array) config('filament-permissions.resource_actions', []);
+
+        // Bespoke actions a resource owns are added per resource name, so a
+        // fallback role that reaches that resource gets them.
+        $bespokeActionsByResource = $this->bespokeActionsByResourceName();
 
         // 2. Get the "Allow List" for this role.
         // This is the source of truth for what they SHOULD have access to.
         $allowedResources = $this->getRoleAllowedResourcesList($role);
 
         foreach ($allowedResources as $resourceName) {
-            foreach ($actions as $action) {
+            foreach ([...$actions, ...($bespokeActionsByResource[$resourceName] ?? [])] as $action) {
                 // EXCLUSION LOGIC
 
                 // Manager Exclusions
@@ -180,6 +193,90 @@ class RolesAndPermissionsService
         $permissions = array_merge($permissions, $extraPermissions);
 
         return array_values(array_unique($permissions));
+    }
+
+    /**
+     * Bespoke actions declared by resources, keyed by derived resource name.
+     *
+     * `getRoleAllowedResourcesList()` speaks in resource NAMES ('gym_member'),
+     * not Resource classes, so the map is keyed the same way to stay joinable
+     * with it. A resource that declares nothing is simply absent.
+     *
+     * The single derivation point for the bespoke action list: the resources'
+     * DeclaresPermissionActions declarations read here also feed
+     * PermissionDescriptionSeeder, which describes these abilities alongside
+     * the shared config list instead of keeping a hand-copied third list.
+     * Memoized because the method is consulted per role and the panel
+     * declarations cannot change within a process.
+     *
+     * @return array<string, array<int, string>>
+     */
+    public function bespokeActionsByResourceName(): array
+    {
+        if ($this->bespokeActionsByResource !== null) {
+            return $this->bespokeActionsByResource;
+        }
+
+        /** @var array<int, string> $panelIds */
+        $panelIds = (array) config('filament-permissions.panels', []);
+
+        $byResourceName = [];
+
+        foreach (Filament::getPanels() as $id => $panel) {
+            if (! in_array($id, $panelIds, true)) {
+                continue;
+            }
+
+            foreach ($panel->getResources() as $resourceClass) {
+                $reflection = $this->safeReflection($resourceClass);
+
+                if ($reflection === null || $reflection->isAbstract()) {
+                    continue;
+                }
+
+                $declared = $this->resolveDeclaredPermissionActions($resourceClass, $reflection);
+
+                if ($declared === []) {
+                    continue;
+                }
+
+                $modelClass = $this->resolveResourceModel($reflection);
+                $resourceName = $this->deriveSlugFromModelOrResource($modelClass, $reflection);
+
+                $byResourceName[$resourceName] = array_values(array_unique([
+                    ...($byResourceName[$resourceName] ?? []),
+                    ...$declared,
+                ]));
+            }
+        }
+
+        return $this->bespokeActionsByResource = $byResourceName;
+    }
+
+    /**
+     * A resource's own action list, or an empty array when it declares none.
+     *
+     * Instantiated without the constructor and without a booted Filament panel,
+     * which is the same thing the permission migration and its test do — these
+     * declarations are plain arrays and need no runtime.
+     *
+     * @param  class-string  $resourceClass
+     * @param  ReflectionClass<object>  $reflection
+     * @return array<int, string>
+     */
+    private function resolveDeclaredPermissionActions(string $resourceClass, ReflectionClass $reflection): array
+    {
+        if (! $reflection->implementsInterface(DeclaresPermissionActions::class)) {
+            return [];
+        }
+
+        $instance = $reflection->newInstanceWithoutConstructor();
+
+        if (! $instance instanceof DeclaresPermissionActions) {
+            return [];
+        }
+
+        return array_values(array_unique($instance->getPermissionActions()));
     }
 
     /**
@@ -356,7 +453,9 @@ class RolesAndPermissionsService
     {
         $permissions = [];
         $panelIds = config('filament-permissions.panels', []);
-        $actions = config('filament-permissions.resource_actions', []);
+
+        /** @var array<int, string> $actions */
+        $actions = (array) config('filament-permissions.resource_actions', []);
 
         foreach (Filament::getPanels() as $id => $panel) {
             if (! in_array($id, $panelIds, true)) {
@@ -380,7 +479,18 @@ class RolesAndPermissionsService
                 $modelClass = $this->resolveResourceModel($reflection);
                 $prefix = $this->deriveSlugFromModelOrResource($modelClass, $reflection);
 
-                $permissions = array_merge($permissions, $this->generateResourcePermissions($prefix, $actions));
+                $resourceActions = $actions;
+
+                // A resource may own abilities beyond the shared list. Merged
+                // here rather than globally listed, so these names exist for
+                // this resource and nowhere else.
+                $declared = $this->resolveDeclaredPermissionActions($resourceClass, $reflection);
+
+                if ($declared !== []) {
+                    $resourceActions = array_values(array_unique([...$actions, ...$declared]));
+                }
+
+                $permissions = array_merge($permissions, $this->generateResourcePermissions($prefix, $resourceActions));
             }
 
             foreach ($panel->getPages() as $pageClass) {

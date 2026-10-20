@@ -37,9 +37,16 @@ A modern, multi-tenant **Gym Management & Operations Platform** built with **Lar
   * **Automated Expiry Checks & Simulation**: Daily automated scheduler (`gym:check-membership-expiry`) to auto-unfreeze expired freezes, with `--dry-run` simulation support.
   * **Audit Trail & Concurrency Protection**: High-concurrency row locking (`lockForUpdate`), activity logging (`gym_member`), and queued transactional email notifications (`MemberFrozenNotification`).
 * **Body Measurements & Progress History**: Log and monitor metrics over time (weight, body fat percentage, chest, waist, hips, biceps) with visual progress charts.
-* **Membership Lifecycle Management**: Track statuses across *Active*, *Expiring Soon*, *Expired*, *Frozen*, and *Cancelled*.
+* **Member Archival & Physical Access Revocation Lifecycle**:
+  * **Single-Owner State Machine (`MemberArchiveService`)**: Atomic, row-locked database transitions enforcing instant access revocation (`canAccessGym() = false`), reported as `member_archived` in `MembershipGuard`.
+  * **Automated Inactive Member Archival (`app:archive-inactive-gym-members`)**: Scheduled console command sweeping members expired > 2 years across all tenants, with per-record transaction boundaries, dry-run simulation, and concurrency skipping.
+  * **Granular RBAC Authorization**: Gated behind dedicated `archive_gym_member` and `unarchive_gym_member` Spatie abilities via `MemberArchiveAuthorization`, forbidding unverified ambient-guard mutations.
+  * **Consent Snapshot Round-Tripping**: Preserves marketing opt-in preferences via `whatsapp_marketing_snapshot`, forcing `allow_whatsapp_marketing` to false while archived and faithfully restoring it upon reactivation.
+  * **Sub-Resource Mutation Shield (`GuardsArchivedOwner`)**: Automatically disables mutation actions (create, edit, delete) on child relations (payments, body measurements, biometric templates) while presenting informative status banners.
+  * **Financial & Audit Integrity**: Uses explicit, opt-in `notArchived()` scoping instead of global Eloquent scopes, guaranteeing that historical payments, tax invoices, and revenue reports never lose member relationship associations.
+* **Membership Lifecycle Management**: Track statuses across *Active*, *Expiring Soon*, *Expired*, *Frozen*, *Archived*, and *Cancelled*.
 * **Member Notes & Interaction History**: Timeline of communications, plan upgrades, trainer interactions, and check-ins.
-* **Bulk Import & Export**: Fast onboarding and backups via Excel/CSV import and export tools.
+* **Bulk Import & Export**: Fast onboarding and backups via Excel/CSV import and export tools with archive-state permission gating.
 
 ---
 
@@ -48,6 +55,15 @@ A modern, multi-tenant **Gym Management & Operations Platform** built with **Lar
 * **Provider-Agnostic Biometric Engine**: Hardware abstraction layer supporting major biometric hardware vendors (e.g., ZKTeco, Hikvision, eSSL).
 * **ADMS Push Protocol Engine**: Native HTTP push communication protocol supporting eSSL and ZKTeco (`/api/iclock/cdata`, `/api/iclock/getrequest`, `/api/iclock/devicecmd`) and Hikvision ISAPI XML event push (`/api/v1/biometric/hikvision/event`).
 * **Dual-Channel Coexistence**: Real-time webhook door unlock (`/api/v1/biometric/webhook/{token}`) for physical relay opening alongside background ADMS attendance sync and remote command queues on a single terminal.
+* **Cryptographic Biometric Erasure & Deprovisioning Lifecycle**:
+  * **Synchronous Credential Revocation**: Instantly issues hardware `DATA DELETE user` commands and cloud template erasures via `BiometricDeProvisioner` when members are archived.
+  * **Grant-Side Enrollment Denial**: `GymMember::assertMayHoldBiometricCredential()` and row-locked controller gates throw `MemberArchivedException` to block archived members from holding credentials.
+  * **Durable Machine Erasure Obligations (`is_erasure_obligation`)**: Flags orphan markers and cleanup obligations to prevent new enrollments from superseding deletion tasks or falsifying compliance audits.
+  * **Time-Based Erasure Cooldown**: 24-hour cloud cooldown window (`erasure_first_attempted_at`) and retry counters preventing infinite worker loops during third-party provider outages.
+  * **Terminal State Management (`DeletionUnresolvable`)**: Automatically isolates broken references and exhausted cooldowns from polling loops, surfacing them for administrative action.
+  * **Monotonic Hardware Epoch Tracking (`epoch_credential_user_add_id`)**: Tracks credential epoch IDs on `AdmsDeviceCommand` so re-enrolled members' deletions are safely re-driven without getting stuck at attempt caps.
+  * **Biometric Operator Attention Widget**: Dashboard widget and relation manager "Needs Operator" filter surfacing unresolvable erasures and stuck terminal commands with one-click "Retry Erasure".
+  * **Fail-Closed Webhook HMAC Verification**: Mandatory HMAC-SHA256 signature verification on `/api/v1/biometric/webhook/{token}` rejecting secret-less devices with HTTP 401, provisioned via `biometrics:provision-webhook-secrets`.
 * **Smart Auto-Checkout Detection**: Automatically determines whether an incoming push punch represents a check-in or check-out based on open attendance records for the day.
 * **Automated Expired Member Deprovisioning**: Daily scheduled hardware cleanup (`biometrics:cleanup-expired-members`) purging members expired beyond the 3-layer grace threshold (`plan_expiry + gym_grace_days + adms_grace_days`).
 * **Remote Device Command Queue**: Asynchronous FIFO command dispatching (`AdmsDeviceCommand`) for remote user registration, deletion, and biometric updates with status tracking and manual resend capabilities.

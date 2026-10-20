@@ -111,6 +111,7 @@ class BiometricDevice extends Model
      *     provider_type: 'App\Enums\BiometricProvidersEnum',
      *     purpose: 'App\Enums\BiometricDevicePurpose',
      *     adms_enabled: 'boolean',
+     *     gym_id: 'integer',
      * }
      */
     protected function casts(): array
@@ -124,6 +125,7 @@ class BiometricDevice extends Model
             'provider_type' => BiometricProvidersEnum::class,
             'purpose' => BiometricDevicePurpose::class,
             'adms_enabled' => 'boolean',
+            'gym_id' => 'integer',
         ];
     }
 

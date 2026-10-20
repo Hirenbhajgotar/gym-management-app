@@ -165,7 +165,7 @@ class RevenueReports extends BasePage implements HasForms, ShareableReport
                 ->sum('amount');
 
             // Active members count
-            $activeMembers = GymMember::query()->where('gym_id', $gymId)->membershipActive()->count();
+            $activeMembers = GymMember::query()->where('gym_id', $gymId)->notArchived()->membershipActive()->count();
 
             // ARPM (Average Revenue Per Member)
             $arpm = $activeMembers > 0 ? round($totalRevenue / $activeMembers, 2) : 0;

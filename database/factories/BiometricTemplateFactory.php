@@ -31,7 +31,10 @@ class BiometricTemplateFactory extends Factory
             },
             'enrolled_by_device_id' => null,
             'biometric_type' => BiometricTypeEnum::Face,
-            'provider_type' => fake()->randomElement(['rekognition', 'azure', 'bioid', 'local', 'custom']),
+            // Deterministic, not random: the cloud/hardware fork in `hasCloudProvider()` must
+            // not vary between runs. A test that needs the other side uses `deviceNative()` or
+            // `cloudBacked()` explicitly rather than relying on a coin flip.
+            'provider_type' => 'custom',
             'template_ref' => json_encode([
                 'provider' => 'custom',
                 'external_id' => fake()->uuid(),
@@ -56,6 +59,53 @@ class BiometricTemplateFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'sync_status' => BiometricTemplateSyncStatusEnum::Synced,
             'hardware_confirmed_at' => null,
+        ]);
+    }
+
+    /**
+     * A credential the ADMS terminal holds itself.
+     */
+    public function deviceNative(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'provider_type' => 'device_native',
+        ]);
+    }
+
+    /**
+     * A credential a cloud provider holds.
+     */
+    public function cloudBacked(string $provider = 'custom'): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'provider_type' => $provider,
+        ]);
+    }
+
+    /**
+     * A machine-written erasure obligation (an orphan marker), not an enrolment record.
+     */
+    public function erasureObligation(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'is_erasure_obligation' => true,
+            'is_active' => false,
+            'enrolled_at' => null,
+            'hardware_confirmed_at' => null,
+        ]);
+    }
+
+    /**
+     * A row parked at `PendingDeletion` because the member made an Art. 17 erasure request.
+     *
+     * Distinct from a machine park (archive/sweep/reconciler), which carries no request marker.
+     */
+    public function memberErasureRequest(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'sync_status' => BiometricTemplateSyncStatusEnum::PendingDeletion,
+            'is_active' => false,
+            'erasure_requested_at' => now(),
         ]);
     }
 

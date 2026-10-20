@@ -15,7 +15,7 @@ namespace App\Biometrics\ValueObjects;
  *
  * The `user_add` form is emitted by {@see \App\Models\AdmsDeviceCommand::idempotencyKeyFor()}.
  * `stage` is present only for commands queued by the sibling propagator (`sync`) or by the
- * nightly enrollment reconciler (`reconcile`).
+ * daily `biometrics:reconcile-enrollments` reconciler (`reconcile`).
  *
  * Parsing fails closed. A key whose segment count or segment shape is not one of the canonical
  * forms yields null rather than a best-effort guess, because the consumer decides which
@@ -31,7 +31,7 @@ final readonly class AdmsCommandKey
     public const STAGE_SYNC = 'sync';
 
     /**
-     * Lifecycle stage for a nightly-reconciler `user_add`.
+     * Lifecycle stage for a daily-reconciler `user_add`.
      */
     public const STAGE_RECONCILE = 'reconcile';
 

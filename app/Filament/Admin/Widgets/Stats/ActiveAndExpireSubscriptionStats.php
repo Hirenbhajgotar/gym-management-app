@@ -42,18 +42,20 @@ class ActiveAndExpireSubscriptionStats extends BaseStatsOverviewWidget
             return [];
         }
 
-        return Cache::flexible(DashboardCacheService::SUBSCRIPTION_STATS . $gymId, DashboardCacheService::getCacheTtl(), function () {
+        return Cache::flexible(DashboardCacheService::SUBSCRIPTION_STATS . $gymId, DashboardCacheService::getCacheTtl(), function () use ($gymId) {
             $today = Date::today();
 
-            // Gym Memberships
-            $gymActiveCount = GymMember::query()->membershipActive()->count('id');
+            // Gym Memberships. The gym_id predicate is explicit so the count is
+            // correct independent of the panel's tenant global scope, which is
+            // what makes it safe to cache under this gym's key.
+            $gymActiveCount = GymMember::query()->where('gym_id', $gymId)->notArchived()->membershipActive()->count('id');
 
-            $gymExpiredCount = GymMember::query()->membershipExpired()->count('id');
+            $gymExpiredCount = GymMember::query()->where('gym_id', $gymId)->notArchived()->membershipExpired()->count('id');
 
             // Personal Trainer Subscriptions
-            $ptActiveCount = GymMember::query()->membershipActive()->hasTrainer()->count('id');
+            $ptActiveCount = GymMember::query()->where('gym_id', $gymId)->notArchived()->membershipActive()->hasTrainer()->count('id');
 
-            $ptExpiredCount = GymMember::query()->membershipExpired()->hasTrainer()->count('id');
+            $ptExpiredCount = GymMember::query()->where('gym_id', $gymId)->notArchived()->membershipExpired()->hasTrainer()->count('id');
 
             return [
                 Stat::make('Active Gym Members', $gymActiveCount)

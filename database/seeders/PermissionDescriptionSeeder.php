@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Enums\PermissionCategory;
 use App\Models\Permission;
+use App\Services\RolesAndPermissionsService;
 use Exception;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Log;
@@ -46,26 +47,34 @@ class PermissionDescriptionSeeder extends Seeder
                 'expense_budget' => 'Expense Budget',
             ];
 
-            // Define Filament v3 standard permissions
-            $resourceActions = [
-                'view_any',    // List/Index page
-                'view',        // View single record
-                'create',      // Create new record
-                'update',      // Edit existing record
-                'delete',      // Delete record
-                'delete_any',
-                'force_delete', // Permanently delete
-                'force_delete_any', // Force delete multiple records
-                'restore',     // Restore soft deleted
-                'replicate',   // Replicate record
-                'reorder',     // Reorder records
-                'export',
-                'import',
-                'approve', // For expense approval workflow
-            ];
+            // Read the shared action list from config rather than repeating
+            // it. This seeder used to keep its own copy, which is how
+            // archive_gym_member and unarchive_gym_member ended up created
+            // with no display metadata while every sibling action had some —
+            // they render as blank rows in the permission matrix.
+            /** @var array<int, string> $resourceActions */
+            $resourceActions = (array) config('filament-permissions.resource_actions', []);
+
+            // Bespoke abilities a resource declares for itself, derived from
+            // the same DeclaresPermissionActions declarations permissions:sync
+            // discovers, so they are described alongside the shared list
+            // rather than relying on the migration to have done it.
+            /** @var array<string, array<int, string>> $bespokeActionsByResource */
+            $bespokeActionsByResource = resolve(RolesAndPermissionsService::class)->bespokeActionsByResourceName();
+
+            // An empty map means no Filament panel was booted when the seeder
+            // ran — the service reads the panels' resource declarations. The
+            // run then silently describes only the shared config actions, so
+            // an operator whose install schedules this seeder without booting
+            // a panel would never learn that archive_gym_member and its
+            // siblings went un-described. Make that observable rather than
+            // silent.
+            if ($bespokeActionsByResource === []) {
+                Log::warning('PermissionDescriptionSeeder: no bespoke resource actions were discovered; the Filament panel is likely not booted, so resource-declared abilities (e.g. archive/unarchive) will not be described by this run.');
+            }
 
             foreach ($resources as $resourceKey => $resource) {
-                foreach ($resourceActions as $action) {
+                foreach ([...$resourceActions, ...($bespokeActionsByResource[$resourceKey] ?? [])] as $action) {
 
                     $permissionName = $action . '_' . $resourceKey;
                     $displayName = ucwords(str_replace(['_', '-'], ' ', $action . '_' . $resource));

@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **Member Archival & Physical Access Revocation Lifecycle**:
+  - Introduced dedicated Spatie permissions `archive_gym_member` and `unarchive_gym_member` gated to gym owners and managers (migration `2026_10_13_000000_create_gym_member_archive_permissions.php`).
+  - Added `MemberArchiveAuthorization` asserting permissions on explicit, authenticated operators without ambient guard fallbacks to prevent unattributable worker mutations.
+  - Implemented `MemberArchiveService` with pessimistic row locking (`lockForUpdate`) as the single source of truth for member archive and unarchive state transitions.
+  - Updated `GymMember::canAccessGym()` to evaluate `is_archived` before membership or payment validity, immediately denying door access and reporting `member_archived` in `MembershipGuard`.
+  - Added marketing consent snapshotting (`whatsapp_marketing_snapshot`): forces `allow_whatsapp_marketing` to false while archived and faithfully restores it on unarchive. Importers preserve this invariant via `recordConsentWhileArchived()`.
+  - Added `GuardsArchivedOwner` trait on child relation managers (`PaymentsRelationManager`, `MeasurementsRelationManager`, `BiometricTemplatesRelationManager`) enforcing read-only banners and server-side mutation blocks on archived members.
+  - Introduced console command `app:archive-inactive-gym-members` (`--years=2`, `--dry-run`) executing chunked, transaction-isolated automated archival sweeps.
+  - Added Filament single and bulk actions on `GymMemberResource` for archiving and unarchiving members with confirmation dialogs and outcome notifications.
+  - Introduced opt-in `notArchived()` query scope, deliberately avoiding global Eloquent scopes to preserve revenue reporting, invoice history, and lifetime value calculations.
+- **Cryptographic Biometric Deprovisioning & Erasure Hardening**:
+  - Implemented synchronous credential revocation in `MemberArchiveService` cascading to `BiometricDeProvisioner` to queue hardware `DATA DELETE user` commands and erase cloud templates immediately upon archival.
+  - Enforced grant-side biometric protection: `GymMember::assertMayHoldBiometricCredential()` and row-locked checks in `BiometricEnrollController` reject enrollment for archived members with `MemberArchivedException`.
+  - Added `is_erasure_obligation` column to `biometric_templates` (`2026_10_16_000000_add_erasure_obligation_to_biometric_templates_table.php`) to separate orphan markers and cleanup obligations from real enrollments, preventing accidental superseding or false audit entries.
+  - Introduced time-based cloud erasure cooldowns (`erasure_first_attempted_at`) and retry counters (`erasure_attempts`, `erasure_requested_at`) via migrations `2026_10_17_000000` and `2026_10_17_000100` to prevent infinite worker loops while tolerating temporary provider outages.
+  - Added terminal sync status `BiometricTemplateSyncStatusEnum::DeletionUnresolvable` for corrupted provider references or exhausted cooldowns.
+  - Added monotonic hardware credential epoch tracking via `epoch_credential_user_add_id` on `adms_device_commands` (`2026_10_18_000000_add_epoch_credential_to_adms_device_commands_table.php`), allowing re-enrolled members' deletions to be safely re-driven without getting stuck at attempt caps.
+  - Added `BiometricOperatorAttentionWidget` to Filament Admin dashboard and "Needs Operator" filter with "Retry Erasure" modal action on `BiometricTemplatesRelationManager`.
+- **Fail-Closed Biometric Webhook Authentication**:
+  - Enforced mandatory HMAC-SHA256 signature verification (`X-Hub-Signature-256`, `X-Signature`) in `BiometricWebhookController`. Devices lacking a configured `webhook_secret` are rejected with HTTP 401, closing the URL token bearer loophole.
+  - Added console command `biometrics:provision-webhook-secrets` (`--gym=`, `--dry-run`, `--reveal`) to generate secure 64-character hex secrets for all unprovisioned devices.
+- **Architecture Documentation**:
+  - Published [ADR-0004: Member Archival Lifecycle, Cryptographic Biometric Credential Erasure, and Access Revocation Architecture](file:///docs/adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md).
+  - Created [Biometric Templates Field Reference](file:///docs/biometric/database/biometric-templates-fields.md).
+  - Updated field references for [Gym Members](file:///docs/biometric/database/gym-members-fields.md) and [ADMS Device Commands](file:///docs/biometric/database/adms-device-commands-fields.md).
 
 ## [v1.8.0] - 2026-10-11 (Current GitHub Release)
 

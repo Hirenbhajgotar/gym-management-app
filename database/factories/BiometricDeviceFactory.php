@@ -59,6 +59,16 @@ class BiometricDeviceFactory extends Factory
         ]);
     }
 
+    public function withWebhookSecret(string $secret): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'provider_config' => array_merge(
+                is_array($attributes['provider_config'] ?? null) ? $attributes['provider_config'] : [],
+                ['webhook_secret' => $secret],
+            ),
+        ]);
+    }
+
     public function inactive(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -88,6 +98,24 @@ class BiometricDeviceFactory extends Factory
             'adms_enabled' => true,
             'provider_type' => null,
             'provider_config' => null,
+        ]);
+    }
+
+    /**
+     * An ADMS-enabled terminal that also carries a provider-backed config.
+     *
+     * ADR-004 blesses dual-mode devices: the terminal is driven through
+     * `user_add`/`user_delete` while a cloud provider holds the credential for
+     * the same PIN. That is exactly the shape where the erasure dispatch has to
+     * keep the two paths apart, and {@see self::admsEnabled()} cannot express it
+     * because it nulls `provider_type`.
+     */
+    public function dualMode(string $serial = 'TEST-SN-DUAL'): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'device_serial' => $serial,
+            'adms_enabled' => true,
+            'provider_type' => BiometricProvidersEnum::Rekognition,
         ]);
     }
 }
