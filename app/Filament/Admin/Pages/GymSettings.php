@@ -392,9 +392,7 @@ class GymSettings extends BasePage implements HasActions, HasForms
     public function downloadInvoice(int $paymentId)
     {
         $gym = $this->getGym();
-        if (! $gym) {
-            abort(404);
-        }
+        abort_unless($gym, 404);
 
         $payment = Payment::query()->where('gym_id', $gym->id)
             ->findOrFail($paymentId);

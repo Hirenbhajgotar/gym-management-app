@@ -78,7 +78,7 @@ php artisan biometrics:cleanup-superseded-templates --days=30 --pending-days=7
 php artisan biometrics:reclaim-stale-commands
 
 # Backfill and provision salted PBKDF2 ADMS communication keys
-php artisan biometrics:backfill-adms-comm-keys --provision
+php artisan biometrics:backfill-adms-comm-keys --reprovision-legacy --reveal
 ```
 
 ### 5) Environment and Config

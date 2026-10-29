@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use Illuminate\Testing\TestResponse;
 use App\Biometrics\Services\RedisBiometricCacheService;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
@@ -324,7 +325,7 @@ class BiometricScalabilityTest extends TestCase
      *
      * @param  array<string, mixed>  $payload
      */
-    private function postSignedWebhook(string $uri, array $payload): \Illuminate\Testing\TestResponse
+    private function postSignedWebhook(string $uri, array $payload): TestResponse
     {
         return $this->postJson($uri, $payload, [
             'X-Signature' => 'sha256=' . hash_hmac('sha256', (string) json_encode($payload), self::WEBHOOK_SECRET),

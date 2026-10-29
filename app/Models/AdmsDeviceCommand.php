@@ -561,7 +561,7 @@ class AdmsDeviceCommand extends Model
      * Normalise id values to a list of ints for strict comparison. Some drivers hydrate integer
      * columns as strings; a non-numeric value becomes 0, which can never match a persisted id.
      *
-     * @param  \Illuminate\Support\Collection<int, mixed>  $ids
+     * @param Collection<int, mixed> $ids
      * @return array<int, int>
      */
     private static function normalisedIntIds(Collection $ids): array

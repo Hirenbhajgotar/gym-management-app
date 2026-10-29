@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Date;
+use Illuminate\Auth\Access\AuthorizationException;
 use App\Biometrics\Services\BiometricDeProvisioner;
 use App\Enums\BiometricTemplateSyncStatusEnum;
 use App\Models\BiometricTemplate;
@@ -81,7 +83,7 @@ class MemberArchiveService
      * in (see {@see MemberArchiveAuthorization}). The scheduled sweep, which has
      * no operator, calls {@see archiveAsSystem()} instead.
      *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
     public function archive(GymMember $member, ?User $operator): bool
     {
@@ -174,7 +176,7 @@ class MemberArchiveService
     /**
      * Restore a member from archive on behalf of an operator.
      *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
     public function unarchive(GymMember $member, ?User $operator): bool
     {
@@ -367,7 +369,7 @@ class MemberArchiveService
      */
     public function cutoffDate(int $years = 2): Carbon
     {
-        return Carbon::now()->subYears($years)->startOfDay();
+        return Date::now()->subYears($years)->startOfDay();
     }
 
     /**

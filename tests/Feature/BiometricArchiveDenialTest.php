@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use Illuminate\Testing\TestResponse;
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\Contracts\BiometricProvider;
 use App\Biometrics\DTOs\BiometricSample;
@@ -384,7 +385,7 @@ class BiometricArchiveDenialTest extends TestCase
             'member_id' => $this->archivedMember->id,
         ]);
 
-        $response->assertStatus(403)
+        $response->assertForbidden()
             ->assertJson([
                 'granted' => false,
                 'reason' => 'member_archived',
@@ -411,7 +412,7 @@ class BiometricArchiveDenialTest extends TestCase
             'member_id' => $this->archivedMember->id,
         ]);
 
-        $response->assertStatus(403)
+        $response->assertForbidden()
             ->assertJson([
                 'granted' => false,
                 'reason' => 'member_archived',
@@ -531,7 +532,7 @@ class BiometricArchiveDenialTest extends TestCase
      *
      * @param  array<string, mixed>  $payload
      */
-    private function postSignedWebhook(string $uri, array $payload): \Illuminate\Testing\TestResponse
+    private function postSignedWebhook(string $uri, array $payload): TestResponse
     {
         return $this->postJson($uri, $payload, [
             'X-Signature' => 'sha256=' . hash_hmac('sha256', (string) json_encode($payload), self::WEBHOOK_SECRET),

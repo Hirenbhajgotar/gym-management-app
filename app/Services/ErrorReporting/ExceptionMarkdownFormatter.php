@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\ErrorReporting;
 
+use App\Biometrics\Services\BiometricLogRedactor;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Throwable;
@@ -12,17 +14,9 @@ class ExceptionMarkdownFormatter
 {
     private const CONTEXT_LINES = 6;
 
-    private const SENSITIVE_INPUT_KEYS = [
-        'password',
-        'password_confirmation',
-        'token',
-        'api_key',
-        'secret',
-        'card_number',
-        'cvv',
-    ];
-
-    private const BLOCKED_HEADERS = ['cookie', 'authorization', 'x-xsrf-token'];
+    public function __construct(
+        private readonly ExceptionTraceFormatter $traceFormatter,
+    ) {}
 
     /**
      * @param  array{requested_url: string, origin_url: string, livewire_component: string|null}  $origin
@@ -30,7 +24,7 @@ class ExceptionMarkdownFormatter
     public function format(Throwable $exception, Request $request, array $origin): string
     {
         $lines = [
-            '# ' . class_basename($exception) . ': ' . $exception->getMessage(),
+            '# ' . class_basename($exception) . ': ' . $this->singleLine($this->exceptionMessage($exception)),
             '',
             '- **Exception**: `' . get_class($exception) . '`',
             '- **Code**: ' . $exception->getCode(),
@@ -56,7 +50,7 @@ class ExceptionMarkdownFormatter
         if ($previous = $exception->getPrevious()) {
             $lines[] = '## Caused By';
             $lines[] = '';
-            $lines[] = '**' . get_class($previous) . '**: ' . $previous->getMessage();
+            $lines[] = '**' . get_class($previous) . '**: ' . $this->singleLine($this->exceptionMessage($previous));
             $lines[] = '`' . $previous->getFile() . ':' . $previous->getLine() . '`';
             $lines[] = '';
         }
@@ -64,8 +58,8 @@ class ExceptionMarkdownFormatter
         $lines[] = '## Request';
         $lines[] = '';
         $lines[] = '- **Method**: ' . $request->method();
-        $lines[] = '- **Requested endpoint**: ' . $origin['requested_url'];
-        $lines[] = '- **Origin URL**: ' . $origin['origin_url'];
+        $lines[] = '- **Requested endpoint**: ' . $this->singleLine($origin['requested_url']);
+        $lines[] = '- **Origin URL**: ' . $this->singleLine($origin['origin_url']);
 
         if ($origin['livewire_component']) {
             $lines[] = '- **Livewire/Filament Component**: `' . $origin['livewire_component'] . '`';
@@ -75,13 +69,13 @@ class ExceptionMarkdownFormatter
             . ' (' . ($request->route()?->getActionName() ?? 'n/a') . ')';
         $lines[] = '- **User**: ' . (Auth::check() ? '#' . Auth::id() . ' — ' . Auth::user()?->email : 'guest');
         $lines[] = '- **IP**: ' . $request->ip();
-        $lines[] = '- **User Agent**: ' . $request->userAgent();
+        $lines[] = '- **User Agent**: ' . $this->singleLine(BiometricLogRedactor::redactText($request->userAgent()));
         $lines[] = '';
 
         $lines[] = '### Headers';
         $lines[] = '';
         $lines[] = '```';
-        foreach ($this->sanitizeHeaders($request->headers->all()) as $key => $value) {
+        foreach (BiometricLogRedactor::redactHeaders($request->headers->all()) as $key => $value) {
             /** @var list<string|null> $value */
             $lines[] = $key . ': ' . implode(', ', $value);
         }
@@ -96,27 +90,88 @@ class ExceptionMarkdownFormatter
         $input = $request->all();
 
         $lines[] = json_encode(
-            $this->sanitizeInput($input),
+            BiometricLogRedactor::sanitizeRequestData($input),
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
         );
         $lines[] = '```';
 
+        if ($queryException = $this->queryException($exception)) {
+            $lines[] = '';
+            $lines[] = '## Database Error';
+            $lines[] = '';
+
+            foreach ($this->databaseErrorDetails($queryException) as $detail) {
+                $lines[] = $detail;
+            }
+        }
+
         return implode("\n", $lines);
+    }
+
+    /**
+     * The QueryException in the exception chain, if any. A framework wrapper
+     * may rethrow it, so checking only the outer type is not enough.
+     */
+    private function queryException(Throwable $exception): ?QueryException
+    {
+        $current = $exception;
+
+        while ($current !== null) {
+            if ($current instanceof QueryException) {
+                return $current;
+            }
+
+            $current = $current->getPrevious();
+        }
+
+        return null;
+    }
+
+    /**
+     * Binding-free database diagnostics for the markdown export.
+     *
+     * @return list<string>
+     */
+    private function databaseErrorDetails(QueryException $exception): array
+    {
+        $errorInfo = is_array($exception->errorInfo) ? $exception->errorInfo : [];
+
+        $sqlState = (string) $exception->getCode();
+
+        if (($sqlState === '' || $sqlState === '0') && isset($errorInfo[0]) && is_scalar($errorInfo[0])) {
+            $sqlState = (string) $errorInfo[0];
+        }
+
+        $driverCode = isset($errorInfo[1]) && is_scalar($errorInfo[1]) ? (string) $errorInfo[1] : 'n/a';
+        $driverMessage = isset($errorInfo[2]) && is_scalar($errorInfo[2]) ? (string) $errorInfo[2] : '';
+
+        return [
+            '- **SQLSTATE**: ' . ($sqlState !== '' ? $sqlState : 'n/a'),
+            '- **Driver code**: ' . ($driverCode !== '' ? $driverCode : 'n/a'),
+            '- **Driver message**: ' . $this->singleLine(BiometricLogRedactor::redactText($driverMessage)),
+            '- **SQL**: ' . $this->singleLine(BiometricLogRedactor::redactText($exception->getSql())),
+        ];
     }
 
     private function formatTrace(Throwable $exception): string
     {
-        $frames = [];
+        return "```\n" . $this->traceFormatter->format($exception) . "\n```";
+    }
 
-        foreach ($exception->getTrace() as $index => $frame) {
-            $file = $frame['file'] ?? '[internal function]';
-            $line = $frame['line'] ?? 0;
-            $function = ($frame['class'] ?? '') . ($frame['type'] ?? '') . $frame['function'];
+    private function singleLine(?string $value): string
+    {
+        return trim(str_replace(["\r", "\n"], ' ', (string) $value));
+    }
 
-            $frames[] = "#{$index} {$file}:{$line} — {$function}()";
+    private function exceptionMessage(Throwable $exception): string
+    {
+        if ($exception instanceof QueryException) {
+            // A raw literal in the SQL must not reach the title line; the
+            // structured diagnostics below repeat the redacted SQL anyway.
+            return BiometricLogRedactor::redactText($exception->getSql());
         }
 
-        return "```\n" . implode("\n", $frames) . "\n```";
+        return BiometricLogRedactor::redactText($exception->getMessage());
     }
 
     private function codeSnippet(string $file, int $line): string
@@ -140,37 +195,5 @@ class ExceptionMarkdownFormatter
         }
 
         return implode("\n", $snippet);
-    }
-
-    /**
-     * @param  array<string, list<string|null>>  $headers
-     * @return array<string, list<string|null>>
-     */
-    private function sanitizeHeaders(array $headers): array
-    {
-        foreach (self::BLOCKED_HEADERS as $key) {
-            unset($headers[$key]);
-        }
-
-        return $headers;
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function sanitizeInput(array $data): array
-    {
-        array_walk_recursive($data, function (&$value, $key) {
-            if (! is_string($key) && ! is_int($key)) {
-                return;
-            }
-
-            if (in_array(strtolower((string) $key), self::SENSITIVE_INPUT_KEYS, true)) {
-                $value = '***REDACTED***';
-            }
-        });
-
-        return $data;
     }
 }

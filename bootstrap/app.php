@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Biometrics\Services\BiometricLogRedactor;
 use App\Http\Middleware\ErrorContextMiddleware;
 use App\Http\Middleware\ExportDownloadMiddleware;
 use App\Http\Middleware\TeamsPermission;
+use App\Services\ErrorReporting\ExceptionTraceFormatter;
 use App\Services\ErrorReportService;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -103,9 +105,12 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
                 // Determine if this should be auto-reported based on severity
                 $shouldAutoReport = $errorReportService->shouldAutoReport($e);
-                Log::info(
-                    'Should auto report: ' . ($shouldAutoReport ? 'yes' : 'no') . ' Error: ' . $e->getMessage() . ' File: ' . $e->getFile() . ':' . $e->getLine(),
-                );
+                Log::info('Should auto report: ' . ($shouldAutoReport ? 'yes' : 'no'), [
+                    'exception' => $e::class,
+                    'error' => BiometricLogRedactor::redactText($e->getMessage()),
+                    'file' => $e->getFile() . ':' . $e->getLine(),
+                    'trace' => app(ExceptionTraceFormatter::class)->format($e),
+                ]);
 
                 if ($shouldAutoReport) {
                     $errorReport = $errorReportService->reportException(
@@ -115,13 +120,16 @@ $app = Application::configure(basePath: dirname(__DIR__))
                     );
                     Log::info('Error report created via withExceptions', [
                         'error_report_id' => $errorReport->id ?? 'null',
-                        'error_hash' => $errorReport->error_hash ?? 'null',
                     ]);
                 }
-            } catch (Exception $exception) {
+            } catch (Throwable $exception) {
                 Log::error('Failed to auto-report error via withExceptions', [
-                    'original_exception' => $e,
-                    'reporting_exception' => $exception,
+                    'original_exception' => $e::class,
+                    'original_error' => BiometricLogRedactor::redactText($e->getMessage()),
+                    'original_trace' => app(ExceptionTraceFormatter::class)->format($e),
+                    'reporting_exception' => $exception::class,
+                    'reporting_error' => BiometricLogRedactor::redactText($exception->getMessage()),
+                    'reporting_trace' => app(ExceptionTraceFormatter::class)->format($exception),
                 ]);
             }
         });
