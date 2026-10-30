@@ -27,14 +27,12 @@ class SubscriptionRenewalJob implements ShouldQueue
 
     public $backoff = [60, 300, 900]; // Retry after 1min, 5min, 15min
 
-    protected RazorpayService $razorpayService;
-
     /**
      * Create a new job instance.
      */
     public function __construct()
     {
-        $this->razorpayService = resolve(RazorpayService::class);
+        //
     }
 
     /**
@@ -177,7 +175,7 @@ class SubscriptionRenewalJob implements ShouldQueue
             DB::beginTransaction();
 
             // Create Razorpay order for renewal
-            $orderData = $this->razorpayService->createOrder([
+            $orderData = resolve(RazorpayService::class)->createOrder([
                 'amount' => $subscription->price,
                 'currency' => $subscription->currency,
                 'receipt' => 'SUB-AUTO-REN-' . $subscription->id . '-' . time(),

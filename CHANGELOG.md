@@ -51,6 +51,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Created [Biometric Templates Field Reference](docs/biometric/database/biometric-templates-fields.md).
   - Updated field references for [Gym Members](docs/biometric/database/gym-members-fields.md), [ADMS Device Commands](docs/biometric/database/adms-device-commands-fields.md), and [Biometric Devices](docs/biometric/database/biometric-devices-fields.md).
 
+### Changed
+- **Docker PHP Runtime Upgrade**:
+  - Upgraded Docker base container image from PHP 8.2 (`php:8.2-fpm`) to PHP 8.3 (`php:8.3-fpm`) in [`Dockerfile`](Dockerfile).
+- **Subscription Renewal Schedule Registration (`routes/console.php`)**:
+  - Updated `Schedule::job()` registration to pass the `SubscriptionRenewalJob::class` string rather than instantiating the job (`new SubscriptionRenewalJob()`), deferring instantiation to scheduled run time and preventing unnecessary overhead during console kernel and route bootstrapping.
+
+### Fixed
+- **Queue Serialization in Subscription Renewal (`SubscriptionRenewalJob`)**:
+  - Resolved `RazorpayService` lazily on demand within `processPayment()` rather than resolving and assigning it to an instance property in `__construct()`. This prevents queue worker serialization errors and stale service state when dispatching `SubscriptionRenewalJob` to queued drivers (e.g. Redis).
+- **Razorpay Configuration Resilience (`config/services.php`)**:
+  - Hardened Razorpay environment variable mapping (`key_id`, `key_secret`, and `webhook_secret`) with explicit `(string)` casting and empty string fallbacks (`(string) env('...', '')`), avoiding null values and strict typing runtime errors when configuration is evaluated without configured secrets.
+
 ## [v1.8.0] - 2026-10-11 (Current GitHub Release)
 
 ### Breaking Changes
