@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Filament;
 
-use Spatie\Permission\PermissionRegistrar;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricProvidersEnum;
@@ -19,6 +18,7 @@ use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class AdmsSetupCardTest extends TestCase
@@ -81,6 +81,8 @@ class AdmsSetupCardTest extends TestCase
         // instead of terminating the JavaScript string.
         $this->assertStringContainsString('o\u0027reilly', $html);
         $this->assertStringNotContainsString("o'reilly/api/iclock/cdata", $html);
+
+        $this->assertStringContainsString('.aspx-suffixed URIs are also accepted', $html);
     }
 
     public function test_adms_setup_modal_renders_working_inline_copy_buttons(): void

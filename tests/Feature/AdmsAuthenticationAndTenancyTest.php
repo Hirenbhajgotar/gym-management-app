@@ -5,22 +5,23 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Biometrics\Services\AdmsDeviceAuthenticator;
-use Illuminate\Support\Facades\Route;
-use App\Http\Middleware\AuthenticateBiometricDevice;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Api\AdmsController;
-use Illuminate\Support\Facades\DB;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\DefaultRole;
+use App\Http\Controllers\Api\AdmsController;
+use App\Http\Middleware\AuthenticateBiometricDevice;
 use App\Models\BiometricDevice;
 use App\Models\Gym;
 use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AdmsAuthenticationAndTenancyTest extends TestCase
@@ -75,6 +76,49 @@ class AdmsAuthenticationAndTenancyTest extends TestCase
 
         $response->assertUnauthorized();
         $this->assertStringContainsString('ERR: Unauthorized', (string) $response->getContent());
+    }
+
+    /**
+     * Both CData surfaces, canonical and `.aspx`, so the aliases are proven to
+     * inherit the same authentication contract as their twins.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function cdataSurfaceUriProvider(): array
+    {
+        return [
+            'api canonical' => ['/api/iclock/cdata'],
+            'api aspx' => ['/api/iclock/cdata.aspx'],
+            'native canonical' => ['/iclock/cdata'],
+            'native aspx' => ['/iclock/cdata.aspx'],
+        ];
+    }
+
+    #[DataProvider('cdataSurfaceUriProvider')]
+    public function test_adms_cdata_surfaces_reject_unknown_serial_with_unauthorized(string $uri): void
+    {
+        $response = $this->call('GET', $uri . '?SN=SN-DOES-NOT-EXIST');
+
+        $response->assertUnauthorized();
+        $this->assertSame('ERR: Unauthorized', $response->getContent());
+    }
+
+    #[DataProvider('cdataSurfaceUriProvider')]
+    public function test_adms_cdata_surfaces_reject_invalid_comm_key_with_unauthorized(string $uri): void
+    {
+        $response = $this->call('GET', $uri . '?SN=SN-AUTH-TEST-001&pushcommkey=wrong-key');
+
+        $response->assertUnauthorized();
+        $this->assertSame('ERR: Unauthorized', $response->getContent());
+    }
+
+    #[DataProvider('cdataSurfaceUriProvider')]
+    public function test_adms_cdata_surfaces_reject_missing_serial_with_bad_request(string $uri): void
+    {
+        $response = $this->call('GET', $uri);
+
+        $response->assertStatus(400);
+        $this->assertSame('ERR: Unauthorized', $response->getContent());
     }
 
     public function test_adms_request_with_valid_comm_key_in_query_succeeds(): void

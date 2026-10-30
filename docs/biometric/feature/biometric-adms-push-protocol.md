@@ -1,12 +1,13 @@
 ---
 feature: Biometric ADMS Push Protocol
 status: accepted
-last_updated: 2026-10-20
+last_updated: 2026-10-30
 author: docs-agent
 related_docs:
   - ../architecture/ADR-004-adms-push-protocol-and-lifecycle.md
   - ../../adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md
   - ../../adr/adr-0005-biometric-adms-communication-key-hardware-standardization.md
+  - ../../adr/adr-0006-biometric-adms-legacy-hardware-endpoint-and-transport-compatibility.md
   - ../architecture/ADR-002-door-access-attendance-integrity.md
   - ../database/adms-device-commands-fields.md
   - ../database/biometric-templates-fields.md
@@ -65,6 +66,8 @@ Terminals can operate in **Dual-Channel Mode**, leveraging the best capabilities
 ---
 
 ## Endpoints Reference
+
+Every endpoint is registered on both the `/api/iclock/*` and unprefixed `/iclock/*` surfaces, and each has an `.aspx`-suffixed alias (for example `POST /api/iclock/cdata.aspx`). Canonical and suffixed forms share the same controller action, middleware, and plain-text responses.
 
 All ADMS endpoints are publicly accessible to terminals without session cookies, authenticating via device serial numbers (`SN`) and optional communication keys (`pushcommkey`):
 - **Device Resolution & Auto-Recovery**: `BiometricDevice::findBySerial($sn)` resolves enabled devices. If an `Inactive` device (e.g. marked inactive by the deadman health check) transmits authenticated communication, it is auto-recovered to `Active` status and its consecutive miss counter is cleared.
@@ -267,6 +270,42 @@ In dual-channel mode, biometric devices dispatch instant door-unlock requests to
 ```
 
 The PBKDF2 verification floor is the fixed `BiometricDevice::MIN_PBKDF2_ITERATIONS` (100,000) constant in every environment. The test suite lowers it at runtime in the testing environment only; there is no production environment variable for the floor.
+
+---
+
+## Reverse Proxy & Transport Compatibility (Nginx)
+
+Budget and entry-level biometric hardware lack hardware SSL/TLS crypto offloading and do not follow HTTP 301/302 redirects. Production reverse proxies (Nginx) must be configured on port 80 to bypass HTTPS redirection exclusively for biometric ADMS endpoints:
+
+```nginx
+server {
+    listen 80;
+    server_name your-gym-domain.com;
+
+    root /var/www/gym-management-app/public;
+    index index.php index.html;
+
+    # Intercept ADMS traffic on plain HTTP without 301 redirect
+    location /iclock/ {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location /api/iclock/ {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+    }
+
+    # Enforce HTTPS redirection for all other human/browser traffic
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+```
 
 ---
 

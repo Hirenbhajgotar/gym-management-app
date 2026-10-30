@@ -46,16 +46,23 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         apiPrefix: 'api',
         then: function () {
+            // Mirror of the api/iclock group in routes/api.php: keep URIs and names in sync.
             Route::prefix('iclock')->middleware([
                 'throttle:biometric-api',
                 AuthenticateAdmsDevice::class,
             ])->group(function () {
                 Route::match(['get', 'post'], '/cdata', [AdmsController::class, 'cdata'])
                     ->name('adms.native.cdata');
+                Route::match(['get', 'post'], '/cdata.aspx', [AdmsController::class, 'cdata'])
+                    ->name('adms.native.cdata.aspx');
                 Route::get('/getrequest', [AdmsController::class, 'getRequest'])
                     ->name('adms.native.getrequest');
+                Route::get('/getrequest.aspx', [AdmsController::class, 'getRequest'])
+                    ->name('adms.native.getrequest.aspx');
                 Route::post('/devicecmd', [AdmsController::class, 'deviceCmd'])
                     ->name('adms.native.devicecmd');
+                Route::post('/devicecmd.aspx', [AdmsController::class, 'deviceCmd'])
+                    ->name('adms.native.devicecmd.aspx');
             });
         },
     )

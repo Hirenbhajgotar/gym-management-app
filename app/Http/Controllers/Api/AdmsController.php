@@ -22,7 +22,9 @@ use Throwable;
  * ADMS (Automatic Device Management System) protocol handler.
  *
  * Speaks the native iClock protocol used by eSSL, ZKTeco, and compatible devices.
- * Three endpoints:
+ * Four operations across three endpoints. Each endpoint is registered on both the
+ * `/api/iclock/*` and unprefixed `/iclock/*` surfaces, with an `.aspx`-suffixed
+ * alias on each:
  *   POST /iclock/cdata?SN={serial}&table=ATTLOG  → receive attendance events
  *   GET  /iclock/cdata?SN={serial}                → initial handshake
  *   GET  /iclock/getrequest?SN={serial}           → device polls for pending commands
