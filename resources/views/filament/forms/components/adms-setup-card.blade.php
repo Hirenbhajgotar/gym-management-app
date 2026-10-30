@@ -163,7 +163,7 @@
                 {{ $fullEndpoint }}
             </div>
             <div class="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
-                Terminal pushes attendance records to this URL
+                Terminal pushes attendance records to this URL — .aspx-suffixed URIs are also accepted.
             </div>
             <span
                 class="sr-only"
