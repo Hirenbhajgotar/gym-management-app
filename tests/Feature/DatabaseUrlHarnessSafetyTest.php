@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Request;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
@@ -60,7 +61,7 @@ final class DatabaseUrlHarnessSafetyTest extends TestCase
      */
     private function currentConfigurationPath(): string
     {
-        $arguments = is_array($_SERVER['argv'] ?? null) ? array_values($_SERVER['argv']) : [];
+        $arguments = is_array(Request::server('argv') ?? null) ? array_values(Request::server('argv')) : [];
 
         foreach ($arguments as $index => $argument) {
             $option = (string) $argument;

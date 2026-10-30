@@ -68,9 +68,38 @@ return [
 
     // ADMS (Automatic Device Management System) push protocol configuration
     'adms' => [
-        'enabled' => env('ADMS_ENABLED', true),
-        'require_comm_key' => env('ADMS_REQUIRE_COMM_KEY', true),
-        'pbkdf2_iterations' => (int) env('ADMS_PBKDF2_ITERATIONS', 100000),
+        'enabled' => filter_var(env('ADMS_ENABLED', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+        'require_comm_key' => filter_var(env('ADMS_REQUIRE_COMM_KEY', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+        'pbkdf2_iterations' => filter_var(env('ADMS_PBKDF2_ITERATIONS', 100000), FILTER_VALIDATE_INT, [
+            'options' => ['default' => 100000, 'min_range' => 1],
+        ]),
+
+        /*
+         * Verification floor. Fixed at the 100,000 constant in every
+         * environment. tests/TestCase.php lowers it at runtime in the testing
+         * environment only, so a production deployment cannot weaken stored
+         * verifiers or raise the floor above an existing hash.
+         */
+        'pbkdf2_min_iterations' => \App\Models\BiometricDevice::MIN_PBKDF2_ITERATIONS,
+
+        /**
+         * Time-bounded compatibility switch for verifiers created before keys were
+         * sanitized. Keep enabled for one release while whitespace-bearing legacy
+         * devices rotate; disable once the fleet has re-provisioned, then remove.
+         */
+        'allow_legacy_unsanitized_comm_key' => filter_var(env('ADMS_ALLOW_LEGACY_UNSANITIZED_COMM_KEY', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+
+        /**
+         * Per-device online guessing controls. Failed pushcommkey attempts are
+         * counted by device id (never by raw serial) and locked out temporarily
+         * after the configured threshold.
+         */
+        'auth_max_failures' => filter_var(env('ADMS_AUTH_MAX_FAILURES', 5), FILTER_VALIDATE_INT, [
+            'options' => ['default' => 5, 'min_range' => 1],
+        ]),
+        'auth_lockout_seconds' => filter_var(env('ADMS_AUTH_LOCKOUT_SECONDS', 900), FILTER_VALIDATE_INT, [
+            'options' => ['default' => 900, 'min_range' => 1],
+        ]),
         'command_lease_seconds' => (int) env('ADMS_COMMAND_LEASE_SECONDS', 600),
         'command_retention_days' => (int) env('ADMS_COMMAND_RETENTION_DAYS', 90),
         'receipt_retention_days' => (int) env('ADMS_RECEIPT_RETENTION_DAYS', 30),

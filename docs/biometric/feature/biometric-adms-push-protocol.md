@@ -1,11 +1,12 @@
 ---
 feature: Biometric ADMS Push Protocol
 status: accepted
-last_updated: 2026-09-23
+last_updated: 2026-10-20
 author: docs-agent
 related_docs:
   - ../architecture/ADR-004-adms-push-protocol-and-lifecycle.md
   - ../../adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md
+  - ../../adr/adr-0005-biometric-adms-communication-key-hardware-standardization.md
   - ../architecture/ADR-002-door-access-attendance-integrity.md
   - ../database/adms-device-commands-fields.md
   - ../database/biometric-templates-fields.md
@@ -67,7 +68,7 @@ Terminals can operate in **Dual-Channel Mode**, leveraging the best capabilities
 
 All ADMS endpoints are publicly accessible to terminals without session cookies, authenticating via device serial numbers (`SN`) and optional communication keys (`pushcommkey`):
 - **Device Resolution & Auto-Recovery**: `BiometricDevice::findBySerial($sn)` resolves enabled devices. If an `Inactive` device (e.g. marked inactive by the deadman health check) transmits authenticated communication, it is auto-recovered to `Active` status and its consecutive miss counter is cleared.
-- **Communication Key Verification**: If a device has a key configured (`adms_comm_key_hash` or `provider_config['pushcommkey']`) or if global enforcement is enabled via `config('biometrics.adms.require_comm_key')` (default `true`), the request must provide a matching `pushcommkey` (query, body, or header). Missing or invalid keys return HTTP 401.
+- **Communication Key Verification & Hardware Standardization**: If a device has a key configured (`adms_comm_key_hash` or a legacy `provider_config` alias) or if global enforcement is enabled via `config('biometrics.adms.require_comm_key')` (default `true`), the request must provide a matching `pushcommkey` (query, body, or header). Missing or invalid keys return HTTP 401 with a uniform `ERR: Unauthorized` body; the specific reason is logged server-side only. Per [ADR-0005](../../adr/adr-0005-biometric-adms-communication-key-hardware-standardization.md), generated keys are standardized to 6-digit numeric PINs (`100000`–`999999`) using `BiometricDevice::generateCommKey()` to comply with eSSL (MB-20, KM-20, K90) and ZKTeco physical keypad firmware constraints. Incoming plain keys are sanitized via `BiometricDevice::sanitizeCommKey()` to remove ASCII/Unicode whitespace and format characters before PBKDF2 hash verification (`verifyCommKey()`). A raw-whitespace verifier self-heals to the sanitized form only when the terminal presents the exact raw form (or a matching plaintext exists for the backfill to re-hash); a terminal that presents only the sanitized form must be rotated. Failed attempts are counted per device (`ADMS_AUTH_MAX_FAILURES`, default 5) and lock the device (`ADMS_AUTH_LOCKOUT_SECONDS`, default 900) **before** verification, so guesses are capped; a locked-out terminal is rejected even with the correct key until the cooldown expires or an operator runs `php artisan biometrics:reset-adms-lockout --device-id={id}` (or `--serial`, including disabled devices). Rotation/re-provisioning clears the counter. New keys are exactly 6 alphanumeric characters. `provider_config['comm_key']` is an ADMS alias for device-native devices, including the legacy `provider_type = null` shape; on an explicit cloud provider it is a provider secret and is never read or deleted by ADMS code. A cloud→native switch records `comm_key_source = 'cloud'` so the preserved credential stays out of ADMS aliases and cleanup. A device-native `comm_key` is translated to `pushcommkey` when the provider leaves native mode, so a later return switch does not strand the only plaintext key. Generated keys are stored encrypted for a one-time modal reveal (never in a session-backed notification) and the value is published only after the create/save transaction commits. Error reports drop Livewire's serialized component snapshot and dotted update map before storage, and the error-report edit page renders technical fields read-only so a status change cannot overwrite the stored report.
 
 ### 1. `POST|GET /api/iclock/cdata`
 - **Purpose**: Handshake, heartbeat, and attendance log (`ATTLOG`) push.
@@ -80,7 +81,7 @@ All ADMS endpoints are publicly accessible to terminals without session cookies,
   ```
   - `status`: `0` = Check-in, `1` = Check-out.
   - `verifyMode`: `1` = Fingerprint, `2` = Card, `9` = Palm, `15` = Face.
-- **Response**: Plain text `OK` (or `ERR: Unknown device` with HTTP 401).
+- **Response**: Plain text `OK` (or `ERR: Unauthorized` with HTTP 401).
 
 ### 2. `GET /api/iclock/getrequest`
 - **Purpose**: Polled periodically by terminals to fetch pending management commands.
@@ -112,7 +113,7 @@ All ADMS endpoints are publicly accessible to terminals without session cookies,
 
 ## Event Processing Pipeline (`AdmsEventService`)
 
-The [AdmsEventService](file:///c:/xampp/htdocs/projects/gym-app/app/Biometrics/Services/AdmsEventService.php) processes incoming verified events through the following sequence:
+The [AdmsEventService](../../../app/Biometrics/Services/AdmsEventService.php) processes incoming verified events through the following sequence:
 
 ```
 Terminal Event (SN, userId, timestamp, status, verifyMode)
@@ -191,7 +192,7 @@ php artisan app:cleanup-expired-device-members
 
 ## Device Command Queue & Status Enum
 
-Server-to-device commands are managed via the [AdmsDeviceCommand](file:///c:/xampp/htdocs/projects/gym-app/app/Models/AdmsDeviceCommand.php) model with the backing enum [AdmsCommandStatusEnum](file:///c:/xampp/htdocs/projects/gym-app/app/Enums/AdmsCommandStatusEnum.php):
+Server-to-device commands are managed via the [AdmsDeviceCommand](../../../app/Models/AdmsDeviceCommand.php) model with the backing enum [AdmsCommandStatusEnum](../../../app/Enums/AdmsCommandStatusEnum.php):
 
 | Status Enum Case | String Value | Filament Badge Color | Meaning |
 |---|---|---|---|
@@ -204,14 +205,14 @@ Server-to-device commands are managed via the [AdmsDeviceCommand](file:///c:/xam
 Old executed commands (`ACKNOWLEDGED` and `FAILED`) are pruned automatically using Laravel's `Prunable` trait based on `config('biometrics.adms.command_retention_days')` (default 90 days), evaluated on `acknowledged_at` (falling back to `updated_at`).
 
 ### Member Archival Deprovisioning & Hardware Credential Epoch Tracking
-When an operator archives a member (or when `app:archive-inactive-gym-members` executes the 2-year inactivity sweep), [MemberArchiveService](file:///c:/xampp/htdocs/projects/gym-app/app/Services/MemberArchiveService.php) immediately initiates physical credential revocation via [BiometricDeProvisioner](file:///c:/xampp/htdocs/projects/gym-app/app/Biometrics/Services/BiometricDeProvisioner.php):
+When an operator archives a member (or when `app:archive-inactive-gym-members` executes the 2-year inactivity sweep), [MemberArchiveService](../../../app/Services/MemberArchiveService.php) immediately initiates physical credential revocation via [BiometricDeProvisioner](../../../app/Biometrics/Services/BiometricDeProvisioner.php):
 - **Synchronous Command Queuing**: Queues a `DATA DELETE user Pin={memberId}` command for all active and pending templates across assigned hardware terminals.
-- **Hardware Credential Epoch Tracking**: To prevent dead-letter loops where a previous deletion command failed at the maximum attempt cap, [AdmsDeviceCommand](file:///c:/xampp/htdocs/projects/gym-app/app/Models/AdmsDeviceCommand.php) tracks `epoch_credential_user_add_id`. When a restored member re-enrolls, the subsequent `user_add` establishes a new credential epoch. If the member is later archived again, `BiometricDeProvisioner::hasUnconsumedHardwareCredential()` recognizes the newer epoch and safely re-drives the terminal deletion without getting blocked by previous attempt caps.
+- **Hardware Credential Epoch Tracking**: To prevent dead-letter loops where a previous deletion command failed at the maximum attempt cap, [AdmsDeviceCommand](../../../app/Models/AdmsDeviceCommand.php) tracks `epoch_credential_user_add_id`. When a restored member re-enrolls, the subsequent `user_add` establishes a new credential epoch. If the member is later archived again, `BiometricDeProvisioner::hasUnconsumedHardwareCredential()` recognizes the newer epoch and safely re-drives the terminal deletion without getting blocked by previous attempt caps.
 - **Biometric Operator Attention**: Stuck or unresolvable deletions that reach the attempt cap are automatically surfaced to operators via the `BiometricOperatorAttentionWidget` and the "Needs Operator" filter on `BiometricTemplatesRelationManager`.
 
 ### Fail-Closed Webhook HMAC Authentication
 In dual-channel mode, biometric devices dispatch instant door-unlock requests to `/api/v1/biometric/webhook/{token}`:
-- **Mandatory HMAC-SHA256**: [BiometricWebhookController](file:///c:/xampp/htdocs/projects/gym-app/app/Http/Controllers/Api/BiometricWebhookController.php) mandates that incoming webhook requests must be cryptographically signed via `X-Hub-Signature-256` or `X-Signature`.
+- **Mandatory HMAC-SHA256**: [BiometricWebhookController](../../../app/Http/Controllers/Api/BiometricWebhookController.php) mandates that incoming webhook requests must be cryptographically signed via `X-Hub-Signature-256` or `X-Signature`.
 - **Fail-Closed Stance**: Devices lacking a configured `webhook_secret` in their `provider_config` are immediately refused with HTTP 401, completely eliminating bearer-token vulnerability over raw URLs.
 - **Secret Provisioning**: Gym operators can generate and reveal device signing secrets using `php artisan biometrics:provision-webhook-secrets --gym={id} --reveal`.
 
@@ -246,17 +247,26 @@ In dual-channel mode, biometric devices dispatch instant door-unlock requests to
 'heartbeat_consecutive_misses' => (int) env('BIOMETRIC_HEARTBEAT_CONSECUTIVE_MISSES', 1),
 
 'adms' => [
-    'enabled' => env('ADMS_ENABLED', true),
-    'require_comm_key' => env('ADMS_REQUIRE_COMM_KEY', true),
+    'enabled' => filter_var(env('ADMS_ENABLED', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+    'require_comm_key' => filter_var(env('ADMS_REQUIRE_COMM_KEY', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+    'pbkdf2_iterations' => filter_var(env('ADMS_PBKDF2_ITERATIONS', 100000), FILTER_VALIDATE_INT, [
+        'options' => ['default' => 100000, 'min_range' => 1],
+    ]),
+    'allow_legacy_unsanitized_comm_key' => filter_var(env('ADMS_ALLOW_LEGACY_UNSANITIZED_COMM_KEY', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+    'auth_max_failures' => filter_var(env('ADMS_AUTH_MAX_FAILURES', 5), FILTER_VALIDATE_INT, [
+        'options' => ['default' => 5, 'min_range' => 1],
+    ]),
+    'auth_lockout_seconds' => filter_var(env('ADMS_AUTH_LOCKOUT_SECONDS', 900), FILTER_VALIDATE_INT, [
+        'options' => ['default' => 900, 'min_range' => 1],
+    ]),
     'command_lease_seconds' => (int) env('ADMS_COMMAND_LEASE_SECONDS', 600),
-    'command_ttl_hours' => (int) env('ADMS_COMMAND_TTL_HOURS', 72),
     'command_retention_days' => (int) env('ADMS_COMMAND_RETENTION_DAYS', 90),
     'receipt_retention_days' => (int) env('ADMS_RECEIPT_RETENTION_DAYS', 30),
     'expired_member_grace_days' => (int) env('ADMS_EXPIRED_GRACE_DAYS', 10),
-    'supported_tables' => ['ATTLOG'],
-    'throttle' => env('ADMS_THROTTLE_LIMIT', '120,1'),
 ],
 ```
+
+The PBKDF2 verification floor is the fixed `BiometricDevice::MIN_PBKDF2_ITERATIONS` (100,000) constant in every environment. The test suite lowers it at runtime in the testing environment only; there is no production environment variable for the floor.
 
 ---
 
@@ -264,7 +274,7 @@ In dual-channel mode, biometric devices dispatch instant door-unlock requests to
 
 Feature tests covering the full ADMS protocol and cleanup lifecycles:
 
-- **[`tests/Feature/AdmsProtocolTest.php`](file:///c:/xampp/htdocs/projects/gym-app/tests/Feature/AdmsProtocolTest.php)**:
+- **[`tests/Feature/AdmsProtocolTest.php`](../../../tests/Feature/AdmsProtocolTest.php)**:
   - Check-in event processing via raw ATTLOG push.
   - Automatic check-out detection for open attendance records.
   - Denial of expired members with `AdmsAccessDenied` broadcast.
@@ -276,7 +286,7 @@ Feature tests covering the full ADMS protocol and cleanup lifecycles:
   - Terminal handshake and heartbeat updates.
   - Dual-mode coexistence with existing vendor webhook endpoint.
 
-- **[`tests/Feature/CleanupExpiredDeviceMembersTest.php`](file:///c:/xampp/htdocs/projects/gym-app/tests/Feature/CleanupExpiredDeviceMembersTest.php)**:
+- **[`tests/Feature/CleanupExpiredDeviceMembersTest.php`](../../../tests/Feature/CleanupExpiredDeviceMembersTest.php)**:
   - Automated command queuing for expired members beyond the 3-layer grace period.
   - Respect for custom gym grace period settings.
   - Exclusion of members currently within their grace window.

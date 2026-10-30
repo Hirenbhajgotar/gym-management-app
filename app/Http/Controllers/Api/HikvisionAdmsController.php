@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Biometrics\Services\AdmsEventService;
+use App\Biometrics\Services\BiometricLogRedactor;
 use App\Biometrics\Services\BiometricReceiptService;
 use App\Biometrics\Services\BiometricTimestampParser;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricReceiptStatusEnum;
 use App\Http\Controllers\Controller;
 use App\Models\BiometricDevice;
+use App\Services\ErrorReporting\ExceptionTraceFormatter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -59,7 +60,7 @@ class HikvisionAdmsController extends Controller
                 'status' => BiometricDeviceStatusEnum::Active,
                 'last_heartbeat_at' => now(),
             ]);
-            Cache::forget(BiometricDevice::missCounterCacheKey($device->id));
+            BiometricDevice::clearMissCounter($device->id);
         }
 
         if (! $device->adms_enabled) {
@@ -137,7 +138,7 @@ class HikvisionAdmsController extends Controller
 
         // Update heartbeat and reset miss counter
         $device->update(['last_heartbeat_at' => now()]);
-        Cache::forget(BiometricDevice::missCounterCacheKey($device->id));
+        BiometricDevice::clearMissCounter($device->id);
 
         // Durable receipt fingerprint
         $eventSerial = (string) ($xml->eventSerialNo ?? $accessEvent->serialNo ?? '');
@@ -165,7 +166,8 @@ class HikvisionAdmsController extends Controller
             Log::error('Hikvision: Event processing failed due to system exception', [
                 'device_id' => $device->id,
                 'employee_hash' => hash('sha256', $employeeNo),
-                'error' => $e->getMessage(),
+                'error' => BiometricLogRedactor::redactText($e->getMessage()),
+                'trace' => resolve(ExceptionTraceFormatter::class)->format($e),
             ]);
 
             return response()->json(['error' => 'Internal processing error'], 500);

@@ -24,7 +24,7 @@
 ### 3) Secrets and Credentials Handling
 
 - Credential sources: Environment variables loaded via `.env` (never hardcoded in source repository), accessed via Laravel `config()` helper.
-- Biometric Communication Keys: `ADMS_REQUIRE_COMM_KEY=true` enforces that edge biometric terminals must authenticate using PBKDF2 salted communication keys (configured via `config('biometrics.adms.pbkdf2_iterations')`, default 100,000). Legacy unsalted SHA-256 hashes are detected and re-provisioned via `biometrics:backfill-adms-comm-keys --provision`.
+- Biometric Communication Keys: `ADMS_REQUIRE_COMM_KEY=true` enforces that edge biometric terminals must authenticate using PBKDF2 salted communication keys (configured via `config('biometrics.adms.pbkdf2_iterations')`, default 100,000). Legacy unsalted SHA-256 hashes are detected and re-provisioned via `biometrics:backfill-adms-comm-keys --reprovision-legacy --reveal`.
 - Hardcoding checks: Verified no raw API keys or secrets exist in tracked PHP/JS code.
 - Rotation or lifecycle notes: Razorpay secrets, Meta access tokens, Twilio credentials, and ADMS comm keys can be rotated without breaking database schemas.
 

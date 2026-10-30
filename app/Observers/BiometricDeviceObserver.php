@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
-use App\Helpers\ParserHelper;
 use App\Models\BiometricDevice;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class BiometricDeviceObserver implements ShouldHandleEventsAfterCommit
 {
@@ -53,17 +54,22 @@ class BiometricDeviceObserver implements ShouldHandleEventsAfterCommit
 
     /**
      * Clear the navigation badge and device lookup caches.
+     *
+     * Cache invalidation is best-effort. The observer runs after commit; if a
+     * cache backend is down, throwing here would turn a successful create or
+     * update into a reported failure (and, in the backfill command, skip
+     * printing a key that is already committed).
      */
     private function clearCache(BiometricDevice $biometricDevice): void
     {
-        ParserHelper::clearCache(BiometricDevice::NAVIGATION_BADGE_CACHE_KEY . $biometricDevice->gym_id);
+        $this->forget(BiometricDevice::NAVIGATION_BADGE_CACHE_KEY . $biometricDevice->gym_id);
 
         $gymIds = array_filter([
             $biometricDevice->getOriginal('gym_id'),
             $biometricDevice->gym_id,
         ], fn (mixed $id): bool => is_numeric($id));
         foreach ($gymIds as $gymId) {
-            Cache::forget("biometric:gym:{$gymId}:has_adms_devices");
+            $this->forget("biometric:gym:{$gymId}:has_adms_devices");
         }
 
         $serials = array_filter([
@@ -71,7 +77,7 @@ class BiometricDeviceObserver implements ShouldHandleEventsAfterCommit
             $biometricDevice->device_serial,
         ], fn (mixed $serial): bool => is_string($serial) && $serial !== '');
         foreach ($serials as $serial) {
-            Cache::forget("biometric:device:serial:{$serial}");
+            $this->forget("biometric:device:serial:{$serial}");
         }
 
         $hashes = array_filter([
@@ -79,7 +85,19 @@ class BiometricDeviceObserver implements ShouldHandleEventsAfterCommit
             $biometricDevice->token_hash,
         ], fn (mixed $hash): bool => is_string($hash) && $hash !== '');
         foreach ($hashes as $hash) {
-            Cache::forget("biometric:device:token:{$hash}");
+            $this->forget("biometric:device:token:{$hash}");
+        }
+    }
+
+    private function forget(string $key): void
+    {
+        try {
+            Cache::forget($key);
+        } catch (Throwable $exception) {
+            Log::warning('Biometric device cache invalidation failed; continuing', [
+                'key' => $key,
+                'exception' => $exception::class,
+            ]);
         }
     }
 }

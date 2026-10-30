@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use App\Biometrics\Exceptions\MemberArchivedException;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Resources\GymMemberResource;
@@ -897,7 +898,7 @@ class GymMember extends Model
      * operator. The operator is passed in explicitly by the caller, and a caller
      * that cannot name one is refused rather than silently attributed.
      *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
     public function archive(?User $operator = null): bool
     {
@@ -913,7 +914,7 @@ class GymMember extends Model
      * operator either. Delegates to {@see MemberArchiveService}, which owns the
      * gate and the row lock.
      *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
     public function unarchive(?User $operator = null): bool
     {

@@ -372,7 +372,7 @@ class BiometricDeadLetterReconciliationTest extends TestCase
     {
         $pin = '880010';
 
-        $template = BiometricTemplate::query()->create([
+        BiometricTemplate::query()->create([
             'gym_member_id' => $this->member->id,
             'gym_id' => $this->gym->id,
             'enrolled_by_device_id' => $this->device->id,

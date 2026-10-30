@@ -273,9 +273,7 @@ class EnrollBiometricAction
                     ->lockForUpdate()
                     ->first();
 
-                if (! $lockedMember instanceof GymMember) {
-                    throw new MemberArchivedException();
-                }
+                throw_unless($lockedMember instanceof GymMember, MemberArchivedException::class);
 
                 $lockedMember->assertMayHoldBiometricCredential();
 

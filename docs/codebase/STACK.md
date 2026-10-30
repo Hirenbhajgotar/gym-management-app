@@ -7,7 +7,7 @@
 | Area | Value | Evidence |
 |------|-------|----------|
 | Primary language | PHP 8.2+ & JavaScript/Node 20+ | [`composer.json`](file:///c:/xampp/htdocs/projects/gym-app/composer.json#L12), [`Dockerfile`](file:///c:/xampp/htdocs/projects/gym-app/Dockerfile#L1) |
-| Runtime + version | PHP 8.2-fpm, Node 20.x, Nginx alpine | [`Dockerfile`](file:///c:/xampp/htdocs/projects/gym-app/Dockerfile#L1-L28), [`docker-compose.yml`](file:///c:/xampp/htdocs/projects/gym-app/docker-compose.yml#L1-L37) |
+| Runtime + version | PHP 8.3-fpm, Node 20.x, Nginx alpine | [`Dockerfile`](file:///c:/xampp/htdocs/projects/gym-app/Dockerfile#L1-L28), [`docker-compose.yml`](file:///c:/xampp/htdocs/projects/gym-app/docker-compose.yml#L1-L37) |
 | Package manager | Composer (PHP), NPM (Node.js) | [`composer.json`](file:///c:/xampp/htdocs/projects/gym-app/composer.json), [`package.json`](file:///c:/xampp/htdocs/projects/gym-app/package.json) |
 | Module/build system | Vite 6 + Tailwind CSS v4 Vite plugin | [`package.json`](file:///c:/xampp/htdocs/projects/gym-app/package.json#L9-L16), [`vite.config.js`](file:///c:/xampp/htdocs/projects/gym-app/vite.config.js) |
 
@@ -78,7 +78,7 @@ php artisan biometrics:cleanup-superseded-templates --days=30 --pending-days=7
 php artisan biometrics:reclaim-stale-commands
 
 # Backfill and provision salted PBKDF2 ADMS communication keys
-php artisan biometrics:backfill-adms-comm-keys --provision
+php artisan biometrics:backfill-adms-comm-keys --reprovision-legacy --reveal
 ```
 
 ### 5) Environment and Config

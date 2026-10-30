@@ -17,7 +17,6 @@ use App\Biometrics\Services\FusionEngine;
 use App\Biometrics\Services\MembershipGuard;
 use App\Biometrics\Services\OfflineQueueManager;
 use App\Biometrics\Services\OfflineSyncService;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
 class BiometricServiceProvider extends ServiceProvider
@@ -36,14 +35,5 @@ class BiometricServiceProvider extends ServiceProvider
         $this->app->singleton(OfflineQueueManager::class);
         $this->app->singleton(BiometricDataDeletionService::class);
         $this->app->singleton(BiometricTemplatePropagator::class);
-    }
-
-    public function boot(): void
-    {
-        if ($this->app->isProduction() && ! config()->boolean('biometrics.adms.require_comm_key', true)) {
-            Log::warning(
-                'ADMS communication key requirement is disabled in production. This leaves ADMS endpoints vulnerable to impersonation. Ensure ADMS_REQUIRE_COMM_KEY=true is set.'
-            );
-        }
     }
 }

@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources;
 
+use App\Biometrics\Services\AdmsDeviceAuthenticator;
+use App\Biometrics\Services\CommKeyReveal;
+use App\Biometrics\Services\DeviceTokenReveal;
+use App\Biometrics\Services\WebhookSecretReveal;
+use App\Biometrics\Services\WebhookSecretRotationService;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricProvidersEnum;
@@ -13,8 +18,10 @@ use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\CreateBiometricDe
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\EditBiometricDevice;
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\ListBiometricDevices;
 use App\Filament\BaseResources\BaseResource;
+use App\Helpers\ClipboardHelper;
 use App\Models\BiometricDevice;
 use App\Models\User;
+use Closure;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\Group;
@@ -34,6 +41,7 @@ use Filament\Infolists\Components\Section as InfolistSection;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Actions\BulkActionGroup;
@@ -47,11 +55,21 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
+use Throwable;
 
 class BiometricDeviceResource extends BaseResource
 {
     protected static ?string $model = BiometricDevice::class;
+
+    /**
+     * Per-request memo for the (expensive) decryptability check. Filament
+     * evaluates provider field visibility for every field on every render.
+     *
+     * @var array<string, bool>
+     */
+    private static array $providerConfigUnreadableCache = [];
 
     protected static ?string $navigationIcon = 'heroicon-o-finger-print';
 
@@ -197,13 +215,31 @@ class BiometricDeviceResource extends BaseResource
                         Section::make('Provider Configuration')
                             ->description('Configure biometric recognition. Cloud AI services (AWS Rekognition, Azure Face, BioID) are managed centrally by the platform — no API keys or accounts required from you. For smart hardware terminals (Hikvision, ZKTeco, Suprema), keep Device-Native.')
                             ->schema([
+                                Placeholder::make('provider_config_unreadable_warning')
+                                    ->label('Provider configuration is unreadable')
+                                    ->content(fn (Get $get): string => (bool) $get('replace_unreadable_provider_config')
+                                        ? 'The stored configuration will be replaced with the values submitted for the selected provider. This cannot be undone.'
+                                        : 'The stored provider configuration cannot be decrypted. It is preserved on save so the ciphertext can still be recovered from a backup or an old application key.')
+                                    ->visible(fn (?BiometricDevice $record): bool => self::providerConfigIsUnreadable($record))
+                                    ->columnSpanFull(),
+
+                                Toggle::make('replace_unreadable_provider_config')
+                                    ->label('Replace unreadable provider configuration')
+                                    ->helperText('Only tick this if you intend to discard the existing encrypted value permanently. Leave it off to keep the current ciphertext.')
+                                    ->visible(fn (?BiometricDevice $record): bool => self::providerConfigIsUnreadable($record))
+                                    ->live()
+                                    ->columnSpanFull(),
+
                                 Select::make('provider_type')
                                     ->label('Biometric Recognition Provider')
                                     ->placeholder('None — Device-Native (Hardware does verification)')
                                     ->options(BiometricProvidersEnum::class)
                                     ->nullable()
                                     ->live()
-                                    ->helperText('Select a recognition provider. All cloud AI services are managed by the platform with zero configuration needed from you.'),
+                                    ->helperText(fn (Get $get, ?BiometricDevice $record): string => self::providerConfigIsUnreadable($record)
+                                        && ! (bool) $get('replace_unreadable_provider_config')
+                                        ? 'Warning: the stored configuration is unreadable. Changing providers without the replacement toggle preserves the old ciphertext and may leave the new provider misconfigured.'
+                                        : 'Select a recognition provider. Cloud AI services are managed by the platform.'),
 
                                 Section::make('')
                                     ->schema([
@@ -214,11 +250,12 @@ class BiometricDeviceResource extends BaseResource
                                         Placeholder::make('webhook_endpoint_info')
                                             ->label('Webhook Endpoint (for device vendors)')
                                             ->content(function (): string {
-                                                return config('app.url') . '/api/v1/biometric/webhook/{device_token}';
+                                                return rtrim(self::resolvedAppUrl(), '/') . '/api/v1/biometric/webhook/{device_token}';
                                             })
                                             ->helperText('Device vendors send attendance events to this URL with HMAC signature in X-Signature header.'),
                                     ])
-                                    ->visible(fn (Get $get): bool => static::isDeviceNative($get)),
+                                    ->visible(fn (Get $get, ?BiometricDevice $record): bool => self::providerConfigEditable($get, $record)
+                                        && static::isDeviceNative($get)),
 
                                 // AWS Rekognition Configuration
                                 Section::make('AWS Rekognition Settings')
@@ -247,7 +284,8 @@ class BiometricDeviceResource extends BaseResource
                                             ->default(config('biometrics.similarity_threshold') * 100)
                                             ->helperText('Minimum confidence percentage required to grant access (Default: ' . (config('biometrics.similarity_threshold') * 100) . '%).'),
                                     ])
-                                    ->visible(fn (Get $get): bool => static::isProvider($get, BiometricProvidersEnum::Rekognition))
+                                    ->visible(fn (Get $get, ?BiometricDevice $record): bool => self::providerConfigEditable($get, $record)
+                                        && static::isProvider($get, BiometricProvidersEnum::Rekognition))
                                     ->columns(2),
 
                                 // Azure Face Configuration
@@ -277,7 +315,8 @@ class BiometricDeviceResource extends BaseResource
                                             ->default(config('biometrics.confidence_threshold') * 100)
                                             ->helperText('Minimum confidence percentage required to grant access (Default: ' . (config('biometrics.confidence_threshold') * 100) . '%).'),
                                     ])
-                                    ->visible(fn (Get $get): bool => static::isProvider($get, BiometricProvidersEnum::AzureFace))
+                                    ->visible(fn (Get $get, ?BiometricDevice $record): bool => self::providerConfigEditable($get, $record)
+                                        && static::isProvider($get, BiometricProvidersEnum::AzureFace))
                                     ->columns(2),
 
                                 // BioID Configuration
@@ -294,7 +333,8 @@ class BiometricDeviceResource extends BaseResource
                                             ->default(true)
                                             ->helperText('Verifies real human presence to prevent photo or video spoofing.'),
                                     ])
-                                    ->visible(fn (Get $get): bool => static::isProvider($get, BiometricProvidersEnum::BioID))
+                                    ->visible(fn (Get $get, ?BiometricDevice $record): bool => self::providerConfigEditable($get, $record)
+                                        && static::isProvider($get, BiometricProvidersEnum::BioID))
                                     ->columns(2),
 
                                 // On-Premise/Local Configuration
@@ -319,7 +359,8 @@ class BiometricDeviceResource extends BaseResource
                                             ->maxValue(300)
                                             ->default(30),
                                     ])
-                                    ->visible(fn (Get $get): bool => static::isProvider($get, BiometricProvidersEnum::OnPremise))
+                                    ->visible(fn (Get $get, ?BiometricDevice $record): bool => self::providerConfigEditable($get, $record)
+                                        && static::isProvider($get, BiometricProvidersEnum::OnPremise))
                                     ->columns(2),
 
                                 // Custom API Configuration
@@ -334,12 +375,14 @@ class BiometricDeviceResource extends BaseResource
                                             ->label('API Key')
                                             ->nullable()
                                             ->password()
-                                            ->revealable(),
+                                            ->revealable()
+                                            ->helperText('Leave blank to keep the stored value. Existing credentials are never shown in the form.'),
                                         TextInput::make('provider_config.secret')
                                             ->label('Secret')
                                             ->nullable()
                                             ->password()
-                                            ->revealable(),
+                                            ->revealable()
+                                            ->helperText('Leave blank to keep the stored value. Existing credentials are never shown in the form.'),
 
                                         Select::make('provider_config.auth_type')
                                             ->label('Authentication Type')
@@ -365,7 +408,7 @@ class BiometricDeviceResource extends BaseResource
 
                                         KeyValue::make('provider_config.headers')
                                             ->label('Additional Headers')
-                                            ->helperText('Key-value pairs for custom headers')
+                                            ->helperText('Key-value pairs for custom headers. Leave blank to keep the stored headers; adding a pair replaces the stored map.')
                                             ->nullable()
                                             ->columnSpanFull(),
 
@@ -420,7 +463,8 @@ class BiometricDeviceResource extends BaseResource
                                             ->collapsible()
                                             ->collapsed(),
                                     ])
-                                    ->visible(fn (Get $get): bool => static::isProvider($get, BiometricProvidersEnum::Custom))
+                                    ->visible(fn (Get $get, ?BiometricDevice $record): bool => self::providerConfigEditable($get, $record)
+                                        && static::isProvider($get, BiometricProvidersEnum::Custom))
                                     ->columns(2),
                             ]),
                     ])->columnSpan(['lg' => 2]),
@@ -449,29 +493,61 @@ class BiometricDeviceResource extends BaseResource
                                     ->label('ADMS Communication Key (pushcommkey)')
                                     ->password()
                                     ->revealable()
-                                    ->maxLength(64)
+                                    ->maxLength(BiometricDevice::COMM_KEY_PASTE_BUFFER)
+                                    ->placeholder('e.g. 123456')
                                     ->live(onBlur: true)
-                                    ->required(fn (string $operation, Get $get, ?BiometricDevice $record): bool => (bool) $get('adms_enabled') && ($operation === 'create' || blank($record?->adms_comm_key_hash)))
+                                    ->afterStateUpdated(function (mixed $state, Set $set): void {
+                                        if (! is_string($state)) {
+                                            $set('adms_comm_key', null);
+
+                                            return;
+                                        }
+
+                                        $cleaned = BiometricDevice::sanitizeCommKey($state);
+                                        if ($cleaned !== $state) {
+                                            $set('adms_comm_key', $cleaned);
+                                        }
+                                    })
+                                    ->dehydrateStateUsing(fn (mixed $state): ?string => is_string($state) && $state !== '' ? BiometricDevice::sanitizeCommKey($state) : null)
+                                    ->rules([
+                                        fn (string $operation, Get $get, ?BiometricDevice $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($operation, $get, $record): void {
+                                            $cleaned = BiometricDevice::sanitizeCommKey($value);
+                                            $transitionRequiresKey = self::commKeyTransitionRequiresKey($get, $record);
+                                            $isRequired = self::commKeyRequired($operation, $get, $record);
+
+                                            if ($cleaned === '') {
+                                                if ($isRequired) {
+                                                    $fail($transitionRequiresKey
+                                                        ? 'Enter a new ADMS Communication Key before switching away from device-native. The existing plaintext comm_key alias is not read for a cloud provider.'
+                                                        : 'The ADMS Communication Key is required when ADMS is enabled.');
+                                                }
+
+                                                return;
+                                            }
+
+                                            $validationError = BiometricDevice::commKeyValidationError($cleaned);
+
+                                            if ($validationError !== null) {
+                                                $fail($validationError);
+                                            }
+                                        },
+                                    ])
+                                    ->required(fn (string $operation, Get $get, ?BiometricDevice $record): bool => self::commKeyRequired($operation, $get, $record)
+                                        && ! self::commKeyTransitionRequiresKey($get, $record))
                                     ->hintAction(
                                         FormAction::make('generateCommKey')
                                             ->label('Generate')
                                             ->icon('heroicon-o-key')
                                             ->action(function (Set $set) {
-                                                $key = bin2hex(random_bytes(16));
-                                                $set('adms_comm_key', $key);
+                                                $set('adms_comm_key', BiometricDevice::generateCommKey());
                                             })
                                     )
-                                    ->helperText('Required for ADMS push authentication. Must match the Comm Key / pushcommkey set on the terminal under Menu > Comm > Cloud Server.')
+                                    ->helperText('Exactly 6 letters or numbers after whitespace is removed; a 6-digit number is recommended for universal device compatibility. Leave blank on edit to keep the current key, except when switching from Device-Native to a cloud provider that would stop reading the only plaintext comm_key. A new key is shown only in the one-time reveal window; the stored value is never displayed.')
                                     ->visible(fn (Get $get): bool => (bool) $get('adms_enabled')),
 
                                 Placeholder::make('adms_setup_info')
                                     ->label('ADMS Configuration')
-                                    ->content(function (): string {
-                                        $appUrl = config('app.url');
-                                        $url = is_string($appUrl) ? $appUrl : '';
-
-                                        return $url . '/api/iclock/cdata';
-                                    })
+                                    ->content(fn (): string => rtrim(self::resolvedAppUrl(), '/') . '/api/iclock/cdata')
                                     ->helperText('On device: Menu > Comm > ADMS / Cloud Server > set Server Address to this URL.')
                                     ->visible(fn (Get $get): bool => (bool) $get('adms_enabled')),
                             ]),
@@ -483,21 +559,23 @@ class BiometricDeviceResource extends BaseResource
                                     ->password()
                                     ->revealable()
                                     ->nullable()
-                                    ->hintAction(
-                                        FormAction::make('generateWebhookSecret')
-                                            ->label('Generate')
-                                            ->icon('heroicon-o-key')
-                                            ->action(function (Set $set) {
-                                                $secret = bin2hex(random_bytes(24)); // 48 character hex string
-                                                $set('provider_config.webhook_secret', $secret);
-                                            })
-                                    )
-                                    ->helperText('Used to verify HMAC signatures on incoming webhooks.'),
+                                    ->visible(fn (Get $get, ?BiometricDevice $record): bool => self::providerConfigEditable($get, $record))
+                                    ->rules([
+                                        fn (): Closure => static function (string $attribute, mixed $value, Closure $fail): void {
+                                            $error = self::manualWebhookSecretValidationError($value);
+
+                                            if ($error !== null) {
+                                                $fail($error);
+                                            }
+                                        },
+                                    ])
+                                    ->helperText('Used to verify HMAC signatures on incoming webhooks. At least ' . WebhookSecretRotationService::MANUAL_WEBHOOK_SECRET_MIN_LENGTH . ' characters; letters, numbers, and . _ ~ + / = - only. Leave blank to keep the stored secret. Generated secrets are 64 hex characters. The stored value is never displayed; use the audited table action to rotate it.'),
 
                                 TextInput::make('provider_config.webhook_signature_header')
                                     ->label('Signature Header')
                                     ->placeholder('X-Signature')
                                     ->default('X-Signature')
+                                    ->visible(fn (Get $get, ?BiometricDevice $record): bool => self::providerConfigEditable($get, $record))
                                     ->helperText('Header name containing HMAC-SHA256 signature (accepts sha256=... or raw hex)'),
                             ]),
                         Section::make('API Credentials')
@@ -575,6 +653,19 @@ class BiometricDeviceResource extends BaseResource
                 ViewAction::make()
                     ->slideOver(),
 
+                Action::make('admsGuide')
+                    ->label('ADMS Setup')
+                    ->icon('heroicon-o-signal')
+                    ->color('success')
+                    ->visible(fn (BiometricDevice $record): bool => $record->adms_enabled)
+                    ->modalHeading('ADMS Terminal Setup')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close')
+                    ->modalContent(fn (BiometricDevice $record) => view('filament.forms.components.adms-setup-card', [
+                        'commKeyStatus' => self::commKeyStatusLabel($record),
+                        'appUrl' => self::resolvedAppUrl(),
+                    ])),
+
                 ActionGroup::make([
                     Action::make('regenerateToken')
                         ->label('Regenerate Token')
@@ -583,33 +674,61 @@ class BiometricDeviceResource extends BaseResource
                         ->authorize(fn (BiometricDevice $record): bool => auth()->user()?->can('rotateCredentials', $record) ?? false)
                         ->requiresConfirmation()
                         ->modalHeading('Regenerate API Token')
-                        ->modalDescription('This will invalidate the current API token. A new one will be generated and copied to your clipboard.')
+                        ->modalDescription('This will invalidate the current API token. A new one will be generated and stored for one-time reveal.')
                         ->modalSubmitActionLabel('Regenerate')
                         ->action(function (BiometricDevice $record, Component $livewire): void {
-                            $oldHash = $record->token_hash;
-                            $plainToken = bin2hex(random_bytes(32));
-                            $newHash = hash('sha256', $plainToken);
+                            $result = resolve(WebhookSecretRotationService::class)->regenerateToken($record);
 
-                            $record->update([
-                                'device_token' => $plainToken,
-                                'token_hash' => $newHash,
-                            ]);
+                            if (! $result['rotated']) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Token was not regenerated')
+                                    ->body($result['failure'] ?? 'The API token could not be regenerated. The existing token is unchanged.')
+                                    ->persistent()
+                                    ->send();
 
-                            if ($oldHash) {
-                                Cache::forget("biometric:device:token:{$oldHash}");
+                                return;
                             }
-                            Cache::forget("biometric:device:token:{$newHash}");
 
-                            $escapedToken = json_encode($plainToken);
+                            try {
+                                activity()
+                                    ->performedOn($record)
+                                    ->withProperties([
+                                        'gym_id' => $record->gym_id,
+                                        'action' => 'adms_device_token_regenerated',
+                                        'reveal_available' => $result['reveal_available'],
+                                    ])
+                                    ->log('ADMS device API token regenerated');
+                            } catch (Throwable $exception) {
+                                Log::warning('ADMS: device token regeneration audit failed', [
+                                    'device_id' => $record->getKey(),
+                                    'exception' => $exception::class,
+                                ]);
+                            }
 
-                            $livewire->js("
-                                window.navigator.clipboard.writeText({$escapedToken});
-                                new FilamentNotification()
-                                    .title('API Token Regenerated')
-                                    .body('New token has been copied to your clipboard.')
-                                    .success()
-                                    .send();
-                            ");
+                            if (! $result['reveal_available']) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Token regenerated but not revealable')
+                                    ->body($result['failure'] ?? 'The database token was updated, but it could not be stored for one-time reveal. Regenerate again once the cache is healthy.')
+                                    ->persistent()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $plainToken = (string) $result['secret'];
+
+                            // The modal is the primary delivery path. The
+                            // clipboard is a convenience and may be blocked on
+                            // HTTP LAN deployments.
+                            $livewire->js(ClipboardHelper::copyScript(
+                                $plainToken,
+                                'API Token Regenerated',
+                                'Token regenerated — use Reveal API Token',
+                                'New token copied to the clipboard. Use Reveal API Token to read it again within ' . DeviceTokenReveal::TTL_MINUTES . ' minutes.',
+                                'The clipboard is unavailable. Use Reveal API Token to read the new token within ' . DeviceTokenReveal::TTL_MINUTES . ' minutes.'
+                            ));
                         }),
 
                     Action::make('generateWebhookSecret')
@@ -619,24 +738,102 @@ class BiometricDeviceResource extends BaseResource
                         ->authorize(fn (BiometricDevice $record): bool => auth()->user()?->can('update', $record) ?? false)
                         ->requiresConfirmation()
                         ->modalHeading('Generate Webhook Secret')
-                        ->modalDescription('This will generate a new webhook secret and copy it to your clipboard. The old secret will no longer work.')
+                        ->modalDescription('This generates a new 64-character webhook secret. The old secret stops working immediately; use "Reveal Webhook Secret" to read the new one.')
                         ->modalSubmitActionLabel('Generate')
-                        ->action(function (BiometricDevice $record, Component $livewire): void {
-                            $secret = bin2hex(random_bytes(24));
-                            $config = $record->provider_config ?? [];
-                            $config['webhook_secret'] = $secret;
-                            $record->update(['provider_config' => $config]);
+                        ->action(function (BiometricDevice $record): void {
+                            if (self::providerConfigIsUnreadable($record)) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Provider configuration is unreadable')
+                                    ->body('The stored configuration cannot be decrypted and was left untouched. Open Edit and tick "Replace unreadable provider configuration" before generating a webhook secret.')
+                                    ->persistent()
+                                    ->send();
 
-                            $escapedSecret = json_encode($secret);
+                                return;
+                            }
 
-                            $livewire->js("
-                                window.navigator.clipboard.writeText({$escapedSecret});
-                                new FilamentNotification()
-                                    .title('Webhook Secret Generated')
-                                    .body('New webhook secret has been copied to your clipboard.')
-                                    .success()
-                                    .send();
-                            ");
+                            $result = resolve(WebhookSecretRotationService::class)->rotateWebhookSecret($record);
+
+                            if (! $result['rotated']) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Webhook secret was not rotated')
+                                    ->body($result['failure'] ?? 'The webhook secret could not be rotated. The existing secret is unchanged.')
+                                    ->persistent()
+                                    ->send();
+
+                                return;
+                            }
+
+                            try {
+                                activity()
+                                    ->performedOn($record)
+                                    ->withProperties([
+                                        'gym_id' => $record->gym_id,
+                                        'action' => 'adms_webhook_secret_generated',
+                                        'reveal_available' => $result['reveal_available'],
+                                    ])
+                                    ->log('ADMS device webhook secret generated');
+                            } catch (Throwable $exception) {
+                                Log::warning('ADMS: webhook secret generation audit failed', [
+                                    'device_id' => $record->getKey(),
+                                    'exception' => $exception::class,
+                                ]);
+                            }
+
+                            if (! $result['reveal_available']) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Webhook secret rotated but not revealable')
+                                    ->body($result['failure'] ?? 'The database secret was updated, but it could not be stored for one-time reveal. Generate a new secret once the cache is healthy.')
+                                    ->persistent()
+                                    ->send();
+
+                                return;
+                            }
+
+                            Notification::make()
+                                ->success()
+                                ->title('Webhook secret generated')
+                                ->body('Use "Reveal Webhook Secret" within ' . WebhookSecretReveal::TTL_MINUTES . ' minutes to read it.')
+                                ->send();
+                        }),
+
+                    Action::make('revealWebhookSecret')
+                        ->label('Reveal Webhook Secret')
+                        ->icon('heroicon-o-eye')
+                        ->color('warning')
+                        ->visible(fn (BiometricDevice $record): bool => WebhookSecretReveal::exists($record->id, self::revealViewerKey()))
+                        ->authorize(fn (BiometricDevice $record): bool => auth()->user()?->can('update', $record) ?? false)
+                        ->modalHeading('Reveal one-time webhook secret')
+                        ->modalDescription('The secret is not stored in your session. It remains available in this dialog for a few minutes after the first reveal; copy it now.')
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Close')
+                        ->modalContent(function (BiometricDevice $record) {
+                            $claim = WebhookSecretReveal::claimForDisplay($record->id, self::revealViewerKey());
+
+                            if ($claim['claimed'] || $claim['first_delivery_read']) {
+                                try {
+                                    activity()
+                                        ->performedOn($record)
+                                        ->withProperties([
+                                            'gym_id' => $record->gym_id,
+                                            'action' => 'adms_webhook_secret_revealed',
+                                        ])
+                                        ->log('ADMS device webhook secret revealed');
+                                } catch (Throwable $exception) {
+                                    Log::warning('ADMS: webhook secret reveal audit failed', [
+                                        'device_id' => $record->getKey(),
+                                        'exception' => $exception::class,
+                                    ]);
+                                }
+                            }
+
+                            return view('filament.biometric.one-time-secret', [
+                                'secret' => $claim['secret'],
+                                'description' => 'Webhook HMAC secret for this device:',
+                                'unavailableAction' => 'Regenerate',
+                            ]);
                         }),
 
                     Action::make('viewCommands')
@@ -649,6 +846,223 @@ class BiometricDeviceResource extends BaseResource
                                 'device_id' => ['value' => $record->id],
                             ],
                         ])),
+
+                    Action::make('revealCommKey')
+                        ->label('Reveal Comm Key')
+                        ->icon('heroicon-o-eye')
+                        ->color('warning')
+                        ->visible(fn (BiometricDevice $record): bool => CommKeyReveal::exists($record->id, self::revealViewerKey()))
+                        ->authorize(fn (BiometricDevice $record): bool => auth()->user()?->can('update', $record) ?? false)
+                        ->modalHeading('Reveal one-time communication key')
+                        ->modalDescription('The key is not stored in your session. It remains available in this dialog for a few minutes after the first reveal; copy it now.')
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Close')
+                        ->modalContent(function (BiometricDevice $record) {
+                            // Claim once, then render from the encrypted delivery
+                            // copy so a table re-render (search, pagination,
+                            // retry) cannot blank the modal. Nothing is written
+                            // to the session or the Livewire snapshot.
+                            $claim = CommKeyReveal::claimForDisplay($record->id, self::revealViewerKey());
+
+                            if ($claim['claimed'] || $claim['first_delivery_read']) {
+                                try {
+                                    activity()
+                                        ->performedOn($record)
+                                        ->withProperties([
+                                            'gym_id' => $record->gym_id,
+                                            'action' => 'adms_comm_key_revealed',
+                                        ])
+                                        ->log('ADMS device comm key revealed');
+                                } catch (Throwable $exception) {
+                                    // The reveal must still render if the audit store is down.
+                                    Log::warning('ADMS: comm key reveal audit failed', [
+                                        'device_id' => $record->getKey(),
+                                        'exception' => $exception::class,
+                                    ]);
+                                }
+                            }
+
+                            return view('filament.biometric.one-time-secret', [
+                                'secret' => $claim['secret'],
+                                'description' => 'ADMS communication key for this device:',
+                                'unavailableAction' => 'Rotate',
+                            ]);
+                        }),
+
+                    Action::make('revealToken')
+                        ->label('Reveal API Token')
+                        ->icon('heroicon-o-key')
+                        ->color('warning')
+                        ->visible(fn (BiometricDevice $record): bool => DeviceTokenReveal::exists($record->id, self::revealViewerKey()))
+                        ->authorize(fn (BiometricDevice $record): bool => auth()->user()?->can('rotateCredentials', $record) ?? false)
+                        ->modalHeading('Reveal one-time API token')
+                        ->modalDescription('The token is not stored in your session. It remains available in this dialog for a few minutes after the first reveal; copy it now.')
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Close')
+                        ->modalContent(function (BiometricDevice $record) {
+                            $claim = DeviceTokenReveal::claimForDisplay($record->id, self::revealViewerKey());
+
+                            if ($claim['claimed'] || $claim['first_delivery_read']) {
+                                try {
+                                    activity()
+                                        ->performedOn($record)
+                                        ->withProperties([
+                                            'gym_id' => $record->gym_id,
+                                            'action' => 'adms_device_token_revealed',
+                                        ])
+                                        ->log('ADMS device API token revealed');
+                                } catch (Throwable $exception) {
+                                    Log::warning('ADMS: device token reveal audit failed', [
+                                        'device_id' => $record->getKey(),
+                                        'exception' => $exception::class,
+                                    ]);
+                                }
+                            }
+
+                            return view('filament.biometric.one-time-secret', [
+                                'secret' => $claim['secret'],
+                                'description' => 'API bearer token for this device:',
+                                'unavailableAction' => 'Regenerate',
+                            ]);
+                        }),
+
+                    Action::make('rotateCommKey')
+                        ->label('Rotate Comm Key')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('danger')
+                        ->visible(fn (BiometricDevice $record): bool => $record->adms_enabled)
+                        ->authorize(fn (BiometricDevice $record): bool => auth()->user()?->can('update', $record) ?? false)
+                        ->requiresConfirmation()
+                        ->modalHeading('Rotate communication key')
+                        ->modalDescription('This invalidates the current key. You must update the physical terminal immediately; use Reveal Comm Key to read the new key.')
+                        ->modalSubmitActionLabel('Rotate')
+                        ->action(function (BiometricDevice $record): void {
+                            // The comm-key rotation also rewrites provider_config
+                            // (alias cleanup). It must share the edit page's lock
+                            // so a concurrent save cannot overwrite the hash or
+                            // the cleanup.
+                            try {
+                                $lock = Cache::lock(
+                                    WebhookSecretRotationService::providerConfigLockKey(self::deviceKey($record)),
+                                    WebhookSecretRotationService::LOCK_TTL_SECONDS
+                                );
+
+                                $acquired = $lock->get();
+                            } catch (Throwable $exception) {
+                                Log::warning('ADMS: could not create the comm key rotation lock', [
+                                    'device_id' => $record->getKey(),
+                                    'exception' => $exception::class,
+                                ]);
+
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Communication key was not rotated')
+                                    ->body('The provider configuration lock could not be created. Nothing was changed; try again once the cache is healthy.')
+                                    ->persistent()
+                                    ->send();
+
+                                return;
+                            }
+
+                            if (! $acquired) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Communication key was not rotated')
+                                    ->body('Another change to this device is in progress. Nothing was changed; wait a moment and try again.')
+                                    ->persistent()
+                                    ->send();
+
+                                return;
+                            }
+
+                            try {
+                                // Re-read under the lock so alias removal operates
+                                // on the config another writer may have changed.
+                                $record->refresh();
+
+                                $plainKey = BiometricDevice::generateCommKey();
+                                $salt = BiometricDevice::generateCommKeySalt();
+
+                                try {
+                                    $config = is_array($record->provider_config) ? $record->provider_config : null;
+                                } catch (Throwable) {
+                                    // A corrupt provider_config must not block the
+                                    // rotation that is meant to recover the device.
+                                    $config = null;
+                                }
+
+                                $removedAliases = [];
+
+                                if ($config !== null) {
+                                    if (array_key_exists('pushcommkey', $config)) {
+                                        unset($config['pushcommkey']);
+                                        $removedAliases[] = 'pushcommkey';
+                                    }
+
+                                    if ($record->mayDeleteCommKeyAlias() && array_key_exists('comm_key', $config)) {
+                                        unset($config['comm_key']);
+                                        $removedAliases[] = 'comm_key';
+                                    }
+                                }
+
+                                $attributes = [
+                                    'adms_comm_key_hash' => BiometricDevice::hashCommKey($plainKey, $salt),
+                                    'adms_comm_key_salt' => $salt,
+                                ];
+
+                                if ($config !== null) {
+                                    $attributes['provider_config'] = $config;
+                                }
+
+                                $record->forceFill($attributes)->saveQuietly();
+                            } finally {
+                                try {
+                                    $lock->release();
+                                } catch (Throwable) {
+                                    // The lock TTL is the backstop.
+                                }
+                            }
+
+                            CommKeyReveal::forget($record->id);
+                            $stored = CommKeyReveal::put($record->id, $plainKey);
+
+                            resolve(AdmsDeviceAuthenticator::class)->resetFailures($record);
+
+                            try {
+                                activity()
+                                    ->performedOn($record)
+                                    ->withProperties([
+                                        'gym_id' => $record->gym_id,
+                                        'action' => 'adms_comm_key_rotated',
+                                        'reveal_available' => $stored,
+                                        'removed_aliases' => $removedAliases,
+                                        'provider_type' => $record->provider_type?->value,
+                                    ])
+                                    ->log('ADMS device comm key rotated');
+                            } catch (Throwable $exception) {
+                                Log::warning('ADMS: comm key rotation audit failed', [
+                                    'device_id' => $record->getKey(),
+                                    'exception' => $exception::class,
+                                ]);
+                            }
+
+                            if (! $stored) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Key rotated but not revealable')
+                                    ->body('The cache is unavailable. Rotate again once the cache is healthy, or set the key manually from the edit page.')
+                                    ->persistent()
+                                    ->send();
+
+                                return;
+                            }
+
+                            Notification::make()
+                                ->success()
+                                ->title('Communication key rotated')
+                                ->body('Use Reveal Comm Key to read the new one-time key.')
+                                ->send();
+                        }),
 
                     EditAction::make(),
                     DeleteAction::make(),
@@ -722,14 +1136,14 @@ class BiometricDeviceResource extends BaseResource
                             ->schema([
                                 TextEntry::make('adms_server_host')
                                     ->label('Server Address / Domain')
-                                    ->state(fn (): string => parse_url(config('app.url') ?: 'http://localhost', PHP_URL_HOST) ?: request()->getHost())
+                                    ->state(fn (): string => parse_url(self::resolvedAppUrl(), PHP_URL_HOST) ?: request()->getHost())
                                     ->copyable()
                                     ->helperText('Enter in terminal without http:// or path'),
 
                                 TextEntry::make('adms_server_port')
                                     ->label('Server Port')
                                     ->state(function (): string {
-                                        $appUrl = config('app.url') ?: 'http://localhost';
+                                        $appUrl = self::resolvedAppUrl();
                                         $port = parse_url($appUrl, PHP_URL_PORT);
 
                                         if ($port) {
@@ -752,44 +1166,45 @@ class BiometricDeviceResource extends BaseResource
                             ->schema([
                                 TextEntry::make('adms_cdata_url')
                                     ->label('Attendance Push URL (Handshake)')
-                                    ->state(fn (): string => rtrim(config('app.url') ?: request()->root(), '/') . '/api/iclock/cdata')
+                                    ->state(fn (): string => rtrim(self::resolvedAppUrl(), '/') . '/api/iclock/cdata')
                                     ->copyable(),
 
                                 TextEntry::make('adms_comm_key_status')
                                     ->label('Communication Key (pushcommkey)')
-                                    ->state(fn (BiometricDevice $record): string => filled($record->adms_comm_key_hash) ? 'Configured (Active)' : 'Not Configured')
+                                    ->state(fn (BiometricDevice $record): string => self::commKeyStatusLabel($record))
                                     ->badge()
-                                    ->color(fn (BiometricDevice $record): string => filled($record->adms_comm_key_hash) ? 'success' : 'warning'),
+                                    ->color(fn (BiometricDevice $record): string => self::commKeyStatusColor($record)),
                             ]),
 
                         InfolistGrid::make(2)
                             ->schema([
                                 TextEntry::make('adms_getrequest_url')
                                     ->label('Command Polling Endpoint')
-                                    ->state(fn (): string => rtrim(config('app.url') ?: request()->root(), '/') . '/api/iclock/getrequest')
+                                    ->state(fn (): string => rtrim(self::resolvedAppUrl(), '/') . '/api/iclock/getrequest')
                                     ->copyable(),
 
                                 TextEntry::make('adms_devicecmd_url')
                                     ->label('Command Acknowledgment Endpoint')
-                                    ->state(fn (): string => rtrim(config('app.url') ?: request()->root(), '/') . '/api/iclock/devicecmd')
+                                    ->state(fn (): string => rtrim(self::resolvedAppUrl(), '/') . '/api/iclock/devicecmd')
                                     ->copyable(),
                             ]),
 
                         ViewEntry::make('adms_setup_instructions')
                             ->view('filament.forms.components.adms-setup-card')
                             ->viewData(fn (BiometricDevice $record): array => [
-                                'commKey' => filled($record->adms_comm_key_hash) ? 'Configured (Active)' : null,
+                                'commKeyStatus' => self::commKeyStatusLabel($record),
+                                'appUrl' => self::resolvedAppUrl(),
                             ])
                             ->columnSpanFull(),
                     ])
-                    ->visible(fn (BiometricDevice $record): bool => (bool) $record->adms_enabled),
+                    ->visible(fn (BiometricDevice $record): bool => $record->adms_enabled),
 
                 InfolistSection::make('API & Dual-Channel Webhook')
                     ->icon('heroicon-o-key')
                     ->schema([
                         TextEntry::make('webhook_endpoint')
                             ->label('Vendor Webhook Endpoint (Door Relay)')
-                            ->state(fn (): string => rtrim(config('app.url') ?: request()->root(), '/') . '/api/v1/biometric/webhook/{device_token}')
+                            ->state(fn (): string => rtrim(self::resolvedAppUrl(), '/') . '/api/v1/biometric/webhook/{device_token}')
                             ->copyable()
                             ->columnSpanFull()
                             ->helperText('Send attendance events to this endpoint for sub-second door relay control.'),
@@ -800,9 +1215,9 @@ class BiometricDeviceResource extends BaseResource
 
                         TextEntry::make('webhook_secret_status')
                             ->label('Webhook Secret')
-                            ->state(fn (BiometricDevice $record): string => filled($record->provider_config['webhook_secret'] ?? null) ? 'Configured' : 'Not Set')
+                            ->state(fn (BiometricDevice $record): string => self::webhookSecretStatus($record)['label'])
                             ->badge()
-                            ->color(fn (BiometricDevice $record): string => filled($record->provider_config['webhook_secret'] ?? null) ? 'success' : 'gray'),
+                            ->color(fn (BiometricDevice $record): string => self::webhookSecretStatus($record)['color']),
                     ])
                     ->columns(2)
                     ->collapsed(),
@@ -818,6 +1233,277 @@ class BiometricDeviceResource extends BaseResource
         ];
     }
 
+    /**
+     * @return array{label: string, color: string}
+     */
+    public static function webhookSecretStatus(BiometricDevice $record): array
+    {
+        if (self::providerConfigIsUnreadable($record)) {
+            return ['label' => 'Unreadable', 'color' => 'danger'];
+        }
+
+        $config = $record->provider_config;
+
+        if (! is_array($config) || ! array_key_exists('webhook_secret', $config)) {
+            return ['label' => 'Not Set', 'color' => 'gray'];
+        }
+
+        $secret = $config['webhook_secret'];
+
+        if ($secret === null || $secret === '') {
+            return ['label' => 'Not Set', 'color' => 'gray'];
+        }
+
+        if (! is_string($secret)) {
+            return ['label' => 'Invalid — regenerate', 'color' => 'danger'];
+        }
+
+        // A non-empty string is not necessarily usable: the HMAC verifier
+        // must meet the same minimum length/charset policy as a manual entry,
+        // otherwise a legacy short value shows a misleading green badge.
+        if (self::manualWebhookSecretValidationError($secret) !== null) {
+            return ['label' => 'Weak — regenerate', 'color' => 'danger'];
+        }
+
+        return ['label' => 'Configured', 'color' => 'success'];
+    }
+
+    private static function commKeyStatusLabel(BiometricDevice $record): string
+    {
+        // Check the unversioned shape first. The verifier is usable, but it
+        // carries no iteration count; the UI should say so rather than imply a
+        // fully versioned verifier. Defensive probe: this resource can be
+        // deployed independently of the model method.
+        if ($record->commKeyVerifierIsUnversioned()) {
+            return 'Configured (unversioned)';
+        }
+
+        // A valid verifier still authenticates even when provider_config can no
+        // longer be decrypted; do not suggest a destructive rotation for it.
+        if ($record->hasRecognizedCommKeyVerifier()) {
+            return 'Configured';
+        }
+
+        if ($record->hasRealCommKeyHash()) {
+            return 'Unrecognized verifier — rotate the key';
+        }
+
+        if (self::providerConfigIsUnreadable($record)) {
+            return 'Unreadable — re-enter or rotate the key';
+        }
+
+        return $record->hasCommKeyConfigured() ? 'Configured' : 'Not configured';
+    }
+
+    private static function commKeyStatusColor(BiometricDevice $record): string
+    {
+        if ($record->commKeyVerifierIsUnversioned()) {
+            return 'success';
+        }
+
+        if ($record->hasRecognizedCommKeyVerifier()) {
+            return 'success';
+        }
+
+        if ($record->hasRealCommKeyHash()) {
+            return 'danger';
+        }
+
+        if (self::providerConfigIsUnreadable($record)) {
+            return 'danger';
+        }
+
+        return $record->hasCommKeyConfigured() ? 'success' : 'warning';
+    }
+
+    /**
+     * One-time delivery copies are keyed by the authenticated viewer so a
+     * second operator cannot read a colleague's copy without an audit entry.
+     */
+    private static function revealViewerKey(): string
+    {
+        $userId = auth()->id();
+
+        return $userId === null ? 'guest' : (string) $userId;
+    }
+
+    /**
+     * Whether the submitted provider_config contains a non-blank manual
+     * webhook secret. Call this after the Edit page has stripped blank secret
+     * inputs; a true result needs the audit/forget hook after commit.
+     *
+     * @param  array<string, mixed>  $submittedConfig
+     */
+    public static function manualWebhookSecretWasSubmitted(array $submittedConfig): bool
+    {
+        return array_key_exists('webhook_secret', $submittedConfig)
+            && filled($submittedConfig['webhook_secret']);
+    }
+
+    /**
+     * Validate a manually entered webhook secret.
+     *
+     * Blank means "keep the stored value". Anything else must be at least 32
+     * characters of `[A-Za-z0-9._~+/=-]` with no whitespace or control
+     * characters, matching the strength of the generated 64-hex secret.
+     */
+    public static function manualWebhookSecretValidationError(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (! is_string($value)) {
+            return 'The webhook secret must be a valid string.';
+        }
+
+        if (strlen($value) < WebhookSecretRotationService::MANUAL_WEBHOOK_SECRET_MIN_LENGTH) {
+            return 'The webhook secret must be at least ' . WebhookSecretRotationService::MANUAL_WEBHOOK_SECRET_MIN_LENGTH . ' characters.';
+        }
+
+        if (preg_match('/[\s\x00-\x1F\x7F]/', $value) === 1) {
+            return 'The webhook secret must not contain whitespace or control characters.';
+        }
+
+        if (preg_match(WebhookSecretRotationService::MANUAL_WEBHOOK_SECRET_PATTERN, $value) !== 1) {
+            return 'The webhook secret may contain only letters, numbers, and . _ ~ + / = - characters.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Provider configuration inputs stay hidden while the stored payload
+     * cannot be decrypted. Replacing it requires the explicit toggle, which
+     * also prevents the save path from silently re-encrypting an empty array
+     * over the recoverable ciphertext.
+     */
+    protected static function providerConfigEditable(Get $get, ?BiometricDevice $record): bool
+    {
+        if ($record === null || ! self::providerConfigIsUnreadable($record)) {
+            return true;
+        }
+
+        return (bool) $get('replace_unreadable_provider_config');
+    }
+
+    private static function providerConfigIsUnreadable(?BiometricDevice $record): bool
+    {
+        if ($record === null) {
+            return false;
+        }
+
+        $raw = $record->getRawOriginal('provider_config');
+        $key = self::deviceKey($record) . ':' . (is_string($raw) ? md5($raw) : 'null');
+
+        return self::$providerConfigUnreadableCache[$key] ??= $record->providerConfigIsUnreadable();
+    }
+
+    /**
+     * Normalize an Eloquent key for the typed lock/reveal helpers.
+     */
+    private static function deviceKey(BiometricDevice $record): int|string
+    {
+        $key = $record->getKey();
+
+        return is_int($key) || is_string($key) ? $key : 0;
+    }
+
+    public static function resolvedAppUrl(): string
+    {
+        return self::configString('app.url', request()->root() ?: 'http://localhost');
+    }
+
+    private static function configString(string $key, string $default): string
+    {
+        $value = config($key);
+
+        return is_string($value) && $value !== '' ? $value : $default;
+    }
+
+    /**
+     * Non-secret provider_config fields rendered by the form. Edit-page fill
+     * and the drift test derive from this list.
+     *
+     * @return array<int, string>
+     */
+    public static function providerConfigFormFields(?BiometricProvidersEnum $provider): array
+    {
+        return match ($provider) {
+            BiometricProvidersEnum::Rekognition => ['similarity_threshold'],
+            BiometricProvidersEnum::AzureFace => ['confidence_threshold'],
+            BiometricProvidersEnum::BioID => ['enable_liveness'],
+            BiometricProvidersEnum::OnPremise => ['server_url', 'model_type', 'model_path', 'timeout'],
+            BiometricProvidersEnum::Custom => [
+                'api_url',
+                'auth_type',
+                'timeout',
+                'skip_liveness',
+                'path_enroll',
+                'path_verify',
+                'path_liveness',
+                'path_delete',
+                'response_template_id_key',
+                'response_matched_key',
+                'response_confidence_key',
+                'response_liveness_key',
+            ],
+            default => [],
+        };
+    }
+
+    /**
+     * Non-secret provider_config fields that are rendered for every provider.
+     *
+     * Edit-page fill and the form drift test derive from this list; the edit
+     * page must not hardcode the signature header.
+     *
+     * @return array<int, string>
+     */
+    public static function providerConfigCommonFields(): array
+    {
+        return ['webhook_signature_header'];
+    }
+
+    /**
+     * Secret provider_config fields, the providers that render them, and why
+     * any provider excludes them.
+     *
+     * The form drift test fails when a field remains in this map but the form
+     * stops rendering it for a provider that should support it.
+     *
+     * @return array<string, array{providers: array<int, BiometricProvidersEnum>, reason: string}>
+     */
+    public static function providerConfigSecretFieldOwners(): array
+    {
+        return [
+            'webhook_secret' => [
+                'providers' => BiometricProvidersEnum::cases(),
+                'reason' => 'Shared webhook HMAC secret for every provider.',
+            ],
+            'api_key' => [
+                'providers' => [BiometricProvidersEnum::Custom],
+                'reason' => 'Custom HTTP providers only; cloud provider credentials are managed by the platform.',
+            ],
+            'secret' => [
+                'providers' => [BiometricProvidersEnum::Custom],
+                'reason' => 'Custom HTTP providers only; cloud provider credentials are managed by the platform.',
+            ],
+            'headers' => [
+                'providers' => [BiometricProvidersEnum::Custom],
+                'reason' => 'Custom HTTP providers only; cloud providers do not accept arbitrary headers.',
+            ],
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function providerConfigSecretFields(): array
+    {
+        return array_keys(self::providerConfigSecretFieldOwners());
+    }
+
     protected static function isProvider(Get $get, BiometricProvidersEnum $provider): bool
     {
         $value = $get('provider_type');
@@ -827,9 +1513,34 @@ class BiometricDeviceResource extends BaseResource
 
     protected static function isDeviceNative(Get $get): bool
     {
-        $value = $get('provider_type');
+        return BiometricDevice::providerTypeIsDeviceNative($get('provider_type'));
+    }
 
-        return blank($value) || $value === BiometricProvidersEnum::DeviceNative || $value === BiometricProvidersEnum::DeviceNative->value;
+    /**
+     * A key is required on create, when the device has no verifier at all, or
+     * when the transition would stop reading the last native plaintext alias.
+     */
+    private static function commKeyRequired(string $operation, Get $get, ?BiometricDevice $record): bool
+    {
+        if (! (bool) $get('adms_enabled')) {
+            return false;
+        }
+
+        if ($operation === 'create' || $record === null || ! $record->hasCommKeyConfigured()) {
+            return true;
+        }
+
+        return self::commKeyTransitionRequiresKey($get, $record);
+    }
+
+    private static function commKeyTransitionRequiresKey(Get $get, ?BiometricDevice $record): bool
+    {
+        if ($record === null || ! $record->hasOnlyPlaintextCommKeyAlias()) {
+            return false;
+        }
+
+        return BiometricDevice::providerTypeIsDeviceNative($record->provider_type)
+            && ! BiometricDevice::providerTypeIsDeviceNative($get('provider_type'));
     }
 
     /**
