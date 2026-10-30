@@ -726,6 +726,37 @@ XML;
         );
     }
 
+    public function test_adms_endpoints_accessible_without_api_prefix(): void
+    {
+        // Handshake without /api prefix
+        $handshake = $this->get('/iclock/cdata?SN=TEST-SN-001');
+        $handshake->assertOk();
+        $this->assertEquals('OK', $handshake->getContent());
+
+        // Getrequest without /api prefix
+        $getrequest = $this->get('/iclock/getrequest?SN=TEST-SN-001');
+        $getrequest->assertOk();
+        $this->assertEquals('OK', $getrequest->getContent());
+
+        // Devicecmd without /api prefix
+        $command = AdmsDeviceCommand::factory()->sent()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+        ]);
+
+        $devicecmd = $this->call(
+            'POST',
+            '/iclock/devicecmd?SN=TEST-SN-001',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'],
+            "ID={$command->id}&Return=0"
+        );
+        $devicecmd->assertOk();
+        $this->assertSame(AdmsCommandStatusEnum::ACKNOWLEDGED, $command->fresh()?->status);
+    }
+
     /**
      * Post a webhook payload signed the way a provisioned device signs it.
      *

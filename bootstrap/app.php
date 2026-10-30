@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Biometrics\Services\BiometricLogRedactor;
+use App\Http\Controllers\Api\AdmsController;
+use App\Http\Middleware\AuthenticateAdmsDevice;
 use App\Http\Middleware\ErrorContextMiddleware;
 use App\Http\Middleware\ExportDownloadMiddleware;
 use App\Http\Middleware\TeamsPermission;
@@ -14,6 +16,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Livewire\Exceptions\MethodNotFoundException;
 use Livewire\Mechanisms\HandleComponents\CorruptComponentPayloadException;
@@ -42,6 +45,19 @@ $app = Application::configure(basePath: dirname(__DIR__))
         api: __DIR__ . '/../routes/api.php',
 
         apiPrefix: 'api',
+        then: function () {
+            Route::prefix('iclock')->middleware([
+                'throttle:biometric-api',
+                AuthenticateAdmsDevice::class,
+            ])->group(function () {
+                Route::match(['get', 'post'], '/cdata', [AdmsController::class, 'cdata'])
+                    ->name('adms.native.cdata');
+                Route::get('/getrequest', [AdmsController::class, 'getRequest'])
+                    ->name('adms.native.getrequest');
+                Route::post('/devicecmd', [AdmsController::class, 'deviceCmd'])
+                    ->name('adms.native.devicecmd');
+            });
+        },
     )
     ->withMiddleware(function (Middleware $middleware) {
         /** @phpstan-ignore larastan.noEnvCallsOutsideOfConfig */
