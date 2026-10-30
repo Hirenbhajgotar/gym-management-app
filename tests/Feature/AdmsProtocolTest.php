@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use Illuminate\Testing\TestResponse;
 use App\Biometrics\Services\BiometricTimestampParser;
 use App\Biometrics\Services\RedisBiometricCacheService;
 use App\Enums\AdmsCommandStatusEnum;
@@ -27,10 +26,14 @@ use App\Models\GymMember;
 use App\Models\GymSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Testing\TestResponse;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AdmsProtocolTest extends TestCase
@@ -726,35 +729,216 @@ XML;
         );
     }
 
-    public function test_adms_endpoints_accessible_without_api_prefix(): void
+    /**
+     * Every CData URI: canonical and `.aspx`, on both route surfaces.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function cdataUriProvider(): array
     {
-        // Handshake without /api prefix
-        $handshake = $this->get('/iclock/cdata?SN=TEST-SN-001');
-        $handshake->assertOk();
-        $this->assertEquals('OK', $handshake->getContent());
+        return self::admsUriProvider(['cdata', 'cdata.aspx']);
+    }
 
-        // Getrequest without /api prefix
-        $getrequest = $this->get('/iclock/getrequest?SN=TEST-SN-001');
-        $getrequest->assertOk();
-        $this->assertEquals('OK', $getrequest->getContent());
+    /**
+     * Every getrequest URI: canonical and `.aspx`, on both route surfaces.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function getRequestUriProvider(): array
+    {
+        return self::admsUriProvider(['getrequest', 'getrequest.aspx']);
+    }
 
-        // Devicecmd without /api prefix
+    /**
+     * Every devicecmd URI: canonical and `.aspx`, on both route surfaces.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function deviceCmdUriProvider(): array
+    {
+        return self::admsUriProvider(['devicecmd', 'devicecmd.aspx']);
+    }
+
+    /**
+     * Only the `.aspx` CData aliases added by this change.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function aspxCdataUriProvider(): array
+    {
+        return self::admsUriProvider(['cdata.aspx']);
+    }
+
+    /**
+     * @param  list<string>  $endpoints
+     * @return array<string, array{0: string}>
+     */
+    private static function admsUriProvider(array $endpoints): array
+    {
+        $uris = [];
+
+        foreach (['api-prefixed' => '/api/iclock/', 'native' => '/iclock/'] as $surface => $prefix) {
+            foreach ($endpoints as $endpoint) {
+                $uris["{$surface} {$endpoint}"] = [$prefix . $endpoint];
+            }
+        }
+
+        return $uris;
+    }
+
+    #[DataProvider('cdataUriProvider')]
+    public function test_adms_handshake_is_served_on_every_cdata_surface_and_alias(string $uri): void
+    {
+        $response = $this->get($uri . '?SN=TEST-SN-001');
+
+        $response->assertOk();
+        $this->assertStringStartsWith('text/plain', (string) $response->headers->get('Content-Type'));
+        $this->assertSame('OK', $response->getContent());
+
+        $this->device->refresh();
+        $this->assertNotNull($this->device->last_heartbeat_at);
+    }
+
+    #[DataProvider('getRequestUriProvider')]
+    public function test_adms_getrequest_returns_the_pending_command_on_every_surface_and_alias(string $uri): void
+    {
+        $command = AdmsDeviceCommand::factory()->userDelete((string) $this->member->id)->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+        ]);
+
+        $response = $this->get($uri . '?SN=TEST-SN-001');
+
+        $response->assertOk();
+        $content = (string) $response->getContent();
+        $this->assertStringStartsWith('C:' . $command->id . ':', $content);
+        $this->assertStringContainsString('DATA DELETE user', $content);
+        $this->assertStringContainsString("Pin={$this->member->id}", $content);
+        $this->assertSame(AdmsCommandStatusEnum::SENT, $command->fresh()?->status);
+    }
+
+    #[DataProvider('deviceCmdUriProvider')]
+    public function test_adms_devicecmd_acknowledges_on_every_surface_and_alias(string $uri): void
+    {
         $command = AdmsDeviceCommand::factory()->sent()->create([
             'gym_id' => $this->gym->id,
             'device_id' => $this->device->id,
         ]);
 
-        $devicecmd = $this->call(
+        $response = $this->call(
             'POST',
-            '/iclock/devicecmd?SN=TEST-SN-001',
+            $uri . '?SN=TEST-SN-001',
             [],
             [],
             [],
             ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'],
             "ID={$command->id}&Return=0"
         );
-        $devicecmd->assertOk();
+
+        $response->assertOk();
+        $this->assertSame('OK', $response->getContent());
+        $this->assertDatabaseHas('adms_device_commands', [
+            'id' => $command->id,
+            'status' => 'acknowledged',
+            'device_return_code' => '0',
+        ]);
         $this->assertSame(AdmsCommandStatusEnum::ACKNOWLEDGED, $command->fresh()?->status);
+    }
+
+    #[DataProvider('aspxCdataUriProvider')]
+    public function test_adms_aspx_cdata_accepts_attlog_attendance_push(string $uri): void
+    {
+        Event::fake([MemberCheckedIn::class]);
+
+        $timestamp = now()->subHours(2)->format('Y-m-d H:i:s');
+
+        $response = $this->call(
+            'POST',
+            $uri . '?SN=TEST-SN-001&table=ATTLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            "{$this->member->id}\t{$timestamp}\t0\t15\t0"
+        );
+
+        $response->assertOk();
+        $this->assertSame('OK', $response->getContent());
+        $this->assertDatabaseHas('attendances', [
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'attendanceable_id' => $this->member->id,
+            'provider_type' => 'adms',
+        ]);
+        Event::assertDispatched(MemberCheckedIn::class);
+    }
+
+    #[DataProvider('aspxCdataUriProvider')]
+    public function test_adms_aspx_cdata_rejects_unsupported_tables(string $uri): void
+    {
+        $timestamp = now()->subHours(2)->format('Y-m-d H:i:s');
+
+        $response = $this->call(
+            'POST',
+            $uri . '?SN=TEST-SN-001&table=OPERLOG',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            "{$this->member->id}\t{$timestamp}\t0\t15\t0"
+        );
+
+        $response->assertStatus(400);
+        $this->assertSame('ERR: Unsupported table', $response->getContent());
+        $this->assertDatabaseMissing('attendances', [
+            'device_id' => $this->device->id,
+            'attendanceable_id' => $this->member->id,
+        ]);
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function unsupportedAliasMethodProvider(): array
+    {
+        return [
+            'api getrequest aspx rejects POST' => ['POST', '/api/iclock/getrequest.aspx'],
+            'native getrequest aspx rejects POST' => ['POST', '/iclock/getrequest.aspx'],
+            'api devicecmd aspx rejects GET' => ['GET', '/api/iclock/devicecmd.aspx'],
+            'native devicecmd aspx rejects GET' => ['GET', '/iclock/devicecmd.aspx'],
+        ];
+    }
+
+    #[DataProvider('unsupportedAliasMethodProvider')]
+    public function test_aspx_aliases_reject_methods_their_canonical_twins_reject(string $method, string $uri): void
+    {
+        $this->call($method, $uri . '?SN=TEST-SN-001')->assertStatus(405);
+    }
+
+    public function test_every_iclock_route_has_an_aspx_twin_with_the_same_contract(): void
+    {
+        $iclockRoutes = collect(Route::getRoutes()->getRoutes())
+            ->filter(fn (RoutingRoute $route): bool => str_contains($route->uri(), 'iclock'))
+            ->keyBy(fn (RoutingRoute $route): string => $route->uri());
+
+        $this->assertNotEmpty($iclockRoutes);
+
+        foreach ($iclockRoutes as $uri => $route) {
+            if (str_ends_with($uri, '.aspx')) {
+                continue;
+            }
+
+            $aliasUri = $uri . '.aspx';
+
+            $this->assertTrue($iclockRoutes->has($aliasUri), "Missing .aspx twin for {$uri}.");
+
+            $alias = $iclockRoutes->get($aliasUri);
+            $this->assertInstanceOf(RoutingRoute::class, $alias);
+
+            $this->assertSame($route->methods(), $alias->methods(), "Method mismatch for {$aliasUri}.");
+            $this->assertSame($route->getActionName(), $alias->getActionName(), "Controller mismatch for {$aliasUri}.");
+            $this->assertSame($route->gatherMiddleware(), $alias->gatherMiddleware(), "Middleware mismatch for {$aliasUri}.");
+        }
     }
 
     /**

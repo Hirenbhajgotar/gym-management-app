@@ -255,16 +255,23 @@ Route::post('/v1/biometric/webhook/{token}', [BiometricWebhookController::class,
     ->name('api.biometric.webhook');
 
 // ADMS Protocol Routes (eSSL/ZKTeco push protocol)
+// Mirror of the native iclock group in bootstrap/app.php: keep URIs and names in sync.
 Route::prefix('iclock')->middleware([
     'throttle:biometric-api',
     AuthenticateAdmsDevice::class,
 ])->group(function () {
     Route::match(['get', 'post'], '/cdata', [AdmsController::class, 'cdata'])
         ->name('adms.cdata');
+    Route::match(['get', 'post'], '/cdata.aspx', [AdmsController::class, 'cdata'])
+        ->name('adms.cdata.aspx');
     Route::get('/getrequest', [AdmsController::class, 'getRequest'])
         ->name('adms.getrequest');
+    Route::get('/getrequest.aspx', [AdmsController::class, 'getRequest'])
+        ->name('adms.getrequest.aspx');
     Route::post('/devicecmd', [AdmsController::class, 'deviceCmd'])
         ->name('adms.devicecmd');
+    Route::post('/devicecmd.aspx', [AdmsController::class, 'deviceCmd'])
+        ->name('adms.devicecmd.aspx');
 });
 
 // Hikvision ISAPI event push (uses biometric device token auth)
