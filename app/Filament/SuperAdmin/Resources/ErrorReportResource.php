@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\SuperAdmin\Resources;
 
+use App\Biometrics\Services\BiometricLogRedactor;
 use App\Enums\DefaultRole;
 use App\Enums\ErrorPriority;
 use App\Enums\ErrorStatus;
@@ -11,14 +12,15 @@ use App\Filament\BaseResources\BaseResource;
 use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages\CreateErrorReport;
 use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages\EditErrorReport;
 use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages\ListErrorReports;
+use App\Helpers\ClipboardHelper;
 use App\Helpers\ParserHelper;
 use App\Models\ErrorReport;
-use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
@@ -32,6 +34,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\HtmlString;
 
 class ErrorReportResource extends BaseResource
 {
@@ -62,65 +65,116 @@ class ErrorReportResource extends BaseResource
                     ->schema([
                         Select::make('status')
                             ->options(ErrorStatus::class)
+                            ->default(ErrorStatus::PENDING)
                             ->required(),
 
                         Select::make('priority')
                             ->options(ErrorPriority::class)
+                            ->default(ErrorPriority::MEDIUM)
                             ->required(),
 
-                        TextInput::make('error_type'),
+                        Select::make('error_type')
+                            ->label('Type')
+                            ->options(self::errorTypeOptions())
+                            ->default('user_reported')
+                            ->required(),
 
                         Textarea::make('error_message')
                             ->rows(4)
+                            ->visible(fn (string $operation): bool => $operation === 'create')
+                            ->required(fn (Get $get): bool => blank($get('user_description')))
+                            ->dehydrateStateUsing(fn (?string $state): ?string => $state === null
+                                ? null
+                                : BiometricLogRedactor::redactText($state))
+                            ->columnSpanFull(),
+
+                        Placeholder::make('error_message_view')
+                            ->label('Error Message')
+                            ->content(fn (?ErrorReport $record): HtmlString => self::preformatted(
+                                BiometricLogRedactor::redactText($record?->error_message)
+                            ))
+                            ->visible(fn (string $operation): bool => $operation === 'edit')
                             ->columnSpanFull(),
 
                         Textarea::make('user_description')
                             ->label('User Description')
                             ->rows(4)
+                            ->visible(fn (string $operation): bool => $operation === 'create')
+                            ->required(fn (Get $get): bool => blank($get('error_message')))
+                            ->helperText('Describe the problem in your own words. This text cannot be edited after the report is created.')
+                            ->dehydrateStateUsing(fn (?string $state): ?string => $state === null
+                                ? null
+                                : BiometricLogRedactor::redactText($state))
+                            ->columnSpanFull(),
+
+                        // Read-only on edit: Filament's formatStateUsing() mutates
+                        // the hydrated state, so a writable redacted field would
+                        // be saved back and corrupt the stored evidence.
+                        Placeholder::make('user_description_view')
+                            ->label('User Description')
+                            ->content(fn (?ErrorReport $record): HtmlString => self::preformatted(
+                                BiometricLogRedactor::redactText($record?->user_description)
+                            ))
+                            ->visible(fn (string $operation): bool => $operation === 'edit')
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
 
                 Section::make('Technical Details')
+                    ->description('Read-only. These fields are redacted for display and are never written back to the stored report.')
+                    ->visible(fn (string $operation): bool => $operation === 'edit')
                     ->schema([
-                        TextInput::make('origin_url')
+                        Placeholder::make('origin_url_view')
                             ->label('Origin URL')
-                            ->helperText('Original URL of the page where error occurred')
-                            ->disabled()
+                            ->content(fn (?ErrorReport $record): string => $record?->redactedOriginUrl() ?? '')
                             ->columnSpanFull(),
 
-                        TextInput::make('livewire_component')
+                        Placeholder::make('livewire_component_view')
                             ->label('Livewire/Filament Component')
-                            ->disabled(),
+                            ->content(fn (?ErrorReport $record): string => (string) $record?->livewire_component),
 
-                        TextInput::make('php_version')
+                        Placeholder::make('php_version_view')
                             ->label('PHP Version')
-                            ->disabled(),
+                            ->content(fn (?ErrorReport $record): string => (string) $record?->php_version),
 
-                        TextInput::make('laravel_version')
+                        Placeholder::make('laravel_version_view')
                             ->label('Laravel Version')
-                            ->disabled(),
+                            ->content(fn (?ErrorReport $record): string => (string) $record?->laravel_version),
 
-                        Textarea::make('markdown_report')
+                        Placeholder::make('markdown_report_view')
                             ->label('Full Markdown Report')
-                            ->helperText('The Copy as Markdown action sends the contents of this field to the clipboard.')
-                            ->disabled()
-                            ->rows(20)
+                            ->content(fn (?ErrorReport $record): HtmlString => self::preformatted(
+                                $record?->toRedactedMarkdown() ?? ''
+                            ))
                             ->columnSpanFull(),
 
-                        Textarea::make('stack_trace')
+                        Placeholder::make('stack_trace_view')
                             ->label('Raw Stack Trace')
-                            ->disabled()
-                            ->rows(10)
+                            ->content(fn (?ErrorReport $record): HtmlString => self::preformatted(
+                                BiometricLogRedactor::redactText($record?->stack_trace)
+                            ))
                             ->columnSpanFull(),
 
-                        KeyValue::make('context')
-                            ->disabled()
+                        Placeholder::make('context_view')
+                            ->label('Context')
+                            ->content(fn (?ErrorReport $record): HtmlString => self::preformatted(
+                                (string) json_encode(
+                                    $record?->redactedContextForDisplay() ?? [],
+                                    JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+                                )
+                            ))
                             ->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->collapsible(),
             ]);
+    }
+
+    private static function preformatted(string $value): HtmlString
+    {
+        return new HtmlString(
+            '<pre class="whitespace-pre-wrap break-words text-sm">' . e($value) . '</pre>'
+        );
     }
 
     public static function table(Table $table): Table
@@ -147,11 +201,13 @@ class ErrorReportResource extends BaseResource
 
                 TextColumn::make('error_type')
                     ->label('Type')
-                    ->badge(),
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => BiometricLogRedactor::redactText($state)),
 
                 TextColumn::make('error_message')
                     ->label('Error')
                     ->limit(50)
+                    ->formatStateUsing(fn (?string $state): string => BiometricLogRedactor::redactText($state))
                     ->searchable(),
 
                 TextColumn::make('occurred_at')
@@ -166,12 +222,7 @@ class ErrorReportResource extends BaseResource
                     ->options(ErrorPriority::class),
 
                 SelectFilter::make('error_type')
-                    ->options([
-                        'auto_reported' => 'Auto Reported',
-                        'user_reported' => 'User Reported',
-                        'exception' => 'Exception',
-                        'validation' => 'Validation',
-                    ]),
+                    ->options(self::errorTypeOptions()),
             ])
             ->actions([
                 ActionGroup::make([
@@ -231,17 +282,31 @@ class ErrorReportResource extends BaseResource
             ->label('Copy as Markdown')
             ->icon('heroicon-o-clipboard-document')
             ->action(function (ErrorReport $record, $livewire) {
-                // Use json_encode to safely escape the string for JavaScript
-                $jsString = json_encode($record->toMarkdown());
-
-                $livewire->js("
-                    window.navigator.clipboard.writeText({$jsString});
-                    new FilamentNotification()
-                        .title('Copied to clipboard')
-                        .success()
-                        .send();
-                ");
+                // Historical rows may predate write-time redaction. The model
+                // owns the single redacted export used by both copy actions.
+                $livewire->js(self::copyToClipboardScript($record->toRedactedMarkdown()));
             });
+    }
+
+    /**
+     * Clipboard script with a secure-context fallback for HTTP/LAN panels.
+     */
+    public static function copyToClipboardScript(string $value): string
+    {
+        return ClipboardHelper::copyScript($value);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function errorTypeOptions(): array
+    {
+        return [
+            'auto_reported' => 'Auto Reported',
+            'user_reported' => 'User Reported',
+            'exception' => 'Exception',
+            'validation' => 'Validation',
+        ];
     }
 
     public static function getRelations(): array

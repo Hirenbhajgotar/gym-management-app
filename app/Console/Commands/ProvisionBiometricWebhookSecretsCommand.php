@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Biometrics\Services\WebhookSecretRotationService;
 use App\Models\BiometricDevice;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ProvisionBiometricWebhookSecretsCommand extends Command
 {
@@ -19,6 +22,7 @@ class ProvisionBiometricWebhookSecretsCommand extends Command
     protected $signature = 'biometrics:provision-webhook-secrets
                             {--gym= : Only provision devices for this gym id}
                             {--dry-run : Report what would change without writing}
+                            {--replace-unreadable : Replace a provider_config ciphertext that cannot be decrypted}
                             {--reveal : Print each device\'s webhook secret so it can be installed on the terminal}';
 
     /**
@@ -60,55 +64,133 @@ class ProvisionBiometricWebhookSecretsCommand extends Command
             }
         }
 
-        $dryRun = (bool) $this->option('dry-run');
-        $reveal = (bool) $this->option('reveal');
+        $dryRun = $this->option('dry-run');
+        $reveal = $this->option('reveal');
+        $replaceUnreadable = $this->option('replace-unreadable');
 
         $examinedCount = 0;
         $provisionedCount = 0;
         $alreadyConfiguredCount = 0;
+        $unreadableCount = 0;
+        $lockFailureCount = 0;
 
         /** @var array<int, array{name: string, secret: string, provisioned: bool}> $revealed */
         $revealed = [];
 
         BiometricDevice::query()
             ->when($gymId, fn (Builder $q): Builder => $q->where('gym_id', $gymId))
-            ->chunkById(100, function ($devices) use ($dryRun, $reveal, &$examinedCount, &$provisionedCount, &$alreadyConfiguredCount, &$revealed): void {
+            ->chunkById(100, function ($devices) use ($dryRun, $reveal, $replaceUnreadable, &$examinedCount, &$provisionedCount, &$alreadyConfiguredCount, &$unreadableCount, &$lockFailureCount, &$revealed): void {
                 foreach ($devices as $device) {
                     $examinedCount++;
 
-                    $config = is_array($device->provider_config) ? $device->provider_config : [];
+                    // The command and the edit/rotation paths all rewrite the
+                    // whole encrypted config. Serialize on the same per-device
+                    // lock or one writer silently overwrites the other.
+                    try {
+                        $lock = Cache::lock(
+                            WebhookSecretRotationService::providerConfigLockKey(self::deviceKey($device)),
+                            WebhookSecretRotationService::LOCK_TTL_SECONDS
+                        );
 
-                    if (filled($config['webhook_secret'] ?? null)) {
-                        $alreadyConfiguredCount++;
+                        $acquired = $lock->get();
+                    } catch (Throwable $exception) {
+                        Log::warning('Biometric webhook secret provisioning could not create a provider-config lock', [
+                            'device_id' => $device->getKey(),
+                            'exception' => $exception::class,
+                        ]);
 
-                        if ($reveal) {
-                            $revealed[$device->id] = [
-                                'name' => $device->device_name,
-                                'secret' => (string) $config['webhook_secret'],
-                                'provisioned' => false,
-                            ];
-                        }
+                        $lock = null;
+                        $acquired = false;
+                    }
+
+                    if (! $acquired || $lock === null) {
+                        $lockFailureCount++;
+
+                        $this->warn(sprintf(
+                            'Device [ID: %d, SN: %s] is being changed by another process; skipped.',
+                            $device->id,
+                            $device->device_serial ?? 'n/a'
+                        ));
 
                         continue;
                     }
 
-                    $secret = null;
+                    try {
+                        // Another writer may have changed the config since this
+                        // chunk was selected; re-check every condition against
+                        // the row read under the lock.
+                        $device->refresh();
 
-                    if (! $dryRun) {
-                        $secret = bin2hex(random_bytes(32));
-                        $config['webhook_secret'] = $secret;
-                        $device->provider_config = $config;
-                        $device->save();
-                    }
+                        if ($device->providerConfigIsUnreadable()) {
+                            if (! $replaceUnreadable) {
+                                // The ciphertext may be recoverable with an old
+                                // APP_KEY or a backup. Never re-encrypt an empty
+                                // array over it as a side effect of provisioning.
+                                $unreadableCount++;
 
-                    $provisionedCount++;
+                                continue;
+                            }
+                        }
 
-                    if ($reveal && $secret !== null) {
-                        $revealed[$device->id] = [
-                            'name' => $device->device_name,
-                            'secret' => $secret,
-                            'provisioned' => true,
-                        ];
+                        $config = is_array($device->provider_config) ? $device->provider_config : [];
+                        $existingSecret = $config['webhook_secret'] ?? null;
+                        $hasUsableSecret = is_string($existingSecret) && $existingSecret !== '';
+                        $hasMalformedSecret = $existingSecret !== null
+                            && $existingSecret !== ''
+                            && ! $hasUsableSecret;
+
+                        if ($hasMalformedSecret && ! $replaceUnreadable) {
+                            // A malformed (array/numeric) secret is not usable for
+                            // HMAC verification and must not be silently treated as
+                            // configured. Only an explicit replacement discards it.
+                            $unreadableCount++;
+                            $this->warn(sprintf(
+                                'Device [ID: %d, SN: %s] has a non-string webhook secret; skipped. Re-run with --replace-unreadable to replace it.',
+                                $device->id,
+                                $device->device_serial ?? 'n/a'
+                            ));
+
+                            continue;
+                        }
+
+                        if ($hasUsableSecret) {
+                            $alreadyConfiguredCount++;
+
+                            if ($reveal) {
+                                $revealed[$device->id] = [
+                                    'name' => $device->device_name,
+                                    'secret' => is_string($existingSecret) ? $existingSecret : '',
+                                    'provisioned' => false,
+                                ];
+                            }
+
+                            continue;
+                        }
+
+                        $secret = null;
+
+                        if (! $dryRun) {
+                            $secret = bin2hex(random_bytes(32));
+                            $config['webhook_secret'] = $secret;
+                            $device->provider_config = $config;
+                            $device->save();
+                        }
+
+                        $provisionedCount++;
+
+                        if ($reveal && $secret !== null) {
+                            $revealed[$device->id] = [
+                                'name' => $device->device_name,
+                                'secret' => $secret,
+                                'provisioned' => true,
+                            ];
+                        }
+                    } finally {
+                        try {
+                            $lock->release();
+                        } catch (Throwable) {
+                            // The lock TTL is the backstop.
+                        }
                     }
                 }
             });
@@ -119,6 +201,20 @@ class ProvisionBiometricWebhookSecretsCommand extends Command
             ($dryRun ? 'Dry run complete. ' : 'Provisioning complete. ')
             . "{$examinedCount} device(s) examined, {$provisionedCount} {$action}, {$alreadyConfiguredCount} already had a secret."
         );
+
+        if ($unreadableCount > 0) {
+            $this->error(sprintf(
+                '%d device(s) have an unreadable provider_config or a non-string webhook secret and were left untouched. Re-run with --replace-unreadable to discard the existing value, or recover it with the original application key first.',
+                $unreadableCount
+            ));
+        }
+
+        if ($lockFailureCount > 0) {
+            $this->error(sprintf(
+                '%d device(s) were skipped because another change held their provider configuration lock. Re-run the command once those changes finish.',
+                $lockFailureCount
+            ));
+        }
 
         if ($reveal) {
             if ($dryRun) {
@@ -137,9 +233,11 @@ class ProvisionBiometricWebhookSecretsCommand extends Command
             'examined' => $examinedCount,
             'provisioned' => $provisionedCount,
             'already_configured' => $alreadyConfiguredCount,
+            'unreadable_skipped' => $unreadableCount,
+            'lock_failures' => $lockFailureCount,
         ]);
 
-        return self::SUCCESS;
+        return $unreadableCount > 0 || $lockFailureCount > 0 ? self::FAILURE : self::SUCCESS;
     }
 
     /**
@@ -169,5 +267,15 @@ class ProvisionBiometricWebhookSecretsCommand extends Command
 
         $this->newLine();
         $this->warn('Treat these values as credentials: a device that cannot sign will have its events rejected.');
+    }
+
+    /**
+     * Normalize an Eloquent key for the typed provider-config lock helper.
+     */
+    private static function deviceKey(BiometricDevice $device): int|string
+    {
+        $key = $device->getKey();
+
+        return is_int($key) || is_string($key) ? $key : 0;
     }
 }

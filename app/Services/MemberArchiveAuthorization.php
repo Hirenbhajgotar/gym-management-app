@@ -84,9 +84,7 @@ class MemberArchiveAuthorization
         // would authorise an unattributable write as the previous operator —
         // the exact fail-open this gate exists to prevent. Every caller passes
         // the operator it resolved explicitly.
-        if (! $operator instanceof User) {
-            throw new AuthorizationException($unattributableMessage);
-        }
+        throw_unless($operator instanceof User, AuthorizationException::class, $unattributableMessage);
 
         throw_unless(
             $operator->can($ability, $member ?? GymMember::class),

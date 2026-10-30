@@ -9,6 +9,7 @@ use App\Enums\ErrorCategory;
 use App\Enums\ErrorPriority;
 use App\Models\ErrorReport;
 use App\Services\ErrorReporting\ExceptionMarkdownFormatter;
+use App\Services\ErrorReporting\ExceptionTraceFormatter;
 use App\Services\ErrorReporting\RequestOriginResolver;
 use Error;
 use Exception;
@@ -34,6 +35,7 @@ class ErrorReportService
     public function __construct(
         private readonly RequestOriginResolver $originResolver,
         private readonly ExceptionMarkdownFormatter $markdownFormatter,
+        private readonly ExceptionTraceFormatter $traceFormatter,
         private readonly ExceptionStorageService $exceptionStorage,
     ) {}
 
@@ -46,6 +48,11 @@ class ErrorReportService
         string $errorCategory = ErrorCategory::OTHER->value,
         ?string $exceptionId = null,
     ): ErrorReport {
+        $errorMessage = BiometricLogRedactor::redactText($errorMessage);
+        $userDescription = $userDescription !== null
+            ? BiometricLogRedactor::redactText($userDescription)
+            : null;
+
         try {
             /** @var array{requested_url: string, origin_url: string, livewire_component: string|null} $origin */
             $origin = $this->originResolver->resolve(request());
@@ -58,6 +65,10 @@ class ErrorReportService
             $context['exception_class'] = $exceptionData['exceptionClass'];
             $stackTrace = $exceptionData['stackTrace'];
             $errorHash = $exceptionData['errorHash'];
+
+            if ($exceptionData['databaseError'] !== null) {
+                $context['database_error'] = $exceptionData['databaseError'];
+            }
 
             $markdownReport = $exception
                 ? $this->markdownFormatter->format($exception, request(), $origin)
@@ -87,8 +98,8 @@ class ErrorReportService
             ]);
         } catch (Exception $e) {
             Log::error('Failed to create ErrorReport', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'error' => BiometricLogRedactor::redactText($e->getMessage()),
+                'trace' => $this->traceFormatter->format($e),
             ]);
             throw $e;
         }
@@ -107,7 +118,9 @@ class ErrorReportService
         }
 
         return $this->reportError(
-            errorMessage: $exception->getMessage(),
+            errorMessage: $exception instanceof QueryException
+                ? BiometricLogRedactor::redactText($exception->getSql())
+                : $exception->getMessage(),
             userDescription: $userDescription,
             exception: $exception,
             errorType: $reportType,
@@ -149,15 +162,26 @@ class ErrorReportService
             'origin_url' => $origin['origin_url'],
             'livewire_component' => $origin['livewire_component'],
             'method' => request()->method(),
-            'user_agent' => request()->header('User-Agent'),
+            'user_agent' => BiometricLogRedactor::redactText(request()->header('User-Agent')),
             'ip' => request()->ip(),
-            'referer' => request()->header('Referer'),
+            'referer' => $this->originResolver->redactUrl((string) request()->header('Referer')),
             'route' => request()->route()?->getName(),
             'headers' => $redactedHeaders,
-            'request_data' => $this->sanitizeRequestData(request()->all()),
+            'request_data' => BiometricLogRedactor::sanitizeRequestData(request()->all()),
         ];
     }
 
+    /**
+     * @return array{
+     *     errorMessage: string,
+     *     stackTrace: string|null,
+     *     file: string|null,
+     *     line: int|null,
+     *     exceptionClass: string|null,
+     *     errorHash: string|null,
+     *     databaseError: array{sqlstate: string, driver_code: int|string|null, driver_message: string}|null
+     * }
+     */
     private function extractExceptionData(?Throwable $exception = null, ?string $exceptionId = null): array
     {
         $stackTrace = null;
@@ -166,24 +190,43 @@ class ErrorReportService
         $line = null;
         $exceptionClass = null;
         $errorMessage = '';
+        $databaseError = null;
 
         if ($exceptionId) {
             $exceptionData = $this->exceptionStorage->retrieve($exceptionId);
 
             if ($exceptionData) {
-                $stackTrace = $exceptionData['trace'] ?? null;
-                $file = $exceptionData['file'] ?? null;
-                $line = $exceptionData['line'] ?? null;
-                $exceptionClass = $exceptionData['class'] ?? null;
-                $errorMessage = $exceptionData['message'] ?? '';
+                $storedTrace = $exceptionData['trace'] ?? null;
+                $stackTrace = is_string($storedTrace)
+                    ? BiometricLogRedactor::redactText($storedTrace)
+                    : null;
+                $storedFile = $exceptionData['file'] ?? null;
+                $file = is_string($storedFile) ? $storedFile : null;
+                $storedLine = $exceptionData['line'] ?? null;
+                $line = is_int($storedLine) ? $storedLine : null;
+                $storedClass = $exceptionData['class'] ?? null;
+                $exceptionClass = is_string($storedClass) ? $storedClass : null;
+                $storedMessage = $exceptionData['message'] ?? '';
+                $errorMessage = is_string($storedMessage)
+                    ? BiometricLogRedactor::redactText($storedMessage)
+                    : '';
             }
         } elseif ($exception) {
-            $stackTrace = $exception->getTraceAsString();
+            $stackTrace = $this->traceFormatter->format($exception);
             $file = $exception->getFile();
             $line = $exception->getLine();
             $exceptionClass = get_class($exception);
             $errorHash = $this->generateErrorHash($exception);
-            $errorMessage = $exception->getMessage();
+            // QueryException interpolates bindings into its message. The SQL
+            // with placeholders is enough for diagnosis, but a raw literal in
+            // the SQL (e.g. a `whereRaw` key) still needs redaction.
+            $errorMessage = $exception instanceof QueryException
+                ? BiometricLogRedactor::redactText($exception->getSql())
+                : BiometricLogRedactor::redactText($exception->getMessage());
+
+            if ($exception instanceof QueryException) {
+                $databaseError = $this->queryExceptionDiagnostics($exception);
+            }
         }
 
         return [
@@ -193,12 +236,8 @@ class ErrorReportService
             'line' => $line,
             'exceptionClass' => $exceptionClass,
             'errorHash' => $errorHash,
+            'databaseError' => $databaseError,
         ];
-    }
-
-    private function sanitizeRequestData(array $data): array
-    {
-        return BiometricLogRedactor::redact($data);
     }
 
     public function determinePriority(Throwable $exception): string
@@ -284,13 +323,94 @@ class ErrorReportService
     private function generateErrorHash(Throwable $exception): string
     {
         $data = [
-            'message' => $exception->getMessage(),
+            // Deduplication must not become an offline oracle for the raw
+            // 6-digit comm key. Hash the same redacted message that is stored;
+            // a raw literal in QueryException SQL must not enter the hash.
+            'message' => $exception instanceof QueryException
+                ? BiometricLogRedactor::redactText($exception->getSql())
+                : BiometricLogRedactor::redactText($exception->getMessage()),
             'file' => $exception->getFile(),
             'line' => $exception->getLine(),
             'class' => get_class($exception),
         ];
 
-        return hash('sha256', json_encode($data));
+        if ($exception instanceof QueryException) {
+            $diagnostics = $this->queryExceptionDiagnostics($exception);
+
+            // The same SQL at the same location can fail for different
+            // reasons (duplicate key vs deadlock vs missing table). Include the
+            // SQLSTATE, driver code, and redacted driver message so those do
+            // not collapse into one duplicate group. Bindings are never part
+            // of the hash input.
+            $data['sqlstate'] = $diagnostics['sqlstate'];
+            $data['driver_code'] = $diagnostics['driver_code'];
+            $data['driver_message'] = $diagnostics['driver_message'];
+        }
+
+        $encoded = json_encode($data, JSON_INVALID_UTF8_SUBSTITUTE);
+
+        return hash('sha256', is_string($encoded) ? $encoded : implode('|', $data));
+    }
+
+    /**
+     * Structured, binding-free database diagnostics.
+     *
+     * The SQL kept in the report and hash uses `?` placeholders; the driver
+     * message is redacted and scrubbed of any bound value the driver echoed
+     * back (MySQL quotes the offending value in a duplicate-key error).
+     *
+     * @return array{sqlstate: string, driver_code: int|string|null, driver_message: string}
+     */
+    private function queryExceptionDiagnostics(QueryException $exception): array
+    {
+        $errorInfo = $exception->errorInfo;
+        $errorInfo = is_array($errorInfo) ? $errorInfo : [];
+
+        $sqlState = (string) $exception->getCode();
+
+        if (($sqlState === '' || $sqlState === '0') && isset($errorInfo[0]) && is_scalar($errorInfo[0])) {
+            $sqlState = (string) $errorInfo[0];
+        }
+
+        $driverCode = $errorInfo[1] ?? null;
+
+        if (! is_int($driverCode) && ! is_string($driverCode)) {
+            $driverCode = null;
+        }
+
+        $driverMessage = isset($errorInfo[2]) && is_string($errorInfo[2]) ? $errorInfo[2] : '';
+
+        return [
+            'sqlstate' => $sqlState,
+            'driver_code' => $driverCode,
+            'driver_message' => $this->redactDatabaseDriverMessage($driverMessage, $exception->getBindings()),
+        ];
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $bindings
+     */
+    private function redactDatabaseDriverMessage(string $message, array $bindings): string
+    {
+        $message = BiometricLogRedactor::redactText($message);
+
+        foreach ($bindings as $binding) {
+            if (! is_string($binding) && ! is_int($binding) && ! is_float($binding)) {
+                continue;
+            }
+
+            $value = (string) $binding;
+
+            // Very short bindings (row ids, 0/1 flags) would replace arbitrary
+            // digits in the diagnostic and are not credentials.
+            if (strlen($value) < 4) {
+                continue;
+            }
+
+            $message = str_replace($value, '[REDACTED]', $message);
+        }
+
+        return $message;
     }
 
     public function shouldAutoReport(Throwable $exception): bool

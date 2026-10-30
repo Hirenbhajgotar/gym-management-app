@@ -204,9 +204,7 @@ class MemberArchiveIsolationTest extends TestCase
         $this->bindServiceWithArchiveCalls(function (MemberArchiveService $real, GymMember $member) use (&$calls): bool {
             $calls++;
 
-            if ($calls === 101) {
-                throw new RuntimeException('member exploded');
-            }
+            throw_if($calls === 101, RuntimeException::class, 'member exploded');
 
             return $real->archiveAsSystem($member);
         });

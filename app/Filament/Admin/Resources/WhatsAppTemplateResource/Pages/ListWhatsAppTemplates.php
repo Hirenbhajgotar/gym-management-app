@@ -36,7 +36,7 @@ class ListWhatsAppTemplates extends ListRecords
                         ->options(
                             fn () => WhatsAppTemplate::getDefaults()
                                 ->mapWithKeys(fn ($template) => [$template->name => $template->display_name ?? $template->name])
-                                ->toArray()
+                                ->all()
                         )
                         ->columns(2)
                         ->required(),

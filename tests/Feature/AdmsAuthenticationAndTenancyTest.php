@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Biometrics\Services\AdmsDeviceAuthenticator;
+use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\AuthenticateBiometricDevice;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Api\AdmsController;
+use Illuminate\Support\Facades\DB;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\DefaultRole;
@@ -31,6 +37,8 @@ class AdmsAuthenticationAndTenancyTest extends TestCase
     {
         parent::setUp();
 
+        config(['biometrics.adms.pbkdf2_iterations' => 1000]);
+
         $this->user = User::factory()->create();
         $this->gym = Gym::factory()
             ->hasAttached($this->user, ['role' => DefaultRole::GYM_OWNER->value, 'active' => true], 'users')
@@ -55,7 +63,7 @@ class AdmsAuthenticationAndTenancyTest extends TestCase
         );
 
         $response->assertUnauthorized();
-        $this->assertStringContainsString('ERR: Invalid or missing pushcommkey', (string) $response->getContent());
+        $this->assertStringContainsString('ERR: Unauthorized', (string) $response->getContent());
     }
 
     public function test_adms_request_with_invalid_comm_key_fails(): void
@@ -66,7 +74,7 @@ class AdmsAuthenticationAndTenancyTest extends TestCase
         );
 
         $response->assertUnauthorized();
-        $this->assertStringContainsString('ERR: Invalid or missing pushcommkey', (string) $response->getContent());
+        $this->assertStringContainsString('ERR: Unauthorized', (string) $response->getContent());
     }
 
     public function test_adms_request_with_valid_comm_key_in_query_succeeds(): void
@@ -225,5 +233,268 @@ class AdmsAuthenticationAndTenancyTest extends TestCase
             ->getJson('/api/leads/source/facebook');
 
         $response->assertForbidden();
+    }
+
+    public function test_adms_request_with_salted_pbkdf2_key_tolerates_query_whitespace(): void
+    {
+        $salt = BiometricDevice::generateCommKeySalt();
+        $this->device->forceFill([
+            'adms_comm_key_hash' => BiometricDevice::hashCommKey('123456', $salt),
+            'adms_comm_key_salt' => $salt,
+        ])->saveQuietly();
+        $this->assertNotNull($this->device->refresh()->adms_comm_key_salt);
+
+        $response = $this->call(
+            'GET',
+            '/api/iclock/cdata?SN=SN-AUTH-TEST-001&pushcommkey=%20123%20456%20'
+        );
+
+        $response->assertOk();
+        $this->assertEquals('OK', $response->getContent());
+    }
+
+    public function test_adms_request_with_salted_pbkdf2_key_tolerates_header_and_body_whitespace(): void
+    {
+        $salt = BiometricDevice::generateCommKeySalt();
+        $this->device->forceFill([
+            'adms_comm_key_hash' => BiometricDevice::hashCommKey('123456', $salt),
+            'adms_comm_key_salt' => $salt,
+        ])->saveQuietly();
+        $this->assertNotNull($this->device->refresh()->adms_comm_key_salt);
+
+        $headerResponse = $this->call(
+            'GET',
+            '/api/iclock/cdata?SN=SN-AUTH-TEST-001',
+            [],
+            [],
+            [],
+            ['HTTP_X_PUSHCOMMKEY' => ' 123 456 ']
+        );
+        $headerResponse->assertOk();
+
+        $bodyResponse = $this->call(
+            'POST',
+            '/api/iclock/cdata?SN=SN-AUTH-TEST-001&table=ATTLOG',
+            ['pushcommkey' => ' 123 456 ']
+        );
+        $bodyResponse->assertOk();
+    }
+
+    public function test_adms_auth_failures_return_a_uniform_body_for_unknown_and_invalid_devices(): void
+    {
+        $unknown = $this->call('GET', '/api/iclock/cdata?SN=SN-DOES-NOT-EXIST&pushcommkey=123456');
+        $unknown->assertUnauthorized();
+        $this->assertSame('ERR: Unauthorized', $unknown->getContent());
+
+        $invalid = $this->call('GET', '/api/iclock/cdata?SN=SN-AUTH-TEST-001&pushcommkey=654321');
+        $invalid->assertUnauthorized();
+        $this->assertSame('ERR: Unauthorized', $invalid->getContent());
+    }
+
+    public function test_adms_device_locks_out_after_repeated_failed_attempts_and_a_valid_key_is_rejected_until_the_lockout_expires(): void
+    {
+        config([
+            'biometrics.adms.auth_max_failures' => 3,
+            'biometrics.adms.auth_lockout_seconds' => 60,
+        ]);
+
+        $salt = BiometricDevice::generateCommKeySalt();
+        $this->device->forceFill([
+            'adms_comm_key_hash' => BiometricDevice::hashCommKey('123456', $salt),
+            'adms_comm_key_salt' => $salt,
+        ])->saveQuietly();
+        $this->assertNotNull($this->device->refresh()->adms_comm_key_salt);
+
+        /** @var AdmsDeviceAuthenticator $authenticator */
+        $authenticator = resolve(AdmsDeviceAuthenticator::class);
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $this->call('GET', '/api/iclock/cdata?SN=SN-AUTH-TEST-001&pushcommkey=000000')
+                ->assertUnauthorized();
+        }
+
+        $this->assertTrue($authenticator->isLockedOut($this->device->refresh()));
+
+        // Lockout is checked before verification, so even the correct key is
+        // rejected while the device is locked. This is what caps guesses; a
+        // verify-first order would accept this request and clear the lockout.
+        $this->call('GET', '/api/iclock/cdata?SN=SN-AUTH-TEST-001&pushcommkey=123456')
+            ->assertUnauthorized();
+
+        $this->assertTrue($authenticator->isLockedOut($this->device->refresh()));
+
+        $this->travel(61)->seconds();
+
+        $this->call('GET', '/api/iclock/cdata?SN=SN-AUTH-TEST-001&pushcommkey=123456')
+            ->assertOk();
+
+        $this->assertFalse($authenticator->isLockedOut($this->device->refresh()));
+
+        // The counter was cleared by the successful authentication, so a
+        // single later failure must not immediately re-lock the device.
+        $this->call('GET', '/api/iclock/cdata?SN=SN-AUTH-TEST-001&pushcommkey=000000')
+            ->assertUnauthorized();
+        $this->assertFalse($authenticator->isLockedOut($this->device->refresh()));
+    }
+
+    public function test_lockout_expires_after_the_configured_cooldown(): void
+    {
+        config([
+            'biometrics.adms.auth_max_failures' => 2,
+            'biometrics.adms.auth_lockout_seconds' => 60,
+        ]);
+
+        $salt = BiometricDevice::generateCommKeySalt();
+        $this->device->forceFill([
+            'adms_comm_key_hash' => BiometricDevice::hashCommKey('123456', $salt),
+            'adms_comm_key_salt' => $salt,
+        ])->saveQuietly();
+        $this->assertNotNull($this->device->refresh()->adms_comm_key_salt);
+
+        /** @var AdmsDeviceAuthenticator $authenticator */
+        $authenticator = resolve(AdmsDeviceAuthenticator::class);
+
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $this->call('GET', '/api/iclock/cdata?SN=SN-AUTH-TEST-001&pushcommkey=000000')
+                ->assertUnauthorized();
+        }
+
+        $this->assertTrue($authenticator->isLockedOut($this->device->refresh()));
+
+        $this->travel(61)->seconds();
+
+        $this->assertFalse($authenticator->isLockedOut($this->device->refresh()));
+    }
+
+    public function test_lockout_is_isolated_per_device(): void
+    {
+        config([
+            'biometrics.adms.auth_max_failures' => 2,
+            'biometrics.adms.auth_lockout_seconds' => 60,
+        ]);
+
+        $secondSalt = BiometricDevice::generateCommKeySalt();
+
+        $second = BiometricDevice::factory()->create([
+            'gym_id' => $this->gym->id,
+            'device_name' => 'Second ADMS Device',
+            'device_serial' => 'SN-AUTH-TEST-002',
+            'adms_enabled' => true,
+            'status' => BiometricDeviceStatusEnum::Active,
+            'purpose' => BiometricDevicePurpose::AttendanceOnly,
+            'adms_comm_key_hash' => BiometricDevice::hashCommKey('654321', $secondSalt),
+            'adms_comm_key_salt' => $secondSalt,
+        ]);
+
+        $firstSalt = BiometricDevice::generateCommKeySalt();
+        $this->device->forceFill([
+            'adms_comm_key_hash' => BiometricDevice::hashCommKey('123456', $firstSalt),
+            'adms_comm_key_salt' => $firstSalt,
+        ])->saveQuietly();
+        $this->assertNotNull($this->device->refresh()->adms_comm_key_salt);
+
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $this->call('GET', '/api/iclock/cdata?SN=SN-AUTH-TEST-001&pushcommkey=000000')
+                ->assertUnauthorized();
+        }
+
+        /** @var AdmsDeviceAuthenticator $authenticator */
+        $authenticator = resolve(AdmsDeviceAuthenticator::class);
+
+        $this->assertTrue($authenticator->isLockedOut($this->device->refresh()));
+
+        $this->call('GET', '/api/iclock/cdata?SN=SN-AUTH-TEST-002&pushcommkey=654321')
+            ->assertOk();
+
+        $this->assertFalse($authenticator->isLockedOut($second->refresh()));
+        $this->assertTrue($authenticator->isLockedOut($this->device->refresh()));
+    }
+
+    public function test_adms_controller_fails_closed_when_only_a_generic_device_attribute_is_bound(): void
+    {
+        $plainToken = 'device-token-for-adms-cross-middleware-test';
+
+        $this->device->update([
+            'device_token' => $plainToken,
+            'token_hash' => hash('sha256', $plainToken),
+        ]);
+
+        Route::middleware(AuthenticateBiometricDevice::class)
+            ->get('/api/test-adms-cross-middleware', fn (Request $request) => resolve(AdmsController::class)->cdata($request));
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $plainToken)
+            ->get('/api/test-adms-cross-middleware?SN=SN-AUTH-TEST-001');
+
+        $response->assertUnauthorized();
+        $this->assertSame('ERR: Unauthorized', $response->getContent());
+    }
+
+    public function test_inactive_unkeyed_device_auto_recovers_when_key_enforcement_is_disabled(): void
+    {
+        config(['biometrics.adms.require_comm_key' => false]);
+
+        $device = BiometricDevice::factory()->create([
+            'gym_id' => $this->gym->id,
+            'device_name' => 'Unkeyed Inactive Device',
+            'device_serial' => 'SN-UNKEYED-INACTIVE',
+            'adms_enabled' => true,
+            'status' => BiometricDeviceStatusEnum::Inactive,
+            'purpose' => BiometricDevicePurpose::AttendanceOnly,
+            'adms_comm_key_hash' => null,
+            'adms_comm_key_salt' => null,
+            'provider_config' => null,
+        ]);
+
+        $response = $this->call('GET', '/api/iclock/cdata?SN=SN-UNKEYED-INACTIVE');
+
+        $response->assertOk();
+        $this->assertSame('OK', $response->getContent());
+        $this->assertEquals(BiometricDeviceStatusEnum::Active, $device->refresh()->status);
+    }
+
+    public function test_corrupt_provider_config_returns_unauthorized_instead_of_server_error(): void
+    {
+        $device = BiometricDevice::factory()->create([
+            'gym_id' => $this->gym->id,
+            'device_name' => 'Corrupt Config Device',
+            'device_serial' => 'SN-CORRUPT-CONFIG',
+            'adms_enabled' => true,
+            'status' => BiometricDeviceStatusEnum::Active,
+            'purpose' => BiometricDevicePurpose::AttendanceOnly,
+            'adms_comm_key_hash' => null,
+            'adms_comm_key_salt' => null,
+            'provider_config' => ['pushcommkey' => '123456'],
+        ]);
+
+        DB::table('biometric_devices')
+            ->where('id', $device->id)
+            ->update(['provider_config' => 'not-a-valid-encrypted-payload']);
+
+        $response = $this->call('GET', '/api/iclock/cdata?SN=SN-CORRUPT-CONFIG&pushcommkey=123456');
+
+        $response->assertUnauthorized();
+        $this->assertSame('ERR: Unauthorized', $response->getContent());
+    }
+
+    public function test_inactive_unkeyed_device_still_cannot_recover_when_key_enforcement_is_enabled(): void
+    {
+        config(['biometrics.adms.require_comm_key' => true]);
+
+        $device = BiometricDevice::factory()->create([
+            'gym_id' => $this->gym->id,
+            'device_name' => 'Unkeyed Inactive Device Required',
+            'device_serial' => 'SN-UNKEYED-INACTIVE-REQUIRED',
+            'adms_enabled' => true,
+            'status' => BiometricDeviceStatusEnum::Inactive,
+            'purpose' => BiometricDevicePurpose::AttendanceOnly,
+            'adms_comm_key_hash' => null,
+            'adms_comm_key_salt' => null,
+            'provider_config' => null,
+        ]);
+
+        $response = $this->call('GET', '/api/iclock/cdata?SN=SN-UNKEYED-INACTIVE-REQUIRED');
+
+        $response->assertUnauthorized();
+        $this->assertEquals(BiometricDeviceStatusEnum::Inactive, $device->refresh()->status);
     }
 }

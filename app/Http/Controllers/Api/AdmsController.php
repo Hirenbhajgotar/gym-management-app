@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Biometrics\Services\AdmsEventService;
+use App\Biometrics\Services\BiometricLogRedactor;
 use App\Biometrics\Services\BiometricReceiptService;
 use App\Biometrics\Services\BiometricTimestampParser;
 use App\Enums\AdmsCommandStatusEnum;
-use App\Enums\BiometricDeviceStatusEnum;
 use App\Http\Controllers\Controller;
 use App\Models\AdmsDeviceCommand;
 use App\Models\BiometricDevice;
+use App\Services\ErrorReporting\ExceptionTraceFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -44,16 +44,10 @@ class AdmsController extends Controller
             return $this->plainResponse('ERR: ADMS disabled', 403);
         }
 
-        $serial = $request->query('SN');
-
-        if (! is_string($serial) || blank($serial)) {
-            return $this->plainResponse('ERR: Missing SN parameter', 400);
-        }
-
-        $device = $this->resolveDevice($serial, $request);
+        $device = $this->resolveDevice($request);
 
         if (! $device) {
-            return $this->plainResponse('ERR: Unknown or inactive device', 401);
+            return $this->plainResponse('ERR: Unauthorized', 401);
         }
 
         // GET = initial handshake from device
@@ -85,21 +79,15 @@ class AdmsController extends Controller
             return $this->plainResponse('ERR: ADMS disabled', 403);
         }
 
-        $serial = $request->query('SN');
-
-        if (! is_string($serial) || blank($serial)) {
-            return $this->plainResponse('ERR: Missing SN parameter', 400);
-        }
-
-        $device = $this->resolveDevice($serial, $request);
+        $device = $this->resolveDevice($request);
 
         if (! $device) {
-            return $this->plainResponse('ERR: Unknown or inactive device', 401);
+            return $this->plainResponse('ERR: Unauthorized', 401);
         }
 
         // Keep heartbeat fresh on polling
         $device->update(['last_heartbeat_at' => now()]);
-        Cache::forget(BiometricDevice::missCounterCacheKey($device->id));
+        BiometricDevice::clearMissCounter($device->id);
 
         // Dequeue the oldest pending command for this device atomically
         $leaseDuration = config()->integer('biometrics.adms.command_lease_seconds', 600);
@@ -126,25 +114,19 @@ class AdmsController extends Controller
      */
     public function deviceCmd(Request $request): Response
     {
-        if (! config('biometrics.adms.enabled', true)) {
+        if (! config()->boolean('biometrics.adms.enabled', true)) {
             return $this->plainResponse('ERR: ADMS disabled', 403);
         }
 
-        $serial = $request->query('SN');
-
-        if (! is_string($serial) || blank($serial)) {
-            return $this->plainResponse('ERR: Missing SN parameter', 400);
-        }
-
-        $device = $this->resolveDevice($serial, $request);
+        $device = $this->resolveDevice($request);
 
         if (! $device) {
-            return $this->plainResponse('ERR: Unknown or inactive device', 401);
+            return $this->plainResponse('ERR: Unauthorized', 401);
         }
 
         // Keep heartbeat fresh on command ACK
         $device->update(['last_heartbeat_at' => now()]);
-        Cache::forget(BiometricDevice::missCounterCacheKey($device->id));
+        BiometricDevice::clearMissCounter($device->id);
 
         // Parse response body: ID={cmdId}&Return={code}
         $body = $request->getContent();
@@ -183,60 +165,25 @@ class AdmsController extends Controller
     }
 
     /**
-     * Resolve device and verify it is active and ADMS-enabled.
+     * Resolve the device authenticated and bound by AuthenticateAdmsDevice.
+     *
+     * The controller deliberately reads only the ADMS-specific attribute and
+     * performs no second key check: a route protected by a different device
+     * middleware must fail closed rather than skip comm-key verification.
      */
-    private function resolveDevice(string $serial, ?Request $request = null): ?BiometricDevice
+    private function resolveDevice(Request $request): ?BiometricDevice
     {
-        if ($request && $request->attributes->has('device')) {
-            /** @var BiometricDevice $device */
-            $device = $request->attributes->get('device');
+        $device = $request->attributes->get('adms_device');
 
+        if ($device instanceof BiometricDevice) {
             return $device;
         }
 
-        $device = BiometricDevice::findBySerial($serial);
+        Log::warning('ADMS: controller reached without an authenticated ADMS device attribute', [
+            'ip' => $request->ip(),
+        ]);
 
-        if (! $device || ! $device->adms_enabled) {
-            return null;
-        }
-
-        if ($device->status === BiometricDeviceStatusEnum::Maintenance) {
-            return null;
-        }
-
-        $requireKey = config()->boolean('biometrics.adms.require_comm_key', true);
-        $hasKeyConfigured = $device->hasCommKeyConfigured();
-
-        if (($requireKey || $hasKeyConfigured) && $request) {
-            $providedKey = $request->query('pushcommkey')
-                ?? $request->input('pushcommkey')
-                ?? $request->header('pushcommkey')
-                ?? $request->header('X-PushCommKey');
-
-            if (! is_string($providedKey) || blank($providedKey) || ! $device->verifyCommKey($providedKey)) {
-                Log::warning('ADMS: Invalid pushcommkey', [
-                    'device_id' => $device->id,
-                    'ip' => $request->ip(),
-                ]);
-
-                return null;
-            }
-        }
-
-        // Auto-recover Inactive device if authenticated communication resumes
-        if ($device->status === BiometricDeviceStatusEnum::Inactive) {
-            $device->update([
-                'status' => BiometricDeviceStatusEnum::Active,
-                'last_heartbeat_at' => now(),
-            ]);
-            Cache::forget(BiometricDevice::missCounterCacheKey($device->id));
-            Log::info('ADMS: Device auto-recovered to Active status upon verified communication', [
-                'device_id' => $device->id,
-                'serial_hash' => hash('sha256', (string) $device->device_serial),
-            ]);
-        }
-
-        return $device;
+        return null;
     }
 
     /**
@@ -246,7 +193,7 @@ class AdmsController extends Controller
     {
         // Update last heartbeat and clear missed heartbeats counter
         $device->update(['last_heartbeat_at' => now()]);
-        Cache::forget(BiometricDevice::missCounterCacheKey($device->id));
+        BiometricDevice::clearMissCounter($device->id);
 
         Log::info('ADMS: Device handshake', [
             'device_id' => $device->id,
@@ -266,7 +213,7 @@ class AdmsController extends Controller
     {
         // Update heartbeat
         $device->update(['last_heartbeat_at' => now()]);
-        Cache::forget(BiometricDevice::missCounterCacheKey($device->id));
+        BiometricDevice::clearMissCounter($device->id);
 
         $body = $request->getContent();
 
@@ -353,7 +300,8 @@ class AdmsController extends Controller
                 Log::error('ADMS: Event processing failed due to system exception', [
                     'device_id' => $device->id,
                     'user_id_hash' => hash('sha256', $userId),
-                    'error' => $e->getMessage(),
+                    'error' => BiometricLogRedactor::redactText($e->getMessage()),
+                    'trace' => resolve(ExceptionTraceFormatter::class)->format($e),
                 ]);
                 $systemErrors++;
             }

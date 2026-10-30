@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\ErrorReporting;
 
+use App\Biometrics\Services\BiometricLogRedactor;
 use Illuminate\Http\Request;
 use Throwable;
 
 class RequestOriginResolver
 {
     /**
-     * Ye woh internal endpoints hai jinke peeche asli page chhupa hota hai —
-     * jab error yahan throw ho, to humein referer se asli URL nikalna hoga.
+     * Internal endpoints whose real page is hidden behind them.
+     *
+     * When an error is thrown here, the referer is the URL an operator needs.
      */
     private const INTERNAL_AJAX_PATTERNS = [
         'livewire/update',
@@ -26,13 +28,20 @@ class RequestOriginResolver
         $isInternalAjax = $this->isInternalAjaxRequest($request);
 
         return [
-            'requested_url' => $request->fullUrl(),
-            'origin_url' => $isInternalAjax
-                ? ($request->headers->get('referer') ?? $request->fullUrl())
-                : $request->fullUrl(),
+            'requested_url' => $this->redactUrl($request->fullUrl()),
+            'origin_url' => $this->redactUrl(
+                $isInternalAjax
+                    ? ($request->headers->get('referer') ?? $request->fullUrl())
+                    : $request->fullUrl()
+            ),
             'is_livewire_request' => $isInternalAjax,
             'livewire_component' => $isInternalAjax ? $this->extractLivewireComponent($request) : null,
         ];
+    }
+
+    public function redactUrl(?string $url): string
+    {
+        return BiometricLogRedactor::redactUrl($url);
     }
 
     private function isInternalAjaxRequest(Request $request): bool

@@ -20,6 +20,43 @@ class BiometricDeviceFactory extends Factory
 {
     protected $model = BiometricDevice::class;
 
+    /**
+     * Hash and salt are deliberately not mass-assignable; factories still need
+     * to seed verifier state for tests, so apply attributes explicitly.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function newModel(array $attributes = []): BiometricDevice
+    {
+        /** @var BiometricDevice $model */
+        $model = parent::newModel([]);
+
+        $model->fill($attributes);
+
+        // Only the non-mass-assignable verifier fields need the explicit path;
+        // force-filling every attribute would weaken the mass-assignment guard
+        // for the rest of the model.
+        return $model->forceFill(array_intersect_key($attributes, array_flip([
+            'adms_comm_key_hash',
+            'adms_comm_key_salt',
+        ])));
+    }
+
+    /**
+     * Install a salted verifier without going through `$fillable`.
+     */
+    public function withCommKey(string $key, ?string $salt = null): static
+    {
+        return $this->state(function () use ($key, $salt): array {
+            $salt ??= BiometricDevice::generateCommKeySalt();
+
+            return [
+                'adms_comm_key_salt' => $salt,
+                'adms_comm_key_hash' => BiometricDevice::hashCommKey($key, $salt),
+            ];
+        });
+    }
+
     public function definition(): array
     {
         $plainToken = bin2hex(random_bytes(32));

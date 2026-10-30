@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Date;
 use App\Actions\Member\ArchiveInactiveMembersAction;
 use App\Biometrics\Services\MembershipGuard;
 use App\Console\Commands\ArchiveInactiveGymMembersCommand;
@@ -14,7 +15,6 @@ use App\Services\Biometric\BiometricConsentEligibility;
 use App\Services\MemberArchiveService;
 use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
@@ -111,21 +111,21 @@ class ArchiveInactiveGymMembersTest extends TestCase
         // Stale member expired 2.5 years ago
         $staleMember = GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(2)->subMonths(6)->toDateString(),
+            'membership_end' => Date::now()->subYears(2)->subMonths(6)->toDateString(),
             'is_archived' => false,
         ]);
 
         // Recent member expired 6 months ago
         $recentMember = GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subMonths(6)->toDateString(),
+            'membership_end' => Date::now()->subMonths(6)->toDateString(),
             'is_archived' => false,
         ]);
 
         // Already archived member
         $alreadyArchived = GymMember::factory()->archived()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
         ]);
 
         // Member without membership_end
@@ -147,13 +147,13 @@ class ArchiveInactiveGymMembersTest extends TestCase
     {
         GymMember::factory()->count(3)->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
             'is_archived' => false,
         ]);
 
         GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subMonths(3)->toDateString(),
+            'membership_end' => Date::now()->subMonths(3)->toDateString(),
             'is_archived' => false,
         ]);
 
@@ -171,7 +171,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
     {
         GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->addMonth()->toDateString(),
+            'membership_end' => Date::now()->addMonth()->toDateString(),
             'is_archived' => false,
         ]);
 
@@ -192,7 +192,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
         $toBeArchived = GymMember::factory()->create([
             'gym_id' => $this->gym->id,
             'is_archived' => false,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
         ]);
 
         $alreadyArchived = GymMember::factory()->archived()->create([
@@ -226,13 +226,13 @@ class ArchiveInactiveGymMembersTest extends TestCase
     {
         GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
             'is_archived' => false,
         ]);
 
         GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subMonths(6)->toDateString(),
+            'membership_end' => Date::now()->subMonths(6)->toDateString(),
             'is_archived' => false,
         ]);
 
@@ -253,7 +253,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
     {
         GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subMonths(18)->toDateString(),
+            'membership_end' => Date::now()->subMonths(18)->toDateString(),
             'is_archived' => false,
         ]);
 
@@ -294,7 +294,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
     {
         GymMember::factory()->count(2)->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
             'is_archived' => false,
         ]);
 
@@ -334,7 +334,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
         /** @var GymMember $member */
         $member = GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->addYear()->toDateString(),
+            'membership_end' => Date::now()->addYear()->toDateString(),
             'payment_status' => PaymentStatus::COMPLETED,
             'is_archived' => false,
         ]);
@@ -354,7 +354,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
         /** @var GymMember $member */
         $member = GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->addYear()->toDateString(),
+            'membership_end' => Date::now()->addYear()->toDateString(),
             'payment_status' => PaymentStatus::COMPLETED,
             'is_archived' => false,
         ]);
@@ -372,13 +372,13 @@ class ArchiveInactiveGymMembersTest extends TestCase
     {
         $eligible = GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->addMonths(6)->toDateString(),
+            'membership_end' => Date::now()->addMonths(6)->toDateString(),
             'is_archived' => false,
         ]);
 
         $archived = GymMember::factory()->archived()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->addMonths(6)->toDateString(),
+            'membership_end' => Date::now()->addMonths(6)->toDateString(),
         ]);
 
         $constrained = BiometricConsentEligibility::constrain(
@@ -419,7 +419,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
     {
         GymMember::factory()->count(2)->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
             'is_archived' => false,
         ]);
 
@@ -447,7 +447,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
 
         GymMember::factory()->count($eligible)->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
             'is_archived' => false,
         ]);
 
@@ -474,7 +474,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
 
         // A second writer archives the row while our in-memory copy still says
         // the member is active — exactly the window a chunk callback runs in.
-        $archivedByOtherWriter = Carbon::now()->subMinute()->startOfSecond();
+        $archivedByOtherWriter = Date::now()->subMinute()->startOfSecond();
 
         GymMember::query()->whereKey($member->getKey())->update([
             'is_archived' => true,
@@ -585,7 +585,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
     {
         GymMember::factory()->count(3)->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
             'is_archived' => false,
         ]);
 
@@ -603,7 +603,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
     {
         GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
             'is_archived' => false,
         ]);
 
@@ -621,7 +621,7 @@ class ArchiveInactiveGymMembersTest extends TestCase
     {
         GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
             'is_archived' => false,
         ]);
 
@@ -637,13 +637,13 @@ class ArchiveInactiveGymMembersTest extends TestCase
     {
         GymMember::factory()->count(3)->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
             'is_archived' => false,
         ]);
 
         GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subMonths(6)->toDateString(),
+            'membership_end' => Date::now()->subMonths(6)->toDateString(),
             'is_archived' => false,
         ]);
 
@@ -670,13 +670,13 @@ class ArchiveInactiveGymMembersTest extends TestCase
         // follows --years instead of being a fixed number.
         GymMember::factory()->count(2)->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYears(3)->toDateString(),
+            'membership_end' => Date::now()->subYears(3)->toDateString(),
             'is_archived' => false,
         ]);
 
         GymMember::factory()->create([
             'gym_id' => $this->gym->id,
-            'membership_end' => Carbon::now()->subYear()->subMonths(6)->toDateString(),
+            'membership_end' => Date::now()->subYear()->subMonths(6)->toDateString(),
             'is_archived' => false,
         ]);
 

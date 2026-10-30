@@ -19,7 +19,7 @@ List the most important debt items only.
 | Debt item | Why it exists | Where | Risk if ignored | Suggested fix |
 |-----------|---------------|-------|-----------------|---------------|
 | Static analysis baseline suppression | Large codebase migration to strict PHPStan level `max` | [`phpstan-baseline.neon`](file:///c:/xampp/htdocs/projects/gym-app/phpstan-baseline.neon), [`phpstan.neon`](file:///c:/xampp/htdocs/projects/gym-app/phpstan.neon) | Hidden type edge cases suppressed in baseline | Gradually burn down baseline entries with strict typing improvements |
-| Legacy unsalted SHA-256 communication keys in existing devices | ADMS protocol historically allowed unsalted hashes before key hardening | [`app/Console/Commands/BackfillAdmsCommKeysCommand.php`](file:///c:/xampp/htdocs/projects/gym-app/app/Console/Commands/BackfillAdmsCommKeysCommand.php), [`config/biometrics.php`](file:///c:/xampp/htdocs/projects/gym-app/config/biometrics.php) | Edge terminals running old firmware rejected if key verification fails | Run `php artisan biometrics:backfill-adms-comm-keys --provision` across all tenant devices |
+| Legacy unsalted SHA-256 communication keys in existing devices | ADMS protocol historically allowed unsalted hashes before key hardening | [`app/Console/Commands/BackfillAdmsCommKeyHashesCommand.php`](file:///c:/xampp/htdocs/projects/gym-app/app/Console/Commands/BackfillAdmsCommKeyHashesCommand.php), [`config/biometrics.php`](file:///c:/xampp/htdocs/projects/gym-app/config/biometrics.php) | Edge terminals running old firmware rejected if key verification fails | Run `php artisan biometrics:backfill-adms-comm-keys --reprovision-legacy --reveal` across all tenant devices |
 | Temporary commented sitemap generation cron | Sitemap generation previously had execution time or URL resolution issues | [`routes/console.php#L104`](file:///c:/xampp/htdocs/projects/gym-app/routes/console.php#L104) | Automated public SEO sitemap updates are not running on schedule | Re-enable and test `sitemap:generate` in background worker |
 
 ### 3) Security Concerns
@@ -50,7 +50,7 @@ List the most important debt items only.
 
 1. [ASK USER] Should `sitemap:generate` scheduled command in [`routes/console.php#L104`](file:///c:/xampp/htdocs/projects/gym-app/routes/console.php#L104) be un-commented and re-enabled in production crontab?
 2. [ASK USER] What is the desired operational alert mechanism (e.g. Filament dashboard notification badge vs. email/webhook) when biometric commands reach terminal dead-letter status (`attempt_count >= maxAttempts`)?
-3. [ASK USER] For tenant facilities currently using legacy unsalted SHA-256 ADMS communication keys, should `biometrics:backfill-adms-comm-keys --provision` be executed automatically as part of deployment migrations?
+3. [ASK USER] For tenant facilities currently using legacy unsalted SHA-256 ADMS communication keys, should `biometrics:backfill-adms-comm-keys --reprovision-legacy --reveal` be executed automatically as part of deployment migrations?
 
 ### 7) Evidence
 

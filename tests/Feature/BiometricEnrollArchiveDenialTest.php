@@ -226,7 +226,7 @@ class BiometricEnrollArchiveDenialTest extends TestCase
                 'quality_score' => 0.95,
             ]);
 
-        $response->assertStatus(422)
+        $response->assertUnprocessable()
             ->assertJson([
                 'success' => false,
                 'error' => 'member_archived',
@@ -250,7 +250,7 @@ class BiometricEnrollArchiveDenialTest extends TestCase
                 'template_ref' => (string) $this->archivedMember->id,
             ]);
 
-        $response->assertStatus(422)
+        $response->assertUnprocessable()
             ->assertJson([
                 'error' => 'member_archived',
             ]);
@@ -521,7 +521,7 @@ class BiometricEnrollArchiveDenialTest extends TestCase
         $response = $this->withHeaders($this->authHeaders($this->deviceNativeToken))
             ->deleteJson('/api/v1/biometric/template/' . $foreignTemplate->id);
 
-        $response->assertStatus(403)
+        $response->assertForbidden()
             ->assertJson(['error' => 'Forbidden']);
 
         $foreignTemplate->refresh();

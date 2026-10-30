@@ -133,9 +133,7 @@ class BiometricEnrollController extends Controller
                 // archive is blocked by the lock, but a writer running inside
                 // this same transaction would be visible here; if so, roll the
                 // local row back and let the catch compensate the remote one.
-                if (! $locked->refresh()->mayHoldBiometricCredential()) {
-                    throw new MemberArchivedException();
-                }
+                throw_unless($locked->refresh()->mayHoldBiometricCredential(), MemberArchivedException::class);
 
                 // Resolve command PINs (both member ID and any existing template refs)
                 $existingTemplates = BiometricTemplate::query()
@@ -568,9 +566,7 @@ class BiometricEnrollController extends Controller
             ->lockForUpdate()
             ->first();
 
-        if (! $locked instanceof GymMember) {
-            throw new MemberArchivedException();
-        }
+        throw_unless($locked instanceof GymMember, MemberArchivedException::class);
 
         $locked->assertMayHoldBiometricCredential();
 

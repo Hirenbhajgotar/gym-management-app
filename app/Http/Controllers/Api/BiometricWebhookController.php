@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BiometricDevice;
 use App\Models\GymMember;
 use App\Models\User;
+use App\Services\ErrorReporting\ExceptionTraceFormatter;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,13 +33,19 @@ class BiometricWebhookController extends Controller
             return response()->json(['error' => 'Invalid or inactive webhook token'], 401);
         }
 
+        $providerConfig = $device->provider_config;
+        $providerConfig = is_array($providerConfig) ? $providerConfig : [];
+
         // Verify HMAC signature if provided
         // Support custom header name from device config, default to X-Signature
-        $signatureHeader = $device->provider_config['webhook_signature_header'] ?? 'X-Signature';
+        $signatureHeader = $providerConfig['webhook_signature_header'] ?? 'X-Signature';
         $signature = $request->header($signatureHeader) ?? $request->header('X-Hub-Signature-256');
 
-        // If device has webhook_secret configured, signature is required
-        $hasWebhookSecret = filled($device->provider_config['webhook_secret'] ?? '');
+        // If device has webhook_secret configured, signature is required.
+        // Require a non-empty string: a malformed/legacy array or numeric
+        // secret would otherwise pass `filled()` and HMAC with an empty key.
+        $rawSecret = $providerConfig['webhook_secret'] ?? null;
+        $hasWebhookSecret = is_string($rawSecret) && $rawSecret !== '';
 
         // A webhook that cannot be cryptographically verified is refused. With
         // no webhook_secret configured the request would otherwise be accepted
@@ -119,7 +126,8 @@ class BiometricWebhookController extends Controller
         } catch (Exception $e) {
             Log::error('Biometric webhook error', [
                 'device_id' => $device->id,
-                'error' => $e->getMessage(),
+                'error' => BiometricLogRedactor::redactText($e->getMessage()),
+                'trace' => resolve(ExceptionTraceFormatter::class)->format($e),
                 'payload' => $this->sanitizePayload($payload),
             ]);
 
@@ -205,8 +213,12 @@ class BiometricWebhookController extends Controller
     protected function verifySignature(Request $request, string $signature, BiometricDevice $device): bool
     {
         $rawSecret = is_array($device->provider_config) ? ($device->provider_config['webhook_secret'] ?? '') : '';
-        $secret = is_scalar($rawSecret) ? (string) $rawSecret : '';
 
+        if (! is_string($rawSecret) || $rawSecret === '') {
+            return false;
+        }
+
+        $secret = $rawSecret;
         $payload = $request->getContent();
         $rawSignature = str_starts_with($signature, 'sha256=') ? substr($signature, 7) : $signature;
         $expectedSignature = hash_hmac('sha256', $payload, $secret);

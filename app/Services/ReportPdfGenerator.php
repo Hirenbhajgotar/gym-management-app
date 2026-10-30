@@ -97,8 +97,8 @@ class ReportPdfGenerator
             /** @var MemberReports $page */
             $data = [
                 'stats' => $page->getSummaryStats(),
-                'growth' => method_exists($page, 'getGrowthData') ? $page->getGrowthData()->toArray() : [],
-                'planDistribution' => method_exists($page, 'getPlanDistribution') ? $page->getPlanDistribution()->toArray() : [],
+                'growth' => method_exists($page, 'getGrowthData') ? $page->getGrowthData()->all() : [],
+                'planDistribution' => method_exists($page, 'getPlanDistribution') ? $page->getPlanDistribution()->all() : [],
                 'churnStats' => method_exists($page, 'getChurnStats') ? $page->getChurnStats() : [],
                 'chart_data' => $this->getChartData($page, ['member_growth', 'plan_distribution', 'churn_analysis']),
                 'monthly_trends' => $this->getMonthlyTrends($page),

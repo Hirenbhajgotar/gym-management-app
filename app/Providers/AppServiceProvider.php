@@ -13,6 +13,7 @@ use App\Listeners\LogUserLogin;
 use App\Listeners\NotifyStaffOnConsentGiven;
 use App\Listeners\SubscriptionProvisioner;
 use App\Listeners\UpdateSpatiePermissionCacheOnTenantSwitch;
+use App\Models\BiometricDevice;
 use App\Models\User;
 use App\Notifications\Channels\FilamentChannel;
 use App\Notifications\WhatsAppChannel;
@@ -30,6 +31,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event as FacadesEvent;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -39,6 +41,11 @@ use Spatie\Permission\PermissionRegistrar;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * @var array<string, bool>
+     */
+    private static array $loggedAdmsWarnings = [];
+
     /**
      * Register any application services.
      */
@@ -61,6 +68,8 @@ class AppServiceProvider extends ServiceProvider
         $this->registerPermissionRegistrar();
 
         $this->registerRateLimiter();
+
+        $this->guardInsecureAdmsConfiguration();
 
         $this->registerSpatiePermissionListener();
 
@@ -169,11 +178,98 @@ class AppServiceProvider extends ServiceProvider
             }
 
             // Partition rate limit by IP + route category (iclock vs biometric)
-            // so an enrollment burst does not block real-time attendance check-ins on shared NAT IPs
+            // so an enrollment burst does not block real-time attendance check-ins on shared NAT IPs.
+            // IPv6 requests are keyed by /64 so an attacker cannot rotate inside one allocation.
             $category = $request->is('*iclock*') ? 'iclock' : 'biometric';
+            $ip = $request->ip() ?? 'unknown';
 
-            return Limit::perMinute($limit)->by($request->ip() . ':' . $category);
+            if (preg_match('/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i', $ip, $matches) === 1
+                && filter_var($matches[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+                // IPv4-mapped IPv6 collapses to "::" under the /64 mask, which
+                // would put every IPv4 client behind one shared bucket.
+                $ip = $matches[1];
+            } elseif (preg_match('/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i', $ip, $matches) === 1) {
+                $convertedIp = long2ip((hexdec($matches[1]) << 16) | hexdec($matches[2]));
+                if ($convertedIp !== false) {
+                    $ip = $convertedIp;
+                }
+            }
+
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+                $packed = inet_pton($ip);
+
+                if (is_string($packed) && strlen($packed) === 16) {
+                    $ip = inet_ntop(substr($packed, 0, 8) . str_repeat("\0", 8)) ?: $ip;
+                }
+            }
+
+            return Limit::perMinute($limit)->by($ip . ':' . $category);
         });
+    }
+
+    /**
+     * Refuse to run production with the ADMS guessing controls silently disabled.
+     */
+    private function guardInsecureAdmsConfiguration(): void
+    {
+        if (! app()->isProduction()) {
+            return;
+        }
+
+        if (config('biometrics.device_throttle') === 0) {
+            $this->logInsecureAdmsOnce(
+                'throttle_disabled',
+                'ADMS: biometric API rate limiting is disabled (BIOMETRIC_DEVICE_THROTTLE=0).'
+            );
+        }
+
+        if (! config()->boolean('biometrics.adms.require_comm_key', true)) {
+            $this->logInsecureAdmsOnce(
+                'key_enforcement_disabled',
+                'ADMS: communication key enforcement is disabled (ADMS_REQUIRE_COMM_KEY=false).'
+            );
+        }
+
+        $iterations = config()->integer('biometrics.adms.pbkdf2_iterations', BiometricDevice::MIN_PBKDF2_ITERATIONS);
+
+        if ($iterations < BiometricDevice::MIN_PBKDF2_ITERATIONS) {
+            $this->logInsecureAdmsOnce(
+                'pbkdf2_below_floor',
+                'ADMS: PBKDF2 iterations are below the 100,000 floor.'
+            );
+        }
+
+        if ($iterations > BiometricDevice::MAX_PBKDF2_ITERATIONS) {
+            $this->logInsecureAdmsOnce(
+                'pbkdf2_above_ceiling',
+                'ADMS: PBKDF2 iterations exceed the safe maximum and will be clamped.'
+            );
+        }
+
+        if (! in_array(config('cache.default'), ['redis', 'memcached', 'database', 'dynamodb'], true)) {
+            $this->logInsecureAdmsOnce(
+                'cache_not_shared',
+                'ADMS: per-device authentication lockout requires a shared cache store; the configured store is process-local or unsupported.',
+                ['store' => config('cache.default')]
+            );
+        }
+    }
+
+    /**
+     * Keep an insecure-deployment warning to one line per process instead of
+     * emitting up to five criticals on every request/command.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    private function logInsecureAdmsOnce(string $key, string $message, array $context = []): void
+    {
+        if (isset(self::$loggedAdmsWarnings[$key])) {
+            return;
+        }
+
+        self::$loggedAdmsWarnings[$key] = true;
+
+        Log::critical($message, $context);
     }
 
     private function registerNotificationChannels(): void

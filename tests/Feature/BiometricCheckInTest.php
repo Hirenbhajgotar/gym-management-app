@@ -15,6 +15,7 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class BiometricCheckInTest extends TestCase
@@ -296,6 +297,33 @@ class BiometricCheckInTest extends TestCase
             ->assertJson(['error' => 'Signature required']);
     }
 
+    public function test_a_non_string_webhook_secret_is_refused(): void
+    {
+        $token = 'non-string-secret-token-12345';
+
+        BiometricDevice::factory()
+            ->withToken($token)
+            ->create([
+                'gym_id' => $this->gym->id,
+                'status' => BiometricDeviceStatusEnum::Active,
+                'provider_type' => 'custom',
+                'provider_config' => [
+                    'webhook_secret' => ['nested' => 'not-a-string'],
+                ],
+            ]);
+
+        $payload = ['member_id' => 1];
+
+        $response = $this->postJson("/api/v1/biometric/webhook/{$token}", $payload, [
+            // A malformed secret must not be treated as configured, and an
+            // empty-key HMAC must not be accepted.
+            'X-Signature' => 'sha256=' . hash_hmac('sha256', (string) json_encode($payload), ''),
+        ]);
+
+        $response->assertUnauthorized()
+            ->assertJson(['error' => 'Webhook signature is not configured for this device']);
+    }
+
     /**
      * Post a webhook payload signed the way a provisioned device signs it.
      *
@@ -304,7 +332,7 @@ class BiometricCheckInTest extends TestCase
      *
      * @param  array<string, mixed>  $payload
      */
-    private function postSignedWebhook(string $uri, array $payload): \Illuminate\Testing\TestResponse
+    private function postSignedWebhook(string $uri, array $payload): TestResponse
     {
         return $this->postJson($uri, $payload, [
             'X-Signature' => 'sha256=' . hash_hmac('sha256', (string) json_encode($payload), self::WEBHOOK_SECRET),

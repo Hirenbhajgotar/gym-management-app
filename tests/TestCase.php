@@ -86,6 +86,11 @@ abstract class TestCase extends BaseTestCase
 
         $this->app->make('config')->set('database.connections.mysql.database', $database);
 
+        // Keep the crypto floor explicit and fast for the test suite. The
+        // production floor is the fixed 100,000 constant; BiometricDevice
+        // ignores this config override outside the testing environment.
+        $this->app->make('config')->set('biometrics.adms.pbkdf2_min_iterations', 1);
+
         if (DB::connection()->getDatabaseName() === 'gym_app') {
             $this->fail('SAFETY: Tests are targeting the production database "gym_app". Aborting to prevent data loss.');
         }

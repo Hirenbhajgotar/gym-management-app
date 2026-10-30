@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\BiometricDevice;
 use App\Models\Gym;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -154,6 +155,34 @@ class ProvisionBiometricWebhookSecretsTest extends TestCase
             ->assertSuccessful();
     }
 
+    public function test_a_non_string_webhook_secret_is_not_treated_as_configured(): void
+    {
+        $device = BiometricDevice::factory()->create([
+            'gym_id' => $this->gym->id,
+            'provider_config' => [
+                'webhook_secret' => ['nested' => 'not-a-string'],
+                'threshold' => 0.8,
+            ],
+        ]);
+
+        $this->artisan('biometrics:provision-webhook-secrets')
+            ->expectsOutputToContain('non-string webhook secret')
+            ->assertFailed();
+
+        $this->assertSame(
+            ['nested' => 'not-a-string'],
+            $device->refresh()->provider_config['webhook_secret'] ?? null
+        );
+
+        $this->artisan('biometrics:provision-webhook-secrets', ['--replace-unreadable' => true])
+            ->assertSuccessful();
+
+        $this->assertMatchesRegularExpression(
+            '/^[0-9a-f]{64}$/',
+            (string) ($device->refresh()->provider_config['webhook_secret'] ?? '')
+        );
+    }
+
     public function test_reveal_prints_the_generated_secret_for_the_operator_to_install(): void
     {
         $device = BiometricDevice::factory()->create(['gym_id' => $this->gym->id]);
@@ -194,5 +223,49 @@ class ProvisionBiometricWebhookSecretsTest extends TestCase
         $this->artisan('biometrics:provision-webhook-secrets', ['--gym' => 'invalid'])
             ->expectsOutputToContain('The --gym option must be a positive integer.')
             ->assertFailed();
+    }
+
+    public function test_an_unreadable_provider_config_is_skipped_and_reported(): void
+    {
+        $rawCiphertext = 'not-a-valid-encrypted-payload';
+
+        $device = BiometricDevice::factory()->create(['gym_id' => $this->gym->id]);
+
+        DB::table('biometric_devices')
+            ->where('id', $device->id)
+            ->update(['provider_config' => $rawCiphertext]);
+
+        $this->artisan('biometrics:provision-webhook-secrets')
+            ->expectsOutputToContain('1 device(s) have an unreadable provider_config')
+            ->assertFailed();
+
+        $this->assertSame(
+            $rawCiphertext,
+            DB::table('biometric_devices')->where('id', $device->id)->value('provider_config')
+        );
+    }
+
+    public function test_replace_unreadable_flag_explicitly_discards_the_ciphertext(): void
+    {
+        $rawCiphertext = 'not-a-valid-encrypted-payload';
+
+        $device = BiometricDevice::factory()->create(['gym_id' => $this->gym->id]);
+
+        DB::table('biometric_devices')
+            ->where('id', $device->id)
+            ->update(['provider_config' => $rawCiphertext]);
+
+        $this->artisan('biometrics:provision-webhook-secrets', [
+            '--replace-unreadable' => true,
+            '--reveal' => true,
+        ])->assertSuccessful();
+
+        $device->refresh();
+
+        $this->assertFalse($device->providerConfigIsUnreadable());
+        $this->assertMatchesRegularExpression(
+            '/^[0-9a-f]{64}$/',
+            (string) ($device->provider_config['webhook_secret'] ?? '')
+        );
     }
 }
