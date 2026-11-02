@@ -16,7 +16,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $gym_id
- * @property int $device_id
+ * @property int|null $device_id
+ * @property string|null $device_serial
  * @property string $event_fingerprint
  * @property BiometricReceiptStatusEnum $status
  * @property int|null $attendance_id
@@ -51,6 +52,7 @@ class BiometricEventReceipt extends Model
     protected $fillable = [
         'gym_id',
         'device_id',
+        'device_serial',
         'event_fingerprint',
         'status',
         'attendance_id',

@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Biometrics\Services\BiometricDeProvisioner;
 use App\Biometrics\ValueObjects\AdmsCommandKey;
 use App\Enums\AdmsCommandStatusEnum;
+use App\Enums\AdmsUserTableEnum;
 use App\Enums\BiometricDeProvisionOutcome;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricTemplateSyncStatusEnum;
@@ -187,6 +188,58 @@ class BiometricDeProvisionOutcomeTest extends TestCase
     }
 
     /**
+     * The operator may flip the terminal's schema selector after a credential was
+     * enrolled under the previous schema. The first delete for that PIN must be
+     * formatted to match the credential it erases, not today's selector, or the
+     * firmware will not recognise the record.
+     */
+    #[Test]
+    public function a_new_delete_command_snapshots_the_schema_of_the_credential_it_erases(): void
+    {
+        // Selector flipped to `user` after the credential was enrolled.
+        $this->device->forceFill([
+            'provider_config' => ['adms_user_table' => AdmsUserTableEnum::User->value],
+        ])->save();
+
+        $this->assertSame(
+            AdmsUserTableEnum::User,
+            AdmsDeviceCommand::resolveUserTable($this->device),
+            'Precondition: the live selector now resolves to the flipped schema.'
+        );
+
+        $userAdd = new AdmsDeviceCommand([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => (string) $this->member->id],
+            'idempotency_key' => AdmsDeviceCommand::idempotencyKeyFor(
+                $this->gym->id,
+                $this->device->id,
+                $this->member->id,
+                999,
+            ),
+            'status' => AdmsCommandStatusEnum::ACKNOWLEDGED,
+        ]);
+
+        // `user_table` is not mass-assignable; it is snapshotted by direct
+        // assignment so this fixture really holds the pre-flip schema.
+        $userAdd->user_table = AdmsUserTableEnum::UserInfo;
+        $userAdd->save();
+
+        $template = $this->pendingDeletionTemplate();
+
+        $this->assertSame(BiometricDeProvisionOutcome::Queued, $this->deProvisioner->deprovision($template));
+
+        $delete = AdmsDeviceCommand::query()->where('command_type', 'user_delete')->firstOrFail();
+
+        $this->assertSame(
+            AdmsUserTableEnum::UserInfo,
+            $delete->user_table,
+            'The delete must use the schema the existing credential was enrolled under.'
+        );
+    }
+
+    /**
      * ADMS erases a whole PIN, so the idempotency key must be PIN-scoped. A template-scoped key
      * would let a second template sharing the PIN insert its own command for the same record.
      */
@@ -251,11 +304,13 @@ class BiometricDeProvisionOutcomeTest extends TestCase
     }
 
     /**
-     * Past the cap the obligation cannot self-heal, so it must be reported rather than being
-     * indistinguishable from a healthy idle run.
+     * Past the cap the obligation cannot self-heal, so it must be reported and surfaced
+     * rather than being indistinguishable from a healthy idle run. The row is parked at
+     * `DeletionUnresolvable` with the obligation flag: `PendingDeletion` with the flag false
+     * was invisible to the operator surface and had no exit at all.
      */
     #[Test]
-    public function a_failed_delete_at_the_cap_reports_exhausted_instead_of_silently_no_opping(): void
+    public function a_failed_delete_at_the_cap_reports_exhausted_and_parks_the_obligation(): void
     {
         AdmsDeviceCommand::query()->create([
             'gym_id' => $this->gym->id,
@@ -275,7 +330,9 @@ class BiometricDeProvisionOutcomeTest extends TestCase
         $this->assertSame(BiometricDeProvisionOutcome::Exhausted, $this->deProvisioner->deprovision($template));
 
         $template->refresh();
-        $this->assertSame(BiometricTemplateSyncStatusEnum::PendingDeletion, $template->sync_status);
+        $this->assertSame(BiometricTemplateSyncStatusEnum::DeletionUnresolvable, $template->sync_status);
+        $this->assertTrue((bool) $template->is_erasure_obligation);
+        $this->assertTrue($template->requiresOperatorAttention());
     }
 
     /**
@@ -325,8 +382,11 @@ class BiometricDeProvisionOutcomeTest extends TestCase
     }
 
     #[Test]
-    public function a_device_native_row_with_no_device_bound_is_written_off_as_not_delivered(): void
+    public function a_hardware_row_whose_enrolling_terminal_is_gone_is_parked_for_an_operator(): void
     {
+        // A null device is also what deleting the terminal leaves behind. The
+        // credential is still in the terminal's flash, so writing it off as
+        // `Deleted` would fabricate an erasure.
         $template = BiometricTemplate::query()->create([
             'gym_member_id' => $this->member->id,
             'gym_id' => $this->gym->id,
@@ -339,11 +399,36 @@ class BiometricDeProvisionOutcomeTest extends TestCase
             'enrolled_at' => now()->subDay(),
         ]);
 
+        $this->assertSame(BiometricDeProvisionOutcome::DeviceRemoved, $this->deProvisioner->deprovision($template));
+
+        $template->refresh();
+        $this->assertSame(BiometricTemplateSyncStatusEnum::DeletionUnresolvable, $template->sync_status);
+        $this->assertFalse((bool) $template->is_active);
+        $this->assertTrue((bool) $template->is_erasure_obligation);
+        $this->assertDatabaseMissing('adms_device_commands', ['command_type' => 'user_delete']);
+    }
+
+    #[Test]
+    public function an_undelivered_placeholder_with_no_device_bound_is_written_off(): void
+    {
+        $template = BiometricTemplate::query()->create([
+            'gym_member_id' => $this->member->id,
+            'gym_id' => $this->gym->id,
+            'enrolled_by_device_id' => null,
+            'biometric_type' => BiometricTypeEnum::Fingerprint,
+            'provider_type' => 'device_native',
+            'template_ref' => null,
+            'is_active' => false,
+            'sync_status' => BiometricTemplateSyncStatusEnum::Pending,
+            'enrolled_at' => null,
+            'hardware_confirmed_at' => null,
+        ]);
+
         $this->assertSame(BiometricDeProvisionOutcome::NotDelivered, $this->deProvisioner->deprovision($template));
 
         $template->refresh();
         $this->assertSame(BiometricTemplateSyncStatusEnum::Deleted, $template->sync_status);
-        $this->assertFalse((bool) $template->is_active);
+        $this->assertFalse((bool) $template->is_erasure_obligation);
         $this->assertDatabaseMissing('adms_device_commands', ['command_type' => 'user_delete']);
     }
 

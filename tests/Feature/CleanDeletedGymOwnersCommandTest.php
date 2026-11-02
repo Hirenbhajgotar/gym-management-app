@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Enums\BiometricTemplateSyncStatusEnum;
 use App\Enums\DefaultRole;
+use App\Models\BiometricDevice;
+use App\Models\BiometricErasureRegisterExport;
+use App\Models\BiometricTemplate;
 use App\Models\Gym;
+use App\Models\GymMember;
 use App\Models\User;
 use App\Models\WhatsAppAccount;
+use App\Models\WhatsAppAccountRelease;
 use App\Models\WhatsAppPhoneNumber;
-use App\Services\TwilioAccountManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
+use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -24,17 +29,16 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
     {
         parent::setUp();
 
+        // The purge dispatches the Twilio release after the delete commits. The sync queue
+        // would otherwise make a real HTTP call from the test process, so the outbox row is
+        // asserted here and the job itself is exercised separately with a mocked manager.
+        Queue::fake();
+
         // Create the gym_owner role (global, no gym_id) for test usage
         Role::query()->firstOrCreate([
             'name' => DefaultRole::GYM_OWNER->value,
             'guard_name' => 'web',
         ]);
-    }
-
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
     }
 
     #[Test]
@@ -48,16 +52,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
 
         // Soft-delete 16 days ago
         $owner->delete();
-        $owner->update(['deleted_at' => now()->subDays(16)]);
-
-        // Mock Twilio cleanup so it doesn't make real API calls
-        $managerMock = Mockery::mock(TwilioAccountManager::class);
-        $managerMock->shouldReceive('cleanupTenantResources')->andReturn([
-            'success' => true,
-            'message' => 'Cleaned',
-            'cleaned' => [],
-        ]);
-        $this->app->singleton(TwilioAccountManager::class, fn () => $managerMock);
+        $owner->forceFill(['deleted_at' => now()->subDays(16)])->saveQuietly();
 
         $this->artisan('owners:clean-deleted')
             ->assertExitCode(0);
@@ -66,6 +61,54 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $owner->id]);
         // Gym should also be deleted (cascade via UserObserver -> GymObserver)
         $this->assertDatabaseMissing('gyms', ['id' => $gym->id]);
+    }
+
+    #[Test]
+    public function it_exports_the_erasure_register_and_purges_an_owner_whose_gym_has_a_terminal(): void
+    {
+        $owner = User::factory()->create();
+        $owner->assignRole(DefaultRole::GYM_OWNER->value);
+
+        $gym = Gym::factory()->create();
+        $gym->users()->attach($owner->id, ['role' => DefaultRole::GYM_OWNER->value]);
+
+        $member = GymMember::factory()->create(['gym_id' => $gym->id]);
+        $device = BiometricDevice::factory()->create([
+            'gym_id' => $gym->id,
+            'created_by' => $owner->id,
+            'adms_enabled' => true,
+        ]);
+
+        $template = BiometricTemplate::factory()->deviceNative()->create([
+            'gym_id' => $gym->id,
+            'gym_member_id' => $member->id,
+            'enrolled_by_device_id' => $device->id,
+            'template_ref' => (string) $member->id,
+            'sync_status' => BiometricTemplateSyncStatusEnum::Synced,
+            'is_active' => true,
+        ]);
+
+        $owner->delete();
+        $owner->forceFill(['deleted_at' => now()->subDays(16)])->saveQuietly();
+
+        // Retiring the terminal parks the credential as an obligation. The background
+        // purge has no operator to discharge it, so it exports the register to a durable,
+        // non-tenant-scoped table and then deletes the tenant under that audited override.
+        $this->artisan('owners:clean-deleted')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseMissing('users', ['id' => $owner->id]);
+        $this->assertDatabaseMissing('gyms', ['id' => $gym->id]);
+        $this->assertDatabaseMissing('biometric_devices', ['id' => $device->id]);
+        $this->assertDatabaseMissing('biometric_templates', ['id' => $template->id]);
+
+        $export = BiometricErasureRegisterExport::query()
+            ->where('gym_id', $gym->id)
+            ->sole();
+
+        $this->assertSame(1, $export->obligation_count);
+        $this->assertSame($template->id, $export->obligations[0]['template_id']);
+        $this->assertSame('deletion_unresolvable', $export->obligations[0]['sync_status']);
     }
 
     #[Test]
@@ -79,7 +122,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
 
         // Soft-delete only 10 days ago (within grace period)
         $owner->delete();
-        $owner->update(['deleted_at' => now()->subDays(10)]);
+        $owner->forceFill(['deleted_at' => now()->subDays(10)])->saveQuietly();
 
         $this->artisan('owners:clean-deleted')
             ->assertExitCode(0);
@@ -109,7 +152,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
 
         // Soft-delete 20 days ago
         $owner->delete();
-        $owner->update(['deleted_at' => now()->subDays(20)]);
+        $owner->forceFill(['deleted_at' => now()->subDays(20)])->saveQuietly();
 
         $this->artisan('owners:clean-deleted --dry-run')
             ->expectsOutput('Dry run mode - no owners were deleted.')
@@ -121,7 +164,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
     }
 
     #[Test]
-    public function it_triggers_twilio_cleanup_when_gym_has_whatsapp_account(): void
+    public function it_captures_the_whatsapp_resources_for_a_post_commit_release(): void
     {
         $owner = User::factory()->create();
         $owner->assignRole(DefaultRole::GYM_OWNER->value);
@@ -145,6 +188,7 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
             'whatsapp_account_id' => $whatsappAccount->id,
             'phone_number' => '+14155551111',
             'phone_number_sid' => 'PNtest_cmd_123',
+            'channel_sender_sid' => 'CNtest_cmd_123',
             'country_code' => 'US',
             'status' => 'active',
             'type' => 'local',
@@ -153,32 +197,29 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
 
         // Soft-delete 16 days ago
         $owner->delete();
-        $owner->update(['deleted_at' => now()->subDays(16)]);
-
-        // Mock Twilio cleanup - verify it's called with the correct gym ID
-        $managerMock = Mockery::mock(TwilioAccountManager::class);
-        $managerMock->shouldReceive('cleanupTenantResources')
-            ->with($gym->id)
-            ->once()
-            ->andReturn([
-                'success' => true,
-                'message' => 'All Twilio resources cleaned up',
-                'cleaned' => [
-                    'phone_numbers' => ['success' => true, 'released' => 1],
-                    'messaging_service' => ['success' => true],
-                    'subaccount' => ['success' => true],
-                ],
-            ]);
-        $this->app->singleton(TwilioAccountManager::class, fn () => $managerMock);
+        $owner->forceFill(['deleted_at' => now()->subDays(16)])->saveQuietly();
 
         $this->artisan('owners:clean-deleted')
             ->assertExitCode(0);
 
-        // Everything should be cleaned up
+        // Everything local should be cleaned up
         $this->assertDatabaseMissing('users', ['id' => $owner->id]);
         $this->assertDatabaseMissing('gyms', ['id' => $gym->id]);
         $this->assertDatabaseMissing('whatsapp_accounts', ['gym_id' => $gym->id]);
         $this->assertDatabaseMissing('whatsapp_phone_numbers', ['whatsapp_account_id' => $whatsappAccount->id]);
+
+        // The external release intent survives the tenant cascade because it has no
+        // foreign key, and the queued job runs only after the delete commits.
+        $release = WhatsAppAccountRelease::query()->where('gym_id', $gym->id)->sole();
+
+        $this->assertSame(WhatsAppAccountRelease::STATUS_PENDING, $release->status);
+        $this->assertSame('ACtest_cmd_sid', $release->twilio_account_sid);
+        $this->assertSame('test_token', $release->twilio_auth_token);
+        $this->assertSame('MGtest_cmd_sid', $release->messaging_service_sid);
+        $this->assertSame('+14155551111', $release->phone_number);
+        $this->assertSame('CNtest_cmd_123', $release->channel_sender_sid);
+        $this->assertSame('PNtest_cmd_123', $release->incoming_phone_sid);
+        $this->assertSame(0, $release->attempts);
     }
 
     #[Test]
@@ -195,20 +236,11 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
             $gym->users()->attach($owner->id, ['role' => DefaultRole::GYM_OWNER->value]);
 
             $owner->delete();
-            $owner->update(['deleted_at' => now()->subDays(20)]);
+            $owner->forceFill(['deleted_at' => now()->subDays(20)])->saveQuietly();
 
             $owners[] = $owner;
             $gyms[] = $gym;
         }
-
-        // Mock Twilio cleanup
-        $managerMock = Mockery::mock(TwilioAccountManager::class);
-        $managerMock->shouldReceive('cleanupTenantResources')->andReturn([
-            'success' => true,
-            'message' => 'Cleaned',
-            'cleaned' => [],
-        ]);
-        $this->app->singleton(TwilioAccountManager::class, fn () => $managerMock);
 
         $this->artisan('owners:clean-deleted')
             ->assertExitCode(0);
@@ -223,15 +255,14 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
     }
 
     #[Test]
-    public function it_continues_processing_when_one_owner_fails(): void
+    public function it_processes_every_owner_independently_when_one_has_whatsapp_resources(): void
     {
-        // Create two owners - one will fail, one should succeed
         $owner1 = User::factory()->create();
         $owner1->assignRole(DefaultRole::GYM_OWNER->value);
         $gym1 = Gym::factory()->create();
         $gym1->users()->attach($owner1->id, ['role' => DefaultRole::GYM_OWNER->value]);
 
-        // Create a WhatsApp account for gym1 that will cause issues
+        // The WhatsApp account must be captured for release without blocking the purge.
         WhatsAppAccount::query()->create([
             'gym_id' => $gym1->id,
             'twilio_account_sid' => 'ACtest_fail_sid',
@@ -246,24 +277,23 @@ class CleanDeletedGymOwnersCommandTest extends TestCase
         $gym2->users()->attach($owner2->id, ['role' => DefaultRole::GYM_OWNER->value]);
 
         $owner1->delete();
-        $owner1->update(['deleted_at' => now()->subDays(20)]);
+        $owner1->forceFill(['deleted_at' => now()->subDays(20)])->saveQuietly();
         $owner2->delete();
-        $owner2->update(['deleted_at' => now()->subDays(20)]);
-
-        // Mock Twilio cleanup - it won't block deletion even if it fails
-        $managerMock = Mockery::mock(TwilioAccountManager::class);
-        $managerMock->shouldReceive('cleanupTenantResources')->andReturn([
-            'success' => true,
-            'message' => 'Cleaned',
-            'cleaned' => [],
-        ]);
-        $this->app->singleton(TwilioAccountManager::class, fn () => $managerMock);
+        $owner2->forceFill(['deleted_at' => now()->subDays(20)])->saveQuietly();
 
         $this->artisan('owners:clean-deleted')
             ->assertExitCode(0);
 
-        // Both should be processed
+        // Both should be processed; the first leaves a durable release intent behind.
+        $this->assertDatabaseMissing('users', ['id' => $owner1->id]);
+        $this->assertDatabaseMissing('gyms', ['id' => $gym1->id]);
         $this->assertDatabaseMissing('users', ['id' => $owner2->id]);
         $this->assertDatabaseMissing('gyms', ['id' => $gym2->id]);
+
+        $this->assertDatabaseHas('whatsapp_account_releases', [
+            'gym_id' => $gym1->id,
+            'twilio_account_sid' => 'ACtest_fail_sid',
+            'status' => WhatsAppAccountRelease::STATUS_PENDING,
+        ]);
     }
 }

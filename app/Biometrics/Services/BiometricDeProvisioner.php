@@ -8,6 +8,7 @@ use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\DTOs\TemplateRef;
 use App\Biometrics\ValueObjects\AdmsCommandKey;
 use App\Enums\AdmsCommandStatusEnum;
+use App\Enums\AdmsUserTableEnum;
 use App\Enums\BiometricDeProvisionOutcome;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricTemplateSyncStatusEnum;
@@ -15,6 +16,7 @@ use App\Models\AdmsDeviceCommand;
 use App\Models\BiometricTemplate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -30,13 +32,17 @@ use Throwable;
  * every row down the hardware path, so a cloud credential could be parked behind a
  * `user_delete` and then falsely converged to `Deleted` by a terminal ACK.
  *
- * ADMS exposes only `DATA DELETE user Pin=N`, which erases the whole hardware credential for a
+ * ADMS exposes only a PIN-addressed `DATA DELETE` (`DATA DELETE USERINFO PIN=N` or the
+ * configured legacy `DATA DELETE user Pin=N`), which erases the whole hardware credential for a
  * PIN. A member holding both a fingerprint and a face template on one device shares a single
  * PIN and therefore a single hardware credential, so template-scoped erasure is not
  * expressible and neither is a template-scoped idempotency key. `Deleted` is written in
  * exactly two circumstances: the template provably never reached the hardware, or a terminal
- * (or provider) confirmed the delete. Every other outcome leaves the obligation outstanding in
- * a state the reconciler revisits.
+ * (or provider) confirmed the delete. Every other outcome either leaves the obligation
+ * retryable in `PendingDeletion`, or parks it at `DeletionUnresolvable` with the durable
+ * `is_erasure_obligation` flag and surfaces it to an operator. The parked outcomes are
+ * `Exhausted`, `UnaddressablePin`, `DeviceRemoved` and `CloudUnresolvable`; they are not
+ * retryable by the reconciler and must not be described as such.
  */
 class BiometricDeProvisioner
 {
@@ -57,18 +63,13 @@ class BiometricDeProvisioner
             return $this->deprovisionCloudTemplate($template);
         }
 
-        // No device bound this template, so no terminal can hold a credential for it and
-        // the hardware branch has nothing outstanding. A cloud-backed row never reaches
-        // this branch — it was dispatched above — so this converges to Deleted rather than
-        // claiming a deletion nothing can confirm. `NotDelivered` is the honest outcome:
-        // there was never a credential on hardware to erase.
+        // No terminal is bound to this template any more. That is only proof of "no
+        // credential" when the row provably never reached hardware; a null foreign key
+        // is also what device deletion leaves behind, and the terminal's flash still
+        // holds the credential. Converging that case to `Deleted` would report an
+        // erasure that never happened.
         if ($template->enrolled_by_device_id === null) {
-            $template->update([
-                'is_active' => false,
-                'sync_status' => BiometricTemplateSyncStatusEnum::Deleted,
-            ]);
-
-            return BiometricDeProvisionOutcome::NotDelivered;
+            return $this->resolveUnboundTemplate($template);
         }
 
         $pin = $template->resolvedCommandPin();
@@ -94,10 +95,7 @@ class BiometricDeProvisioner
 
         if ($template->sync_status === BiometricTemplateSyncStatusEnum::Pending
             && ! $possiblyDelivered) {
-            $template->update([
-                'sync_status' => BiometricTemplateSyncStatusEnum::Deleted,
-                'is_active' => false,
-            ]);
+            $template->markErasureDischarged();
 
             return BiometricDeProvisionOutcome::NotDelivered;
         }
@@ -156,6 +154,42 @@ class BiometricDeProvisioner
     }
 
     /**
+     * Resolve erasure for a template whose enrolling terminal is no longer bound.
+     *
+     * A null `enrolled_by_device_id` historically meant "never reached hardware", but
+     * device deletion produces the same state while the terminal still holds the
+     * credential in flash. The two cases are distinguished by durable evidence of
+     * delivery: a hardware acknowledgement, a terminal-held sync state, or an
+     * already-recorded erasure obligation. Anything with that evidence is parked at
+     * `DeletionUnresolvable` for an operator; only a `Pending` row with no evidence
+     * of delivery is written off as `NotDelivered`.
+     */
+    protected function resolveUnboundTemplate(BiometricTemplate $template): BiometricDeProvisionOutcome
+    {
+        if (! $template->hasDurableHardwareEvidence()) {
+            $template->markErasureDischarged();
+
+            return BiometricDeProvisionOutcome::NotDelivered;
+        }
+
+        // `is_erasure_obligation` keeps a later enrolment from superseding the
+        // obligation and writing a false "erasure overridden" audit line.
+        $template->parkAsUnresolvableObligation(
+            'the enrolling terminal is gone and the terminal may still hold the credential',
+            ['device_id' => $template->enrolled_by_device_id]
+        );
+
+        Log::error('BiometricDeProvisioner: enrolling terminal is gone and the terminal may still hold the credential; erasure needs an operator', [
+            'template_id' => $template->id,
+            'gym_id' => $template->gym_id,
+            'member_id' => $template->gym_member_id,
+            'sync_status' => $template->sync_status?->value,
+        ]);
+
+        return BiometricDeProvisionOutcome::DeviceRemoved;
+    }
+
+    /**
      * Erase a provider-backed credential through its provider API.
      *
      * A row with no provider reference cannot be erased through the API. Reporting success
@@ -167,10 +201,14 @@ class BiometricDeProvisioner
     protected function deprovisionCloudTemplate(BiometricTemplate $template): BiometricDeProvisionOutcome
     {
         if (blank($template->template_ref)) {
-            $template->update([
-                'sync_status' => BiometricTemplateSyncStatusEnum::DeletionUnresolvable,
-                'is_active' => false,
-            ]);
+            // The provider may still hold a credential the API can no longer address.
+            // This is the same "no automated path can discharge it" case as the terminal
+            // tombstone, so it goes through the one park writer: state, durable flag,
+            // transactional audit entry.
+            $template->parkAsUnresolvableObligation(
+                'the cloud provider may still hold a credential but no reference can address it',
+                ['provider' => $template->provider_type]
+            );
 
             Log::error('BiometricDeProvisioner: cloud template has no provider reference; erasure needs an operator', [
                 'template_id' => $template->id,
@@ -209,6 +247,10 @@ class BiometricDeProvisioner
         $template->forceFill([
             'sync_status' => BiometricTemplateSyncStatusEnum::Deleted,
             'is_active' => false,
+            // A confirmed provider erase discharges the obligation. Leaving the flag set
+            // kept a correctly erased cloud row flagged forever: excluded from supersede,
+            // and invisible because the row is no longer a "needs operator" candidate.
+            'is_erasure_obligation' => false,
             'erasure_attempts' => 0,
             'erasure_first_attempted_at' => null,
         ])->save();
@@ -260,21 +302,28 @@ class BiometricDeProvisioner
 
         $budgetExhausted = $firstAttemptedAt->lte(now()->subHours($cooldownHours));
 
-        // The counter and the parked status ride one atomic UPDATE, so concurrent writers
-        // cannot under-count the attempts.
-        $template->increment('erasure_attempts', 1, [
-            'sync_status' => $budgetExhausted
-                ? BiometricTemplateSyncStatusEnum::DeletionUnresolvable
-                : BiometricTemplateSyncStatusEnum::PendingDeletion,
-            'is_active' => false,
-        ]);
-
-        // `increment()` fires `updated` but not `saved`, and the model's `saved` hook is what
-        // clears the template-ref cache. Clearing it here is an optimisation —
-        // `findByTemplateRef()` self-heals on the next read — not a correctness requirement.
-        $template->clearTemplateRefCache();
-
         if ($budgetExhausted) {
+            DB::transaction(function () use ($template, $firstAttemptedAt, $cooldownHours): void {
+                // The counter rides its own atomic UPDATE so concurrent writers cannot
+                // under-count. The state, flag and audit entry are written by the single
+                // park writer: the second copy here hard-coded `from_status` as
+                // PendingDeletion and could drift from the invariant.
+                $template->increment('erasure_attempts', 1, ['is_active' => false]);
+
+                $template->parkAsUnresolvableObligation('cloud erasure cooldown exhausted', [
+                    'provider' => $template->provider_type,
+                    'erasure_first_attempted_at' => $firstAttemptedAt->toIso8601String(),
+                    'cooldown_hours' => $cooldownHours,
+                    'erasure_attempts' => $template->erasure_attempts,
+                ]);
+            });
+
+            // `increment()` fires `updated` but not `saved`, and the model's `saved` hook
+            // is what clears the template-ref cache. Clearing it here is an optimisation —
+            // `findByTemplateRef()` self-heals on the next read — not a correctness
+            // requirement.
+            $template->clearTemplateRefCache();
+
             Log::error('BiometricDeProvisioner: cloud erasure budget exhausted; erasure needs an operator', [
                 'template_id' => $template->id,
                 'gym_id' => $template->gym_id,
@@ -287,6 +336,15 @@ class BiometricDeProvisioner
 
             return BiometricDeProvisionOutcome::CloudUnresolvable;
         }
+
+        // The counter and the retryable status ride one atomic UPDATE, so concurrent
+        // writers cannot under-count the attempts.
+        $template->increment('erasure_attempts', 1, [
+            'sync_status' => BiometricTemplateSyncStatusEnum::PendingDeletion,
+            'is_active' => false,
+        ]);
+
+        $template->clearTemplateRefCache();
 
         Log::warning('BiometricDeProvisioner: provider did not confirm the erase; obligation stays retryable', [
             'template_id' => $template->id,
@@ -344,6 +402,16 @@ class BiometricDeProvisioner
      */
     protected function ensureUserDeleteCommand(BiometricTemplate $template, int $deviceId, string $pin): BiometricDeProvisionOutcome
     {
+        // The PIN is the command's address. If it cannot be expressed on the wire, no
+        // `user_delete` for it can ever be delivered, so queueing one would only produce a
+        // row the lease layer quarantines on the first poll and the reconciler re-drives
+        // every hour. Park the template for a physical wipe instead.
+        if (! AdmsDeviceCommand::pinIsUsable($pin)) {
+            return $this->parkForManualErasure($template, 'the template PIN cannot be expressed on the ADMS wire', [
+                'device_id' => $deviceId,
+            ]);
+        }
+
         $hasLiveCommand = AdmsDeviceCommand::query()
             ->where('device_id', $deviceId)
             ->where('command_type', 'user_delete')
@@ -369,7 +437,78 @@ class BiometricDeProvisioner
             $startsNewEpoch = $previousStatus === AdmsCommandStatusEnum::ACKNOWLEDGED
                 || $epochUserAddId !== null;
 
+            // A renewed credential was created by a `user_add` under that command's
+            // snapshotted schema. The delete row may predate a schema flip, so it is
+            // re-formatted to match the credential it is about to erase rather than
+            // producing a cross-schema delete the firmware will not recognise.
+            $redriveUserTable = null;
+
+            if ($epochUserAddId !== null) {
+                $redriveUserTable = AdmsDeviceCommand::query()->find($epochUserAddId)?->user_table;
+            }
+
+            if ($redriveUserTable === null) {
+                $redriveUserTable = $existing->user_table;
+            }
+
             if (! $startsNewEpoch
+                && $previousStatus === AdmsCommandStatusEnum::FAILED
+                && $existing->device_return_code === AdmsDeviceCommand::UNADDRESSABLE_PIN_CODE) {
+                return $this->parkForManualErasure($template, 'the terminal rejected this command as unaddressable', [
+                    'device_id' => $deviceId,
+                    'command_id' => $existing->id,
+                ]);
+            }
+
+            // A lease that timed out because the terminal was offline is a transient outage,
+            // not abandonment: the command was never delivered and rejected. Re-drive it with
+            // a fresh budget after the cooldown instead of parking a compliance obligation.
+            $isTransientTimeout = $previousStatus === AdmsCommandStatusEnum::FAILED
+                && $existing->device_return_code === AdmsDeviceCommand::TIMEOUT_MAX_ATTEMPTS_CODE;
+
+            if ($isTransientTimeout) {
+                $cooldownHours = config()->integer('biometrics.adms.retry_cooldown_hours', 24);
+
+                if ($existing->updated_at !== null
+                    && $existing->updated_at->gt(now()->subHours($cooldownHours))) {
+                    Log::info('BiometricDeProvisioner: hardware delete timed out while the terminal was offline; waiting out the retry cooldown', [
+                        'template_id' => $template->id,
+                        'device_id' => $deviceId,
+                        'command_id' => $existing->id,
+                        'cooldown_hours' => $cooldownHours,
+                    ]);
+
+                    return BiometricDeProvisionOutcome::DeviceUnavailable;
+                }
+            }
+
+            if ($isTransientTimeout && $existing->transient_rearm_count >= AdmsDeviceCommand::MAX_TRANSIENT_REARMS) {
+                // The terminal has been handed this command across repeated lease windows
+                // and never acknowledged it. "Never delivered" is no longer provable, so the
+                // transient exemption stops here: park the template so the credential is
+                // visible to an operator instead of re-arming forever.
+                Log::error('BiometricDeProvisioner: hardware erase timed out after the transient re-arm cap; manual intervention required', [
+                    'template_id' => $template->id,
+                    'gym_id' => $template->gym_id,
+                    'member_id' => $template->gym_member_id,
+                    'device_id' => $deviceId,
+                    'command_id' => $existing->id,
+                    'transient_rearm_count' => $existing->transient_rearm_count,
+                    'rearm_cap' => AdmsDeviceCommand::MAX_TRANSIENT_REARMS,
+                ]);
+
+                $template->parkAsUnresolvableObligation('hardware erase timed out after the transient re-arm cap', [
+                    'device_id' => $deviceId,
+                    'command_id' => $existing->id,
+                    'transient_rearm_count' => $existing->transient_rearm_count,
+                    'rearm_cap' => AdmsDeviceCommand::MAX_TRANSIENT_REARMS,
+                ]);
+
+                return BiometricDeProvisionOutcome::Exhausted;
+            }
+
+            if (! $startsNewEpoch
+                && ! $isTransientTimeout
                 && $previousStatus === AdmsCommandStatusEnum::FAILED
                 && $existing->attempt_count >= AdmsCommandKey::maxAttempts()) {
                 Log::error('BiometricDeProvisioner: hardware erase delivery budget exhausted; manual intervention required', [
@@ -385,14 +524,28 @@ class BiometricDeProvisioner
                     'device_return_code' => $existing->device_return_code,
                 ]);
 
+                // The dead-letter has no automated exit, so the template must carry the
+                // obligation flag. Without it the row stayed at `PendingDeletion` with
+                // everything false, the discharge action was hidden, and the operator had no
+                // surface at all — exactly the case where a human is most likely to have
+                // wiped the terminal by hand.
+                $template->parkAsUnresolvableObligation('hardware erase delivery budget exhausted', [
+                    'device_id' => $deviceId,
+                    'command_id' => $existing->id,
+                    'attempt_count' => $existing->attempt_count,
+                    'attempt_cap' => AdmsCommandKey::maxAttempts(),
+                    'device_return_code' => $existing->device_return_code,
+                ]);
+
                 return BiometricDeProvisionOutcome::Exhausted;
             }
 
             // Only a discharged obligation starts a fresh budget: an `ACKNOWLEDGED` row, or a
             // delete with an unconsumed `user_add` proving its PIN was re-enrolled since the
-            // last failure, means the previous credential is gone. Anything else is the same
+            // last failure, means the previous credential is gone. A timeout is re-armed with
+            // a fresh budget because it was never delivered; anything else is the same
             // obligation and keeps its counter.
-            $attemptCount = $startsNewEpoch ? 0 : $existing->attempt_count;
+            $attemptCount = ($startsNewEpoch || $isTransientTimeout) ? 0 : $existing->attempt_count;
 
             // Compare-and-set on a terminal row: a concurrent lease between the read above and
             // this write would otherwise be regressed to PENDING and delivered twice.
@@ -414,7 +567,11 @@ class BiometricDeProvisioner
                     'expires_at' => null,
                     'device_return_code' => null,
                     'attempt_count' => $attemptCount,
+                    'transient_rearm_count' => $isTransientTimeout
+                        ? $existing->transient_rearm_count + 1
+                        : 0,
                     'epoch_credential_user_add_id' => $epochUserAddId ?? $existing->epoch_credential_user_add_id,
+                    'user_table' => $redriveUserTable instanceof AdmsUserTableEnum ? $redriveUserTable->value : null,
                 ]);
 
             if ($affected === 0) {
@@ -430,13 +587,30 @@ class BiometricDeProvisioner
                 'previous_status' => $previousStatus->value,
                 'starts_new_epoch' => $startsNewEpoch,
                 'attempt_count' => $attemptCount,
+                'transient_rearm_count' => $isTransientTimeout
+                    ? $existing->transient_rearm_count + 1
+                    : 0,
             ]);
 
             return BiometricDeProvisionOutcome::ReDriven;
         }
 
+        // The delete is addressed under the same schema the credential was enrolled
+        // under, not the schema the selector resolves to today. The `creating` hook
+        // snapshots from the live device, so after an operator flips the selector it
+        // would produce a cross-schema delete the firmware cannot match to the PIN.
+        // The newest `user_add` for this PIN is the authoritative snapshot.
+        $epochUserTable = AdmsDeviceCommand::query()
+            ->where('gym_id', $template->gym_id)
+            ->where('device_id', $deviceId)
+            ->where('command_type', 'user_add')
+            ->where('command_payload->Pin', $pin)
+            ->whereIn('status', [AdmsCommandStatusEnum::SENT, AdmsCommandStatusEnum::ACKNOWLEDGED])
+            ->orderByDesc('id')
+            ->value('user_table');
+
         try {
-            AdmsDeviceCommand::query()->create([
+            $command = new AdmsDeviceCommand([
                 'gym_id' => $template->gym_id,
                 'device_id' => $deviceId,
                 'command_type' => 'user_delete',
@@ -444,6 +618,15 @@ class BiometricDeProvisioner
                 'idempotency_key' => $deleteKey,
                 'status' => AdmsCommandStatusEnum::PENDING,
             ]);
+
+            // `user_table` is deliberately not mass-assignable, so the snapshot is
+            // written by direct assignment. Null defers to the creating hook's
+            // default when no delivery of this PIN was recorded.
+            $command->user_table = $epochUserTable instanceof AdmsUserTableEnum
+                ? $epochUserTable
+                : AdmsUserTableEnum::tryParse($epochUserTable);
+
+            $command->save();
 
             return BiometricDeProvisionOutcome::Queued;
         } catch (UniqueConstraintViolationException) {
@@ -573,5 +756,28 @@ class BiometricDeProvisioner
             'sync_status' => BiometricTemplateSyncStatusEnum::PendingDeletion,
             'is_active' => false,
         ]);
+    }
+
+    /**
+     * Park a credential the command queue can never erase for a physical wipe.
+     *
+     * `DeletionUnresolvable` takes the row out of the reconciler's selection and the
+     * obligation flag keeps a later enrolment from superseding it, so the operator's only
+     * route — erase it on the terminal, then confirm the discharge — stays reachable.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    private function parkForManualErasure(BiometricTemplate $template, string $reason, array $context = []): BiometricDeProvisionOutcome
+    {
+        $template->parkAsUnresolvableObligation($reason, $context);
+
+        Log::error('BiometricDeProvisioner: hardware erase cannot be delivered; manual erasure required', [
+            'template_id' => $template->id,
+            'gym_id' => $template->gym_id,
+            'member_id' => $template->gym_member_id,
+            'reason' => $reason,
+        ] + $context);
+
+        return BiometricDeProvisionOutcome::UnaddressablePin;
     }
 }

@@ -74,6 +74,16 @@ class CleanupSupersededTemplatesCommand extends Command
             foreach ($templates as $template) {
                 if ($template->sync_status === BiometricTemplateSyncStatusEnum::Pending) {
                     if (! $template->enrolled_by_device_id) {
+                        // The ledger, not the missing device, decides: a row the
+                        // terminal may still hold must be parked for an operator
+                        // rather than retired as if it were never delivered.
+                        if ($template->hasDurableHardwareEvidence()) {
+                            $deProvisioner->deprovision($template);
+                            $deProvisionedPending++;
+
+                            continue;
+                        }
+
                         $retiredUndeliveredPending++;
                         $template->delete();
 
@@ -122,9 +132,12 @@ class CleanupSupersededTemplatesCommand extends Command
         });
 
         // The buckets are disjoint, so the headline count is the number of rows actually
-        // retired and cannot exceed the number of candidates visited.
+        // retired and cannot exceed the number of candidates visited. The pending buckets
+        // are counted separately from the retired ones: a row handed to the de-provisioner
+        // is not also an "undelivered pending" row, and reporting it as both made the same
+        // rows appear under two descriptions.
         $retiredCount = $retiredSuperseded + $retiredUndeliveredPending;
-        $visitedPending = $retiredUndeliveredPending + $deProvisionedPending + $deferredPending;
+        $visitedPending = $deProvisionedPending + $deferredPending;
 
         $this->info("Retired {$retiredCount} template(s). ({$retiredSuperseded} superseded, {$retiredUndeliveredPending} undelivered pending)");
 

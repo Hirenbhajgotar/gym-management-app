@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Filament;
 
-use Spatie\Permission\PermissionRegistrar;
+use App\Biometrics\Services\AdmsDeviceAuthenticator;
 use App\Biometrics\Services\CommKeyReveal;
 use App\Biometrics\Services\DeviceTokenReveal;
-use App\Biometrics\Services\AdmsDeviceAuthenticator;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricProvidersEnum;
@@ -31,6 +30,7 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use RuntimeException;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class BiometricDeviceCommKeyFormTest extends TestCase
@@ -1222,39 +1222,49 @@ class BiometricDeviceCommKeyFormTest extends TestCase
     public function test_provider_config_form_fields_match_the_shared_map_for_every_provider(): void
     {
         foreach (BiometricProvidersEnum::cases() as $provider) {
-            $device = BiometricDevice::factory()->create([
-                'gym_id' => $this->gym->id,
-                'provider_type' => $provider,
-                'adms_enabled' => false,
-                'provider_config' => [],
-            ]);
+            foreach ([false, true] as $admsEnabled) {
+                $device = BiometricDevice::factory()->create([
+                    'gym_id' => $this->gym->id,
+                    'provider_type' => $provider,
+                    'adms_enabled' => $admsEnabled,
+                    'provider_config' => [],
+                ]);
 
-            $component = Livewire::test(EditBiometricDevice::class, ['record' => $device->getRouteKey()]);
-            $form = $component->instance()->getForm('form');
+                $component = Livewire::test(EditBiometricDevice::class, ['record' => $device->getRouteKey()]);
+                $form = $component->instance()->getForm('form');
 
-            $this->assertNotNull($form);
+                $this->assertNotNull($form);
 
-            $secretPaths = collect(BiometricDeviceResource::providerConfigSecretFields())
-                ->map(static fn (string $field): string => 'provider_config.' . $field)
-                ->all();
+                $secretPaths = collect(BiometricDeviceResource::providerConfigSecretFields())
+                    ->map(static fn (string $field): string => 'provider_config.' . $field)
+                    ->all();
 
-            $actual = collect(array_keys($form->getFlatFields()))
-                ->filter(static fn (string $key): bool => str_starts_with($key, 'provider_config.'))
-                ->reject(static fn (string $key): bool => in_array($key, $secretPaths, true))
-                ->sort()
-                ->values()
-                ->all();
+                $actual = collect(array_keys($form->getFlatFields()))
+                    ->filter(static fn (string $key): bool => str_starts_with($key, 'provider_config.'))
+                    ->reject(static fn (string $key): bool => in_array($key, $secretPaths, true))
+                    ->sort()
+                    ->values()
+                    ->all();
 
-            $expected = collect(array_merge(
-                ['webhook_signature_header'],
-                BiometricDeviceResource::providerConfigFormFields($provider)
-            ))
-                ->map(static fn (string $field): string => 'provider_config.' . $field)
-                ->sort()
-                ->values()
-                ->all();
+                // `adms_user_table` is terminal state, not provider configuration: it
+                // renders only while ADMS is enabled, so the drift baseline has to
+                // include it for that case or the field is never actually covered.
+                $expected = collect(array_merge(
+                    ['webhook_signature_header'],
+                    BiometricDeviceResource::providerConfigFormFields($provider),
+                    $admsEnabled ? ['adms_user_table'] : []
+                ))
+                    ->map(static fn (string $field): string => 'provider_config.' . $field)
+                    ->sort()
+                    ->values()
+                    ->all();
 
-            $this->assertSame($expected, $actual, "Provider form drift for {$provider->value}.");
+                $this->assertSame(
+                    $expected,
+                    $actual,
+                    "Provider form drift for {$provider->value} (adms_enabled: " . ($admsEnabled ? 'true' : 'false') . ').'
+                );
+            }
         }
     }
 

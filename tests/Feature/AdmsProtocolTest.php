@@ -279,8 +279,8 @@ class AdmsProtocolTest extends TestCase
 
         $response->assertOk();
         $content = (string) $response->getContent();
-        $this->assertStringContainsString('DATA DELETE user', $content);
-        $this->assertStringContainsString("Pin={$this->member->id}", $content);
+        $this->assertStringContainsString('DATA DELETE USERINFO', $content);
+        $this->assertStringContainsString("PIN={$this->member->id}", $content);
 
         // Command should be marked as sent
         $this->assertDatabaseHas('adms_device_commands', [
@@ -296,6 +296,33 @@ class AdmsProtocolTest extends TestCase
 
         $response->assertOk();
         $this->assertEquals('OK', $response->getContent());
+    }
+
+    public function test_adms_getrequest_quarantines_an_unaddressable_pin_without_consuming_an_attempt(): void
+    {
+        $command = AdmsDeviceCommand::factory()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_delete',
+            'command_payload' => ['Pin' => "12\t3"],
+            'status' => AdmsCommandStatusEnum::PENDING,
+        ]);
+
+        $response = $this->get('/api/iclock/getrequest?SN=TEST-SN-001');
+
+        $response->assertOk();
+        $this->assertSame('OK', $response->getContent());
+
+        $fresh = $command->fresh();
+        $this->assertNotNull($fresh);
+        // The defect is a property of the payload, so the row is terminalised once instead
+        // of occupying the head of the lease window on every poll.
+        $this->assertSame(AdmsCommandStatusEnum::FAILED, $fresh->status);
+        $this->assertSame(AdmsDeviceCommand::UNADDRESSABLE_PIN_CODE, $fresh->device_return_code);
+        $this->assertSame(0, $fresh->attempt_count);
+
+        // The next poll skips it and still answers OK.
+        $this->assertSame('OK', $this->get('/api/iclock/getrequest?SN=TEST-SN-001')->getContent());
     }
 
     public function test_adms_devicecmd_acknowledges_command(): void
@@ -812,8 +839,8 @@ XML;
         $response->assertOk();
         $content = (string) $response->getContent();
         $this->assertStringStartsWith('C:' . $command->id . ':', $content);
-        $this->assertStringContainsString('DATA DELETE user', $content);
-        $this->assertStringContainsString("Pin={$this->member->id}", $content);
+        $this->assertStringContainsString('DATA DELETE USERINFO', $content);
+        $this->assertStringContainsString("PIN={$this->member->id}", $content);
         $this->assertSame(AdmsCommandStatusEnum::SENT, $command->fresh()?->status);
     }
 

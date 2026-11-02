@@ -102,10 +102,27 @@ class AdmsController extends Controller
 
         $commandString = $command->toAdmsCommandString();
 
+        if ($commandString === '') {
+            // The lease and the serializer must agree on what is deliverable. If they
+            // ever diverge, returning the row to the queue is the only safe move:
+            // sending an empty body would look like "no command" while having already
+            // consumed one of the command's few hardware deliveries.
+            $command->releaseUnusableLease();
+
+            Log::warning('ADMS: leased a command that cannot be expressed; returned it to the queue', [
+                'command_id' => $command->id,
+                'device_id' => $device->id,
+                'command_type' => $command->command_type,
+            ]);
+
+            return $this->plainResponse('OK');
+        }
+
         Log::info('ADMS: Command sent to device', [
             'device_id' => $device->id,
             'command_id' => $command->id,
             'command_type' => $command->command_type,
+            'user_table' => $command->user_table?->value,
         ]);
 
         return $this->plainResponse($commandString);

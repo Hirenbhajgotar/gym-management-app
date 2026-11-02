@@ -253,6 +253,13 @@ class AppServiceProvider extends ServiceProvider
                 ['store' => config('cache.default')]
             );
         }
+
+        if (! config()->boolean('biometrics.adms.user_table_is_valid', true)) {
+            $this->logInsecureAdmsOnce(
+                'user_table_invalid',
+                'ADMS: ADMS_USER_TABLE is blank or not a recognised schema; queued commands fall back to USERINFO.'
+            );
+        }
     }
 
     /**

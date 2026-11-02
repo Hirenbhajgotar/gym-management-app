@@ -41,6 +41,12 @@ class BiometricOperatorAttentionWidget extends BaseTableWidget
     protected static ?int $sort = 7;
 
     /**
+     * The maximum number of candidate rows examined for the dashboard. The cap bounds the
+     * PHP predicate work; the visible window is deterministic (obligations first, then id).
+     */
+    private const CANDIDATE_LIMIT = 1000;
+
+    /**
      * Receptionists are admitted because the `enrollBiometric` ability admits them: the widget
      * surfaces the rows the relation manager's erasure actions repair, so it must not be
      * visible only to the roles that can authorise the repair.
@@ -77,6 +83,7 @@ class BiometricOperatorAttentionWidget extends BaseTableWidget
     {
         return $table
             ->query($this->operatorAttentionQuery())
+            ->description($this->truncationDescription())
             ->columns([
                 TextColumn::make('gymMember.name')
                     ->label('Member')
@@ -134,7 +141,22 @@ class BiometricOperatorAttentionWidget extends BaseTableWidget
 
         $candidates = BiometricTemplate::query()
             ->where('gym_id', $gym?->id)
-            ->whereIn('sync_status', BiometricTemplateSyncStatusEnum::operatorAttentionCandidateStates())
+            ->where(function (Builder $query): void {
+                // State candidates plus any row still carrying the obligation flag, matching
+                // the relation manager's filter: a flag in a state the candidate set does not
+                // name must not disappear from the operator's discovery surface.
+                $query->whereIn('sync_status', BiometricTemplateSyncStatusEnum::operatorAttentionCandidateStates())
+                    ->orWhere('is_erasure_obligation', true);
+            })
+            // The predicate reads the command ledger, so it cannot be expressed in this
+            // query without duplicating the PIN resolution. Cap the tenant-wide candidate
+            // set instead: a dashboard must not materialise every historical row on every
+            // render, and a flagged row that falls outside the cap is still discoverable
+            // through the member's "Needs Operator" filter. Order deterministically so the
+            // visible window cannot change between renders.
+            ->orderByDesc('is_erasure_obligation')
+            ->orderBy('id')
+            ->limit(self::CANDIDATE_LIMIT)
             ->get();
 
         /** @var array<int, int> $ids */
@@ -155,5 +177,36 @@ class BiometricOperatorAttentionWidget extends BaseTableWidget
         return BiometricTemplate::query()
             ->whereIn('id', $ids === [] ? [-1] : $ids)
             ->with(['enrolledByDevice', 'gymMember']);
+    }
+
+    /**
+     * Tell the operator when the dashboard is showing only a window of the candidate set.
+     *
+     * The cap is a performance bound, not a statement that the omitted rows do not exist.
+     * Saying so keeps the fallback path (the per-member "Needs Operator" filter) discoverable
+     * instead of making a truncated list look complete.
+     */
+    protected function truncationDescription(): ?string
+    {
+        $gym = Filament::getTenant();
+
+        if ($gym === null) {
+            return null;
+        }
+
+        $candidateCount = BiometricTemplate::query()
+            ->where('gym_id', $gym->id)
+            ->where(function (Builder $query): void {
+                $query->whereIn('sync_status', BiometricTemplateSyncStatusEnum::operatorAttentionCandidateStates())
+                    ->orWhere('is_erasure_obligation', true);
+            })
+            ->count();
+
+        if ($candidateCount <= self::CANDIDATE_LIMIT) {
+            return null;
+        }
+
+        return 'Showing the first ' . number_format(self::CANDIDATE_LIMIT) . ' of ' . number_format($candidateCount)
+            . ' candidate records. The remaining rows stay discoverable through each member\'s "Needs Operator" filter.';
     }
 }

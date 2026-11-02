@@ -6,15 +6,14 @@ namespace App\Observers;
 
 use App\Models\Gym;
 use App\Services\GymSettingService;
-use App\Services\TwilioAccountManager;
 use Exception;
 use Filament\Notifications\Events\DatabaseNotificationsSent;
 use Filament\Notifications\Notification;
-use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class GymObserver implements ShouldHandleEventsAfterCommit
+class GymObserver
 {
     /**
      * Handle the Gym "created" event.
@@ -23,9 +22,13 @@ class GymObserver implements ShouldHandleEventsAfterCommit
     {
         resolve(GymSettingService::class)->createDefaultSettings($gym);
 
-        $recipient = $gym->owner() ?? Auth::user();
+        DB::afterCommit(function () use ($gym): void {
+            $recipient = $gym->owner() ?? Auth::user();
 
-        if ($recipient) {
+            if (! $recipient) {
+                return;
+            }
+
             Notification::make()
                 ->title('New Gym Added')
                 ->body("Gym '{$gym->name}' has been added successfully.")
@@ -34,7 +37,7 @@ class GymObserver implements ShouldHandleEventsAfterCommit
                 ->send();
 
             event(new DatabaseNotificationsSent($recipient));
-        }
+        });
     }
 
     /**
@@ -48,10 +51,15 @@ class GymObserver implements ShouldHandleEventsAfterCommit
     /**
      * Handle the Gym "deleting" event.
      *
-     * This handles cascade deletion of all gym-related data before the gym is deleted.
+     * Runs synchronously before the row is deleted, so the relations still exist. The
+     * biometric guard and the Twilio cleanup live in the synchronous `Gym::deleting()`
+     * model listener; this observer no longer defers to after-commit (which made the
+     * cascade lazy-load relations that the database had already cascade-deleted).
      */
     public function deleting(Gym $gym): void
     {
+        $gym->loadMissing(['gymMembers', 'leads', 'socialConfigs', 'businessDetail', 'address']);
+
         try {
             Log::info('Starting cascade deletion for gym', [
                 'gym_id' => $gym->id,
@@ -60,7 +68,9 @@ class GymObserver implements ShouldHandleEventsAfterCommit
 
             // 1. Delete all gym members and their associated data
             foreach ($gym->gymMembers as $member) {
-                $member->delete(); // GymMemberObserver will handle related data
+                // The tenant guard has already run: either the member holds no obligation,
+                // or the audited purge exported the register before overriding the guard.
+                $member->deleteWithinAuditedTenantCascade(); // GymMemberObserver handles related data
             }
 
             // 2. Delete all membership plans
@@ -81,22 +91,10 @@ class GymObserver implements ShouldHandleEventsAfterCommit
             // 6. Delete gym settings
             $gym->settings()->delete();
 
-            // 7. Clean up Twilio resources (subaccount, phone numbers, messaging service)
-            // and delete WhatsApp Account
-            if ($gym->whatsAppAccount) {
-                try {
-                    resolve(TwilioAccountManager::class)->cleanupTenantResources($gym->id);
-                } catch (Exception $e) {
-                    Log::warning('Twilio cleanup failed during gym deletion, continuing with local cleanup', [
-                        'gym_id' => $gym->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-
-                // Delete phone numbers first (local records)
-                $gym->whatsAppAccount->phoneNumber()->delete();
-                $gym->whatsAppAccount->delete();
-            }
+            // 7. Twilio resources and the WhatsApp account are released by
+            // Gym::cleanupTwilioResourcesBeforeDeletion(), which runs synchronously before
+            // the DELETE. By the time this after-commit cascade runs, the gym_id cascade has
+            // already removed the account, so a cleanup here would be a silent no-op.
 
             // 8. Delete social configs
             $gym->socialConfigs()->delete();
@@ -132,9 +130,13 @@ class GymObserver implements ShouldHandleEventsAfterCommit
      */
     public function deleted(Gym $gym): void
     {
-        $recipient = $gym->owner() ?? Auth::user();
+        DB::afterCommit(function () use ($gym): void {
+            $recipient = $gym->owner() ?? Auth::user();
 
-        if ($recipient) {
+            if (! $recipient) {
+                return;
+            }
+
             $gymName = $gym->name;
             Notification::make()
                 ->title("{$gymName} removed")
@@ -144,7 +146,7 @@ class GymObserver implements ShouldHandleEventsAfterCommit
                 ->send();
 
             event(new DatabaseNotificationsSent($recipient));
-        }
+        });
     }
 
     /**

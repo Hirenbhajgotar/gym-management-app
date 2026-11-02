@@ -73,6 +73,10 @@ class BiometricReceiptService
                 $receipt = $existing ?? BiometricEventReceipt::query()->create([
                     'gym_id' => $device->gym_id,
                     'device_id' => $device->id,
+                    // Snapshotted for the same reason as `door_events.device_serial`: the
+                    // device foreign key nulls on deletion, and a retained receipt must still
+                    // name the hardware that delivered the event.
+                    'device_serial' => $device->device_serial,
                     'event_fingerprint' => $fingerprint,
                     'status' => BiometricReceiptStatusEnum::CLAIMED,
                     'payload_summary' => $summary,

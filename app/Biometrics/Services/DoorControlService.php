@@ -311,6 +311,7 @@ class DoorControlService
         return DoorEvent::query()->create([
             'gym_id' => $device->gym_id,
             'device_id' => $device->id,
+            'device_serial' => $device->device_serial,
             'gym_member_id' => $gymMember?->id,
             'attendance_id' => $attendance?->id,
             'event_type' => $eventType,

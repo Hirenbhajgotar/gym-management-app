@@ -279,21 +279,86 @@ class BiometricRound2RemediationTest extends TestCase
         $this->assertNotNull($found);
         $this->assertEquals($template->id, $found->id);
 
-        // Verify cached
-        $cacheKey = 'biometric:template_ref:' . $this->gym->id . ':' . hash('sha256', 'ext-ref-999');
+        // Verify cached under the generation-scoped key
+        $cacheKey = BiometricTemplate::templateRefCacheKey($this->gym->id, 'ext-ref-999');
         $this->assertEquals($template->id, Cache::get($cacheKey));
 
-        // Update template ref and verify cache is cleared
+        // Updating the reference bumps the gym generation, which makes every previous key
+        // unreachable; the old entry expires on its own TTL.
         $newJsonRef = json_encode(['external_id' => 'ext-ref-1000', 'format' => 'template_v1']);
         $template->update(['template_ref' => $newJsonRef]);
 
-        $this->assertNull(Cache::get($cacheKey));
+        $this->assertNotSame(
+            $cacheKey,
+            BiometricTemplate::templateRefCacheKey($this->gym->id, 'ext-ref-999'),
+            'A save must change the generation-scoped key.'
+        );
+        $this->assertNull(BiometricTemplate::findByTemplateRef($this->gym->id, 'ext-ref-999'));
+        $this->assertEquals(
+            $template->id,
+            BiometricTemplate::findByTemplateRef($this->gym->id, 'ext-ref-1000')?->id
+        );
 
         // Negative caching test
         $missing = BiometricTemplate::findByTemplateRef($this->gym->id, 'non-existent-ref');
         $this->assertNull($missing);
 
-        $missingCacheKey = 'biometric:template_ref:' . $this->gym->id . ':' . hash('sha256', 'non-existent-ref');
+        $missingCacheKey = BiometricTemplate::templateRefCacheKey($this->gym->id, 'non-existent-ref');
         $this->assertSame(0, Cache::get($missingCacheKey));
+    }
+
+    /**
+     * A punch is attributed through the terminal that sent it. The gym-wide
+     * fallback used to resolve any active template with a matching reference,
+     * including one enrolled on a different terminal, which is only safe while
+     * the deletion tombstone happens to deactivate orphans.
+     */
+    public function test_template_ref_lookup_is_scoped_to_the_polling_terminal(): void
+    {
+        $member = GymMember::factory()->create(['gym_id' => $this->gym->id]);
+
+        $otherDevice = BiometricDevice::factory()->create([
+            'gym_id' => $this->gym->id,
+            'device_serial' => 'SN-TEST-REMED-02',
+        ]);
+
+        $foreign = BiometricTemplate::factory()->deviceNative()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $member->id,
+            'enrolled_by_device_id' => $otherDevice->id,
+            'template_ref' => 'terminal-bound-ref',
+            'is_active' => true,
+        ]);
+
+        $this->assertNull(
+            BiometricTemplate::findByTemplateRef($this->gym->id, 'terminal-bound-ref', $this->device->id),
+            'A terminal must not resolve a credential enrolled on another terminal.'
+        );
+        $this->assertSame(
+            $foreign->id,
+            BiometricTemplate::findByTemplateRef($this->gym->id, 'terminal-bound-ref', $otherDevice->id)?->id
+        );
+
+        // Legacy callers without a device keep the historical gym-wide behaviour.
+        $this->assertSame(
+            $foreign->id,
+            BiometricTemplate::findByTemplateRef($this->gym->id, 'terminal-bound-ref')?->id
+        );
+
+        // A cloud-backed row has no terminal, so the provider still holds it and
+        // every terminal may resolve it.
+        $cloud = BiometricTemplate::factory()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $member->id,
+            'enrolled_by_device_id' => null,
+            'provider_type' => 'custom',
+            'template_ref' => 'cloud-ref',
+            'is_active' => true,
+        ]);
+
+        $this->assertSame(
+            $cloud->id,
+            BiometricTemplate::findByTemplateRef($this->gym->id, 'cloud-ref', $this->device->id)?->id
+        );
     }
 }

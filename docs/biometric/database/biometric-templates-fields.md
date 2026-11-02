@@ -23,7 +23,7 @@ Stores enrolled biometric credentials, facial vectors, fingerprint templates, an
 | `id` | bigint unsigned | NO | auto | — | Primary key |
 | `gym_member_id` | bigint unsigned | NO | — | Enrollment flow | Foreign key to `gym_members` |
 | `gym_id` | bigint unsigned | NO | — | Enrollment flow | Foreign key to `gyms` (multi-tenant isolation) |
-| `enrolled_by_device_id` | bigint unsigned | YES | null | Enrollment flow | Foreign key to `biometric_devices` (null for cloud-only) |
+| `enrolled_by_device_id` | bigint unsigned | YES | null | Enrollment flow / device deletion | Foreign key to `biometric_devices` (null for cloud-only rows, and for hardware rows whose terminal was deleted — a null value is not proof of erasure) |
 | `biometric_type` | varchar(255) | NO | — | Enrollment flow | `BiometricTypeEnum`: `face`, `fingerprint`, `palm`, `card` |
 | `provider_type` | varchar(255) | NO | — | Enrollment flow | Provider key (`aws_rekognition`, `azure_face`, `bioid`, `adms`, `local`) |
 | `template_ref` | text | YES | null | Enrollment flow | External provider reference token or JSON `TemplateRef` (encrypted cast) |
@@ -80,7 +80,8 @@ Stores enrolled biometric credentials, facial vectors, fingerprint templates, an
 | `scopeHardwareBacked($query)` | Scopes query to edge hardware devices |
 | `representsLiveOrPendingCredential()` | Returns bool — true for `Pending`, `Propagated`, `Synced`, `PendingDeletion` |
 | `requiresOperatorAttention()` | Returns bool — true if in `DeletionUnresolvable` or command at delivery cap |
-| `wasDeliveredToHardware()` | Returns bool — true if `hardware_confirmed_at` is set or ADMS command sent |
+| `wasDeliveredToHardware()` | Returns bool — true if `hardware_confirmed_at` is set or the row's own `user_add` was sent/acknowledged |
+| `mayBeHeldByHardware()` | Returns bool — true if the row is an erasure obligation, has a delivery confirmation, or is in `Synced`/`Propagated`/`PendingDeletion`/`DeletionUnresolvable`. Shared by the deletion hook, `resolveUnboundTemplate()`, and the abandoned-placeholder sweep |
 | `getSyncStatusBadgeLabel()` | Returns human-readable label formatted for Filament tables |
 | `getSyncStatusBadgeColor()` | Returns color token for Filament status badges |
 

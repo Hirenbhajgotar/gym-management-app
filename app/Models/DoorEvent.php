@@ -13,7 +13,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $gym_id
- * @property int $device_id
+ * @property int|null $device_id
+ * @property string|null $device_serial
  * @property int|null $gym_member_id
  * @property int|null $attendance_id
  * @property string $event_type
@@ -59,6 +60,7 @@ class DoorEvent extends Model
     protected $fillable = [
         'gym_id',
         'device_id',
+        'device_serial',
         'gym_member_id',
         'attendance_id',
         'event_type',
