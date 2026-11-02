@@ -68,6 +68,12 @@ Schedule::command('app:reconcile-subscriptions')
 // Clean deleted gym owners daily
 Schedule::command('owners:clean-deleted')->dailyAt('02:00');
 
+// Re-dispatch Twilio releases left pending or failed after a tenant deletion
+Schedule::command('whatsapp:release-pending-accounts')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
 // Clean old converted and lost leads older than 2 months
 Schedule::command('leads:cleanup-old')->dailyAt('02:00');
 

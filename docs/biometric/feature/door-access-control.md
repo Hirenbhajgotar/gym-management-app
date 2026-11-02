@@ -107,7 +107,7 @@ Content-Type: application/json
 
 ### ADMS Dual-Channel (Relay/Wiegand via Webhook + Provisioning via ADMS)
 
-- **How it works**: Standalone biometric terminals (e.g. eSSL, ZKTeco) use the real-time webhook channel (`/api/v1/biometric/webhook/{token}`) for instantaneous relay/Wiegand pulse unlock upon verification. Concurrently, the device uses the ADMS channel (`/api/iclock/cdata` & `/api/iclock/getrequest`) for batch attendance logging and background member provisioning/deprovisioning (`DATA DELETE user`).
+- **How it works**: Standalone biometric terminals (e.g. eSSL, ZKTeco) use the real-time webhook channel (`/api/v1/biometric/webhook/{token}`) for instantaneous relay/Wiegand pulse unlock upon verification. Concurrently, the device uses the ADMS channel (`/api/iclock/cdata` & `/api/iclock/getrequest`) for batch attendance logging and background member provisioning/deprovisioning (a schema-negotiated `DATA DELETE` command).
 - **Reference**: See [Biometric ADMS Push Protocol](./biometric-adms-push-protocol.md).
 
 ## Security: URL Validation

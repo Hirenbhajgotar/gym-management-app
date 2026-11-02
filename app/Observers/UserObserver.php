@@ -10,6 +10,7 @@ use App\Models\Gym;
 use App\Models\User;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -83,7 +84,8 @@ class UserObserver
             // Note: GymObserver will handle deletion of gym-related data
             // (members, trainers, settings, social configs, etc.)
             $ownedGyms = Gym::query()->whereHas('users', function (Builder $query) use ($user) {
-                $query->where('users.id', $user->id)
+                $query->withoutGlobalScope(SoftDeletingScope::class)
+                    ->where('users.id', $user->id)
                     ->where('gym_user.role', DefaultRole::GYM_OWNER->value);
             })->get();
 
@@ -93,7 +95,15 @@ class UserObserver
                     'gym_name' => $gym->name,
                     'owner_id' => $user->id,
                 ]);
-                $gym->delete();
+
+                // The gym cascade skips the terminal tombstone, ledger terminalisation and
+                // deletion audit. Retire each terminal through the audited path first; that
+                // parks every credential the terminal may hold. A background purge has no
+                // operator to discharge those obligations, so the register is exported to a
+                // durable, non-tenant-scoped table and the actual delete runs under that
+                // audited override instead of refusing forever.
+                $gym->retireBiometricTerminals();
+                $gym->deleteWithExportedErasureRegister($user);
             }
 
             // 2. Delete all subscriptions
@@ -143,11 +153,11 @@ class UserObserver
                 ->delete();
             Log::info('Deleted user payments', ['user_id' => $user->id]);
 
-            // 10. Delete tenant social configs assigned to this user
-            DB::table('tenant_social_configs')
-                ->where('assigned_user_id', $user->id)
-                ->delete();
-            Log::info('Deleted tenant social configs', ['user_id' => $user->id]);
+            // 10. Tenant social configs are owned by their gym (`tenant_social_configs.gym_id`
+            // is cascade-on-delete), so the gym deletion above already removed them. The
+            // previous cleanup referenced `assigned_user_id`, a column no migration creates;
+            // it aborted the whole purge transaction on every owner.
+            Log::info('Tenant social configs removed with their gyms', ['user_id' => $user->id]);
 
             // 11. Delete notification templates owned by this user
             DB::table('notification_templates')

@@ -69,7 +69,7 @@ class OfflineSyncService
             }
 
             if (! $gymMember && filled($memberIdentifier) && (is_string($memberIdentifier) || is_int($memberIdentifier))) {
-                $template = BiometricTemplate::findByTemplateRef($device->gym_id, (string) $memberIdentifier);
+                $template = BiometricTemplate::findByTemplateRef($device->gym_id, (string) $memberIdentifier, $device->id);
 
                 $gymMember = $template?->gymMember;
             }

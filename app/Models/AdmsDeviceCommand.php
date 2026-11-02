@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Biometrics\ValueObjects\AdmsCommandKey;
+use App\Casts\AdmsUserTableCast;
 use App\Enums\AdmsCommandStatusEnum;
+use App\Enums\AdmsUserTableEnum;
 use App\Enums\BiometricTemplateSyncStatusEnum;
+use App\Traits\AssertsTransactionalAuditSink;
 use Database\Factories\AdmsDeviceCommandFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,21 +21,26 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 /**
  * @property int $id
  * @property int $gym_id
- * @property int $device_id
+ * @property int|null $device_id
+ * @property string|null $device_serial
  * @property string $command_type
  * @property array<string, mixed>|null $command_payload
+ * @property AdmsUserTableEnum|null $user_table
  * @property AdmsCommandStatusEnum $status
  * @property int|null $epoch_credential_user_add_id
+ * @property int $attempt_count
+ * @property int $max_attempt_count
  * @property Carbon|null $sent_at
  * @property Carbon|null $acknowledged_at
  * @property string|null $device_return_code
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read BiometricDevice $device
+ * @property-read BiometricDevice|null $device
  * @property-read Gym $gym
  *
  * @use HasFactory<AdmsDeviceCommandFactory>
@@ -45,10 +53,50 @@ use Illuminate\Support\Facades\Log;
  */
 class AdmsDeviceCommand extends Model
 {
+    use AssertsTransactionalAuditSink;
+
     /** @use HasFactory<AdmsDeviceCommandFactory> */
     use HasFactory;
 
     use Prunable;
+
+    /**
+     * Return code written when a command is quarantined because its PIN can never be addressed.
+     *
+     * A quarantined row is terminal (`FAILED`) rather than left at `PENDING`, because an
+     * unusable PIN is a permanent property of the payload, not a transient condition. Leaving
+     * it leasable made fifty malformed PINs at the head of the queue a permanent head-of-line
+     * block for every later command, including the `user_delete` an erasure depends on.
+     */
+    public const UNADDRESSABLE_PIN_CODE = 'unaddressable_pin';
+
+    /**
+     * Return code written when a command's lease expired at the delivery cap.
+     *
+     * The terminal was offline for the whole lease window, so the command was never
+     * delivered and rejected. It is a transient condition, not abandonment: the reconciler
+     * re-drives it with a fresh budget rather than parking the erasure obligation.
+     */
+    public const TIMEOUT_MAX_ATTEMPTS_CODE = 'timeout_max_attempts';
+
+    /**
+     * How many times a lease that expired at the delivery cap may be re-armed.
+     *
+     * The premise behind the first re-arm — the terminal was offline for the whole lease
+     * window — stops being safe once the terminal has polled and been handed the command
+     * repeatedly. After this bound the row is treated as potentially delivered: the
+     * template is parked as an erasure obligation and surfaced to an operator instead of
+     * being re-armed forever.
+     */
+    public const MAX_TRANSIENT_REARMS = 2;
+
+    /**
+     * Return code written when a terminal was deleted while a command was still queued.
+     *
+     * The row is terminalised so it cannot stay `PENDING` forever, but the code records
+     * why: the command can never be delivered because its target no longer exists.
+     */
+    public const TERMINAL_DELETED_CODE = 'terminal_deleted';
 
     /**
      * Get the prunable model query for old acknowledged and failed commands.
@@ -62,6 +110,9 @@ class AdmsDeviceCommand extends Model
 
         return static::query()
             ->whereIn('status', [AdmsCommandStatusEnum::ACKNOWLEDGED, AdmsCommandStatusEnum::FAILED, AdmsCommandStatusEnum::CANCELLED])
+            // Preserved evidence is retained for as long as the obligation it proves is
+            // outstanding. It is not an in-flight row and must never age out.
+            ->whereNull('preserved_evidence_at')
             ->where(function (Builder $query) use ($cutoff) {
                 $query->where('acknowledged_at', '<=', $cutoff)
                     ->orWhere(function (Builder $sub) use ($cutoff) {
@@ -69,11 +120,11 @@ class AdmsDeviceCommand extends Model
                             ->where('updated_at', '<=', $cutoff);
                     });
             })
-            ->where(function (Builder $query): void {
-                // Retain exhausted rows: they are the only durable evidence that a GDPR
-                // erasure was attempted and abandoned, and the retry counter must not reset.
-                $query->where('attempt_count', '<', AdmsCommandKey::maxAttempts())
-                    ->orWhereNull('attempt_count');
+            // Retain ever-exhausted rows: they are the only durable evidence that a GDPR
+            // erasure was attempted and abandoned. Derived from the one high-water scope
+            // rather than a second hand-written predicate that can drift from it.
+            ->whereNot(function (Builder $query): void {
+                $query->everExhausted();
             });
     }
 
@@ -85,6 +136,8 @@ class AdmsDeviceCommand extends Model
         'status',
         'idempotency_key',
         'attempt_count',
+        'transient_rearm_count',
+        'preserved_evidence_at',
         'leased_at',
         'sent_at',
         'acknowledged_at',
@@ -97,8 +150,10 @@ class AdmsDeviceCommand extends Model
      *
      * @return array{
      *     status: 'App\Enums\AdmsCommandStatusEnum',
+     *     user_table: 'App\Casts\AdmsUserTableCast',
      *     command_payload: 'array',
      *     attempt_count: 'integer',
+     *     max_attempt_count: 'integer',
      *     epoch_credential_user_add_id: 'integer',
      *     leased_at: 'datetime',
      *     sent_at: 'datetime',
@@ -110,14 +165,67 @@ class AdmsDeviceCommand extends Model
     {
         return [
             'status' => AdmsCommandStatusEnum::class,
+            'user_table' => AdmsUserTableCast::class,
             'command_payload' => 'array',
             'attempt_count' => 'integer',
+            'max_attempt_count' => 'integer',
+            'transient_rearm_count' => 'integer',
+            'preserved_evidence_at' => 'datetime',
             'epoch_credential_user_add_id' => 'integer',
             'leased_at' => 'datetime',
             'sent_at' => 'datetime',
             'acknowledged_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(static function (self $command): void {
+            // The device is resolved explicitly rather than through the relation so a
+            // queued command can never depend on (or lazily load) the relation later.
+            $device = $command->device_id === null
+                ? null
+                : BiometricDevice::query()->find($command->device_id);
+
+            $command->user_table ??= self::resolveUserTable($device);
+            $command->device_serial ??= $device?->device_serial;
+        });
+
+        // The high-water mark of `attempt_count`, maintained on every model save so a
+        // reset (a fresh epoch, an operator resend, a test seeding a dead-lettered row)
+        // cannot destroy the evidence that the cap was reached. Query-builder updates
+        // bypass model events, so the two writers that raise the counter do it in SQL.
+        static::saving(static function (self $command): void {
+            // `getAttribute()` rather than the typed property: a new instance that never set
+            // the counter has no attribute yet, and the DB default only applies on insert.
+            $attempts = $command->getAttribute('attempt_count');
+            $highWater = $command->getAttribute('max_attempt_count');
+
+            $attempts = is_numeric($attempts) ? (int) $attempts : 0;
+            $highWater = is_numeric($highWater) ? (int) $highWater : 0;
+
+            if ($attempts > $highWater) {
+                $command->max_attempt_count = $attempts;
+            }
+        });
+    }
+
+    /**
+     * Resolve the wire schema a command will be delivered under.
+     *
+     * The schema is snapshotted when the command is queued, not when it is
+     * delivered: the per-device override is mutable operator state, and flipping
+     * it while a command is leased used to change the format of a command the
+     * terminal had already been told to expect. It also keeps the serializer off
+     * the `device` relation, so polling a command never issues an extra query.
+     */
+    public static function resolveUserTable(?BiometricDevice $device): AdmsUserTableEnum
+    {
+        return AdmsUserTableEnum::resolve(
+            $device?->admsUserTableOverride()?->value,
+            config('biometrics.adms.user_table')
+        );
     }
 
     /**
@@ -146,6 +254,22 @@ class AdmsDeviceCommand extends Model
     }
 
     /**
+     * Rows retained as durable proof that a delivered `user_add` reached a deleted
+     * terminal.
+     *
+     * They keep their `SENT` status (the delivery evidence itself), carry the marker so
+     * the reclaim sweep and `prunable()` can exclude them without re-deriving intent, and
+     * are surfaced to auditors as evidence rather than as in-flight work.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function preservedEvidence(Builder $query): void
+    {
+        $query->whereNotNull('preserved_evidence_at');
+    }
+
+    /**
      * @param  Builder<self>  $query
      */
     #[Scope]
@@ -155,47 +279,181 @@ class AdmsDeviceCommand extends Model
     }
 
     /**
+     * Rows whose current delivery budget has been exhausted.
+     *
+     * This is the operator-facing meaning: the row is at the cap *now*, so it is not
+     * currently leasable. A resend resets `attempt_count` and takes the row out of this set,
+     * which is what makes the dead-letter label disappear once the operator has re-queued
+     * it. Retention must not use this scope — see {@see self::everExhausted()}.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function exhausted(Builder $query): void
+    {
+        $query->where('attempt_count', '>=', AdmsCommandKey::maxAttempts());
+    }
+
+    /**
+     * Rows whose delivery budget has ever been exhausted.
+     *
+     * The high-water mark is authoritative for retention: a re-drive or an operator resend
+     * resets the current `attempt_count`, and reading only that would let the durable
+     * evidence of an abandoned erasure drop back below the cap and become prunable.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function everExhausted(Builder $query): void
+    {
+        $query->where('max_attempt_count', '>=', AdmsCommandKey::maxAttempts());
+    }
+
+    /**
+     * Rows the terminal delivered and rejected at the cap — a true dead letter.
+     *
+     * A row that only timed out while the terminal was offline is excluded: it was never
+     * delivered, so it is a transient outage the reconciler re-drives with a fresh budget,
+     * not an erasure the system has abandoned.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function deadLettered(Builder $query): void
+    {
+        $query->exhausted()
+            ->where(function (Builder $query): void {
+                $query->whereNull('device_return_code')
+                    ->orWhere('device_return_code', '!=', self::TIMEOUT_MAX_ATTEMPTS_CODE);
+            });
+    }
+
+    /**
      * Build the ADMS protocol command string to send to the device.
      *
-     * Format: C:{id}:DATA {ACTION} user {params}
+     * Format (default): `C:{id}:DATA {ACTION} USERINFO PIN={pin}[...]`.
+     * Format (legacy `user` schema): `C:{id}:DATA {ACTION} user Pin={pin}[...]`.
+     * Device-level commands (`reboot`, `clear_log`, `INFO`) share one branch and
+     * are serialised identically under both schemas.
      *
-     * Returns an empty string when a PIN-addressed command has no usable PIN. `user_add`,
-     * `user_update` and `user_delete` are all addressed by PIN, so one without a PIN cannot be
-     * expressed and must never be transmitted: sending it would address an unintended record
-     * on the terminal. Device-level commands (`reboot`, `clear_log`) carry no PIN and are
-     * unaffected.
+     * The schema comes from the command row (`user_table`), which is snapshotted
+     * when the command is queued. A row queued before the column existed falls
+     * back to the configured default.
+     *
+     * Returns an empty string when a PIN-addressed command carries no usable PIN,
+     * or a PIN containing protocol control characters. `user_add`, `user_update`
+     * and `user_delete` are all addressed by PIN; transmitting a mangled PIN would
+     * address a *different* record on the terminal, so it is never repaired by
+     * concatenation.
      */
     public function toAdmsCommandString(): string
     {
         /** @var array<string, mixed> $payload */
         $payload = is_array($this->command_payload) ? $this->command_payload : [];
-        $rawPin = $payload['Pin'] ?? '';
-        $pin = (is_string($rawPin) || is_numeric($rawPin)) ? (string) $rawPin : '';
-        $rawName = $payload['Name'] ?? '';
-        $name = (is_string($rawName) || is_numeric($rawName)) ? (string) $rawName : '';
 
-        // Strip protocol delimiters (\t, \r, \n) to prevent command injection
-        $pin = preg_replace('/[\r\n\t]/', '', $pin) ?? '';
-        $name = preg_replace('/[\r\n\t]/', ' ', $name) ?? '';
+        $pin = $this->serializedPin($payload);
+        $name = $this->serializedName($payload);
 
-        $isPinAddressed = $this->isPinAddressed();
+        if (! $this->isPinAddressed()) {
+            return match ($this->command_type) {
+                'reboot' => sprintf('C:%d:REBOOT', $this->id),
+                'clear_log' => sprintf('C:%d:CLEAR LOG', $this->id),
+                default => sprintf('C:%d:INFO', $this->id),
+            };
+        }
 
-        if ($isPinAddressed && $pin === '') {
+        if ($pin === '') {
             return '';
         }
 
-        return match ($this->command_type) {
-            'user_delete' => sprintf('C:%d:DATA DELETE user Pin=%s', $this->id, $pin),
-            'user_add', 'user_update' => sprintf(
-                "C:%d:DATA UPDATE user Pin=%s\tName=%s\tPri=0",
-                $this->id,
-                $pin,
-                $name
-            ),
-            'reboot' => sprintf('C:%d:REBOOT', $this->id),
-            'clear_log' => sprintf('C:%d:CLEAR LOG', $this->id),
-            default => sprintf('C:%d:INFO', $this->id),
-        };
+        return ($this->user_table ?? AdmsUserTableEnum::resolve(config('biometrics.adms.user_table'))) === AdmsUserTableEnum::UserInfo
+            ? $this->userCommandString($pin, $name, ['USERINFO', 'PIN'])
+            : $this->userCommandString($pin, $name, ['user', 'Pin']);
+    }
+
+    /**
+     * The PIN as it may appear on the wire, or '' when it is unsafe to address.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function serializedPin(array $payload): string
+    {
+        $rawPin = $payload['Pin'] ?? null;
+
+        if (! is_string($rawPin) && ! is_numeric($rawPin)) {
+            return '';
+        }
+
+        $pin = (string) $rawPin;
+
+        return self::pinIsUsable($pin) ? $pin : '';
+    }
+
+    /**
+     * True when a raw payload PIN can address a terminal record.
+     *
+     * `Pin` is an identity field: a value that is not a string or number, is
+     * empty, or carries a protocol control character would address a different
+     * (or no) record, so it is rejected rather than repaired. Stripping the
+     * delimiter from `"123\tPri=1"` would produce `123Pri=1` — a *different*
+     * terminal record — which is why this predicate is shared with
+     * {@see self::leaseNext()} and with the de-provisioner, which must not queue a
+     * `user_delete` the lease layer will immediately quarantine.
+     */
+    public static function pinIsUsable(mixed $rawPin): bool
+    {
+        if (! is_string($rawPin) && ! is_numeric($rawPin)) {
+            return false;
+        }
+
+        $pin = (string) $rawPin;
+
+        return $pin !== '' && preg_match('/[\x00-\x1F\x7F]/', $pin) !== 1;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function serializedName(array $payload): string
+    {
+        $rawName = $payload['Name'] ?? '';
+
+        if (! is_string($rawName) && ! is_numeric($rawName)) {
+            return '';
+        }
+
+        // A name is free text, not an identity: protocol delimiters are replaced
+        // rather than rejected, keeping the record addressable.
+        return preg_replace('/[\x00-\x1F\x7F]/', ' ', (string) $rawName) ?? '';
+    }
+
+    /**
+     * Build a PIN-addressed command under the given wire schema.
+     *
+     * The two schemas differ only in the master-table token and the casing of
+     * the `Pin` key; every other byte is identical. `Passwd` and `Card` are
+     * deliberately never emitted: nothing in the application produces them, and
+     * emitting an empty value would clear a card already assigned on the
+     * terminal.
+     *
+     * @param  array{0: string, 1: string}  $schema  Wire table and PIN key.
+     */
+    private function userCommandString(string $pin, string $name, array $schema): string
+    {
+        [$wireTable, $pinKey] = $schema;
+
+        if ($this->command_type === 'user_delete') {
+            return sprintf('C:%d:DATA DELETE %s %s=%s', $this->id, $wireTable, $pinKey, $pin);
+        }
+
+        return sprintf(
+            "C:%d:DATA UPDATE %s %s=%s\tName=%s\tPri=0",
+            $this->id,
+            $wireTable,
+            $pinKey,
+            $pin,
+            $name
+        );
     }
 
     /** @var array<int, string> */
@@ -211,11 +469,34 @@ class AdmsDeviceCommand extends Model
     }
 
     /**
+     * True when this command can actually be expressed on the wire.
+     *
+     * Device-level commands (`reboot`, `clear_log`, `INFO`) carry no PIN and are
+     * always usable. A PIN-addressed command is usable only when its payload
+     * carries a PIN that passes {@see self::pinIsUsable()}; anything else would
+     * serialise to an empty string.
+     */
+    public function hasUsablePin(): bool
+    {
+        if (! $this->isPinAddressed()) {
+            return true;
+        }
+
+        /** @var array<string, mixed> $payload */
+        $payload = is_array($this->command_payload) ? $this->command_payload : [];
+
+        return self::pinIsUsable($payload['Pin'] ?? null);
+    }
+
+    /**
      * Atomically lease the next pending command or expired-lease command for the device.
      *
-     * A PIN-addressed command with no usable PIN is never leased: `toAdmsCommandString()`
-     * returns an empty string for it, so leasing would burn a delivery attempt on a command
-     * that can never be transmitted.
+     * The SQL prefilter drops the common "no PIN at all" shapes, but it cannot
+     * express the full predicate: JSON extraction cannot tell a PIN containing a
+     * tab from a clean one. The locked batch is therefore re-filtered in PHP with
+     * {@see self::hasUsablePin()}, the same predicate the serializer uses, so a
+     * command that would serialise to an empty string is never leased and never
+     * burns a delivery attempt. Unusable rows are left untouched at PENDING.
      */
     public static function leaseNext(int $deviceId, ?int $leaseSeconds = null): ?self
     {
@@ -225,8 +506,8 @@ class AdmsDeviceCommand extends Model
         return DB::transaction(function () use ($deviceId, $duration, $maxAttempts) {
             $staleThreshold = now()->subSeconds($duration);
 
-            /** @var self|null $command */
-            $command = self::query()
+            /** @var Collection<int, self> $candidates */
+            $candidates = self::query()
                 ->where('device_id', $deviceId)
                 ->where(function (Builder $query) use ($staleThreshold, $maxAttempts) {
                     $query->where(function (Builder $pendingQuery) use ($maxAttempts) {
@@ -253,23 +534,110 @@ class AdmsDeviceCommand extends Model
                         });
                 })
                 ->oldest()
+                ->limit(50)
                 ->lockForUpdate()
-                ->first();
+                ->get();
 
-            if ($command) {
-                if ($command->status === AdmsCommandStatusEnum::SENT) {
-                    $command->update([
-                        'leased_at' => now(),
-                        'expires_at' => now()->addSeconds($duration),
-                        'attempt_count' => $command->attempt_count + 1,
-                    ]);
-                } else {
-                    $command->markSent($duration);
-                }
+            $command = $candidates->first(
+                static fn (self $candidate): bool => ! $candidate->isPinAddressed() || $candidate->hasUsablePin()
+            );
+
+            if ($command === null) {
+                self::quarantineUnaddressable($deviceId, $candidates);
+
+                return null;
+            }
+
+            if ($command->status === AdmsCommandStatusEnum::SENT) {
+                $command->update([
+                    'leased_at' => now(),
+                    'expires_at' => now()->addSeconds($duration),
+                    'attempt_count' => $command->attempt_count + 1,
+                ]);
+            } else {
+                $command->markSent($duration);
             }
 
             return $command;
         });
+    }
+
+    /**
+     * Terminalise the candidates whose PIN can never be expressed on the wire.
+     *
+     * Leaving them `PENDING` made the 50-candidate lease window a permanent head-of-line
+     * block: the oldest malformed rows stayed at the head forever, so every later command
+     * — including a `user_delete` — was never leased, and the terminal received `OK` and
+     * re-polled while each poll logged them. Quarantining is a one-time transition: the
+     * rows are `FAILED` with a return code that names the cause, so they are visible in the
+     * ledger, prunable under the normal retention rule, and never re-leased.
+     *
+     * The caller returns `null` for this poll; the next one selects the following window.
+     * Quarantining and continuing in the same call would need an unbounded scan of a queue
+     * whose head is arbitrarily long.
+     *
+     * @param  Collection<int, self>  $candidates
+     */
+    private static function quarantineUnaddressable(int $deviceId, Collection $candidates): void
+    {
+        $commandIds = $candidates
+            ->filter(static fn (self $candidate): bool => $candidate->isPinAddressed() && ! $candidate->hasUsablePin())
+            ->pluck('id')
+            ->filter(static fn (mixed $id): bool => is_numeric($id))
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->values()
+            ->all();
+
+        if ($commandIds === []) {
+            return;
+        }
+
+        self::query()
+            ->whereIn('id', $commandIds)
+            ->whereIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
+            ->update([
+                'status' => AdmsCommandStatusEnum::FAILED,
+                'device_return_code' => self::UNADDRESSABLE_PIN_CODE,
+                // `acknowledged_at` is deliberately left null: the terminal never saw this
+                // command, so stamping it would render as a false "Acknowledged At" and
+                // become the epoch anchor for a later delete re-drive. Retention falls back
+                // to `updated_at` for a FAILED row with no acknowledgement.
+                'leased_at' => null,
+                'expires_at' => null,
+            ]);
+
+        Log::warning('ADMS: quarantined commands whose PIN cannot be addressed; they can never be delivered', [
+            'device_id' => $deviceId,
+            'command_ids' => $commandIds,
+            'device_return_code' => self::UNADDRESSABLE_PIN_CODE,
+        ]);
+    }
+
+    /**
+     * Return a just-leased command to PENDING without consuming a delivery attempt.
+     *
+     * A command can still turn out to be unexpressible after it was leased (the
+     * serializer is the final authority). `attempt_count` counts hardware
+     * deliveries only, so the lease-time increment is undone here; it never goes
+     * below zero.
+     */
+    public function releaseUnusableLease(): void
+    {
+        self::query()
+            ->where('id', $this->id)
+            ->where('status', AdmsCommandStatusEnum::SENT)
+            ->update([
+                'status' => AdmsCommandStatusEnum::PENDING,
+                'sent_at' => null,
+                'leased_at' => null,
+                'expires_at' => null,
+                // `attempt_count` is UNSIGNED, so the decrement is guarded in SQL rather
+                // than written as `attempt_count - 1`: MySQL raises "out of range" for
+                // `0 - 1` on an unsigned column. `CASE` is portable, unlike `GREATEST`.
+                'attempt_count' => DB::raw('CASE WHEN COALESCE(attempt_count, 0) > 0 THEN attempt_count - 1 ELSE 0 END'),
+            ]);
+
+        $this->refresh();
     }
 
     /**
@@ -291,6 +659,16 @@ class AdmsDeviceCommand extends Model
             ]);
 
         if ($affected > 0) {
+            // This was a query-builder write, so the model's `saving` hook did not run.
+            // The high-water mark is raised in a separate statement rather than inside the
+            // CAS update: an UPDATE's assignments are evaluated against the row being
+            // written, so referring to `attempt_count` there is only correct on drivers
+            // that apply assignments in order. `whereColumn` is order-independent.
+            self::query()
+                ->where('id', $this->id)
+                ->whereColumn('max_attempt_count', '<', 'attempt_count')
+                ->update(['max_attempt_count' => DB::raw('attempt_count')]);
+
             $this->refresh();
 
             return true;
@@ -418,8 +796,9 @@ class AdmsDeviceCommand extends Model
     /**
      * Reconcile biometric templates following a successful hardware user_delete command.
      *
-     * `DATA DELETE user Pin=N` is user-granular: the terminal drops the whole credential for
-     * that PIN, so every template sharing the PIN and awaiting deletion converges to
+     * A hardware `DATA DELETE` erases the whole credential for a PIN in either
+     * schema: the terminal drops the whole record for that PIN, so every template
+     * sharing the PIN and awaiting deletion converges to
      * `Deleted` together. A member with both a fingerprint and a face template on one device
      * holds a single PIN and therefore a single hardware credential.
      *
@@ -431,6 +810,14 @@ class AdmsDeviceCommand extends Model
      */
     protected function reconcileUserDelete(): void
     {
+        // A null device_id compiles to `IS NULL`, which would match every detached hardware
+        // template in the gym that shares the PIN — the same bug fixed in
+        // resolveTargetMember(). A command whose terminal was deleted can never be delivered,
+        // so it must not converge anything.
+        if ($this->device_id === null) {
+            return;
+        }
+
         $pinStr = $this->commandPin();
 
         if ($pinStr === null) {
@@ -449,10 +836,10 @@ class AdmsDeviceCommand extends Model
                 continue;
             }
 
-            $template->update([
-                'sync_status' => BiometricTemplateSyncStatusEnum::Deleted,
-                'is_active' => false,
-            ]);
+            // A terminal ACK is a confirmed erase: converge the row and clear the durable
+            // obligation flag in the same write. Leaving the flag set kept a correctly
+            // erased row on the operator surfaces forever with no action that could clear it.
+            $template->markErasureDischarged();
         }
     }
 
@@ -474,6 +861,12 @@ class AdmsDeviceCommand extends Model
      */
     protected function reconcileUserAdd(): void
     {
+        // See reconcileUserDelete(): a null `device_id` is not a scope, it is the absence of
+        // one, and `where('enrolled_by_device_id', null)` would match every detached row.
+        if ($this->device_id === null) {
+            return;
+        }
+
         $pinStr = $this->commandPin();
 
         if ($pinStr === null) {
@@ -561,7 +954,7 @@ class AdmsDeviceCommand extends Model
      * Normalise id values to a list of ints for strict comparison. Some drivers hydrate integer
      * columns as strings; a non-numeric value becomes 0, which can never match a persisted id.
      *
-     * @param Collection<int, mixed> $ids
+     * @param  Collection<int, mixed>  $ids
      * @return array<int, int>
      */
     private static function normalisedIntIds(Collection $ids): array
@@ -624,6 +1017,78 @@ class AdmsDeviceCommand extends Model
                 'leased_at' => null,
                 'expires_at' => null,
             ]);
+    }
+
+    /**
+     * Return a command to the queue as an audited operator action.
+     *
+     * The reset and the audit entry share one transaction and one sink assertion: an audit
+     * failure rolls the reset back, so the ledger never says a command was re-queued without
+     * saying who did it. `max_attempt_count` is deliberately not reset — it is the durable
+     * retention evidence that the row was ever dead-lettered.
+     *
+     * This is the single writer used by the ledger resend action and the template
+     * "Retry Erasure" action, so the two cannot diverge on what a resend means.
+     */
+    public function requeueForOperator(?User $actor = null): bool
+    {
+        $previousAttempts = $this->attempt_count;
+        $previousReturnCode = $this->device_return_code;
+        $highWater = $this->max_attempt_count;
+
+        return DB::transaction(function () use ($actor, $previousAttempts, $previousReturnCode, $highWater): bool {
+            $this->assertAuditSinkIsTransactional();
+
+            // Compare-and-set on the state the operator saw. A concurrent terminal ACK
+            // between the read and this write moves the row to ACKNOWLEDGED, which is not
+            // in the set, so the update affects zero rows and the evidence that the erase
+            // happened is not overwritten with PENDING.
+            $affected = self::query()
+                ->whereKey($this->getKey())
+                ->whereIn('status', [AdmsCommandStatusEnum::FAILED, AdmsCommandStatusEnum::SENT])
+                ->update([
+                    'status' => AdmsCommandStatusEnum::PENDING,
+                    'attempt_count' => 0,
+                    // An operator re-arm is an explicit override of the transient bound:
+                    // the next timeout starts the budget again rather than immediately
+                    // re-parking the row.
+                    'transient_rearm_count' => 0,
+                    'sent_at' => null,
+                    'leased_at' => null,
+                    'expires_at' => null,
+                    'acknowledged_at' => null,
+                    'device_return_code' => null,
+                ]);
+
+            if ($affected !== 1) {
+                return false;
+            }
+
+            $this->refresh();
+
+            $activityLogger = activity('adms')
+                ->performedOn($this)
+                ->withProperties([
+                    'gym_id' => $this->gym_id,
+                    'device_id' => $this->device_id,
+                    'actor_id' => $actor?->getKey(),
+                    'previous_attempt_count' => $previousAttempts,
+                    'max_attempt_count' => $highWater,
+                    'previous_device_return_code' => $previousReturnCode,
+                ]);
+
+            if ($actor !== null) {
+                $activityLogger->causedBy($actor);
+            }
+
+            if ($activityLogger->log('ADMS command re-queued by operator') === null) {
+                throw new RuntimeException(
+                    'The command was not re-queued because its audit entry could not be written.'
+                );
+            }
+
+            return true;
+        });
     }
 
     /**
@@ -746,6 +1211,14 @@ class AdmsDeviceCommand extends Model
             if ($member !== null) {
                 return $member;
             }
+        }
+
+        // A null device cannot scope the template lookup: `where('enrolled_by_device_id', null)`
+        // compiles to `IS NULL`, which matches every unbound template in the gym and could
+        // resolve another member's row. The digit lookup above is already safe, so give up here
+        // rather than guess.
+        if ($this->device_id === null) {
+            return null;
         }
 
         $template = BiometricTemplate::query()

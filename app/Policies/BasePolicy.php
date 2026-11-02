@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\DefaultRole;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -120,5 +121,28 @@ abstract class BasePolicy
     public function reorder(User $user): bool
     {
         return $user->can(static::getPermissionName('reorder'));
+    }
+
+    /**
+     * Verify the record belongs to one of the gyms the user is attached to.
+     *
+     * Tenant isolation defence-in-depth: panels scope their queries to the
+     * selected tenant, but a policy that only reads a permission would still let
+     * someone holding the permission for gym A act on a record of gym B.
+     * SUPER_ADMIN bypasses the check because it owns the whole platform.
+     */
+    protected function userCanActOnGym(User $user, int $gymId): bool
+    {
+        if ($user->hasRole(DefaultRole::SUPER_ADMIN->value)) {
+            return true;
+        }
+
+        // `loadMissing()` is a no-op once the relation is loaded, so an entire
+        // table render costs one gym-id query per user instead of one per row.
+        $user->loadMissing('gyms');
+
+        $userGymIds = $user->gyms->pluck('id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->all();
+
+        return in_array($gymId, $userGymIds, true);
     }
 }

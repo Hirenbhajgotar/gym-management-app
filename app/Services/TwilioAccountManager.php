@@ -9,6 +9,7 @@ use App\Enums\WhatsAppAccountVerificationStatusEnum;
 use App\Helpers\PhoneNumber;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
+use App\Models\WhatsAppAccountRelease;
 use App\Models\WhatsAppPhoneNumber;
 use App\Models\WhatsAppTemplate;
 use Exception;
@@ -979,6 +980,133 @@ class TwilioAccountManager
 
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Release the Twilio resources captured by a deleted tenant.
+     *
+     * Unlike {@see self::cleanupTenantResources()}, every input comes from the captured
+     * release row: the tenant, its account and its phone number have already been
+     * cascade-deleted. That is also why this method must be idempotent — a retry after a
+     * partial release sees 404s for the resources already gone, and a 404 counts as
+     * success.
+     *
+     * @return array{success: bool, message: string, cleaned: array<string, mixed>, errors: array<int, string>}
+     */
+    public function releaseCapturedResources(WhatsAppAccountRelease $release): array
+    {
+        if (blank($release->twilio_account_sid)) {
+            return [
+                'success' => true,
+                'message' => 'No Twilio resources to release',
+                'cleaned' => [],
+                'errors' => [],
+            ];
+        }
+
+        $client = $this->makeCapturedClient($release);
+        $cleaned = [];
+        $errors = [];
+
+        if ($release->messaging_service_sid && $release->channel_sender_sid) {
+            try {
+                $client->messaging->v1->services($release->messaging_service_sid)
+                    ->channelSenders($release->channel_sender_sid)
+                    ->delete();
+
+                $cleaned['channel_sender'] = ['success' => true];
+            } catch (RestException $e) {
+                if ($e->getStatusCode() === 404) {
+                    $cleaned['channel_sender'] = ['success' => true, 'message' => 'Already removed'];
+                } else {
+                    $cleaned['channel_sender'] = ['success' => false, 'error' => $e->getMessage()];
+                    $errors[] = 'channel sender: ' . $e->getMessage();
+                }
+            }
+        }
+
+        if ($release->incoming_phone_sid) {
+            try {
+                $client->incomingPhoneNumbers($release->incoming_phone_sid)->delete();
+
+                $cleaned['phone_number'] = ['success' => true];
+            } catch (RestException $e) {
+                if ($e->getStatusCode() === 404) {
+                    $cleaned['phone_number'] = ['success' => true, 'message' => 'Already released'];
+                } else {
+                    $cleaned['phone_number'] = ['success' => false, 'error' => $e->getMessage()];
+                    $errors[] = 'phone number: ' . $e->getMessage();
+                }
+            }
+        }
+
+        if ($release->messaging_service_sid) {
+            try {
+                $client->messaging->v1->services($release->messaging_service_sid)->delete();
+
+                $cleaned['messaging_service'] = ['success' => true];
+            } catch (RestException $e) {
+                if ($e->getStatusCode() === 404) {
+                    $cleaned['messaging_service'] = ['success' => true, 'message' => 'Already deleted'];
+                } else {
+                    $cleaned['messaging_service'] = ['success' => false, 'error' => $e->getMessage()];
+                    $errors[] = 'messaging service: ' . $e->getMessage();
+                }
+            }
+        }
+
+        try {
+            $this->masterClient->api->v2010
+                ->accounts($release->twilio_account_sid)
+                ->update(['status' => 'closed']);
+
+            $cleaned['subaccount'] = ['success' => true];
+        } catch (RestException $e) {
+            if ($e->getStatusCode() === 404) {
+                $cleaned['subaccount'] = ['success' => true, 'message' => 'Already closed or not found'];
+            } else {
+                $cleaned['subaccount'] = ['success' => false, 'error' => $e->getMessage()];
+                $errors[] = 'subaccount: ' . $e->getMessage();
+            }
+        }
+
+        $success = $errors === [];
+
+        Log::info('Captured Twilio resources release completed', [
+            'gym_id' => $release->gym_id,
+            'release_id' => $release->getKey(),
+            'success' => $success,
+            'cleaned' => $cleaned,
+            'errors' => $errors,
+        ]);
+
+        return [
+            'success' => $success,
+            'message' => $success
+                ? 'All captured Twilio resources released'
+                : 'Twilio release completed with errors',
+            'cleaned' => $cleaned,
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * Build a subaccount client from the captured release row.
+     *
+     * In sandbox mode the master account owns every phone number, so the captured
+     * subaccount credentials cannot be used — the same branch as
+     * {@see self::makeSubaccountClient()}.
+     */
+    protected function makeCapturedClient(WhatsAppAccountRelease $release): Client
+    {
+        if ($this->useSandbox) {
+            return new Client($this->masterAccountSid, $this->masterAuthToken);
+        }
+
+        return new Client(
+            (string) $release->twilio_account_sid,
+            (string) $release->twilio_auth_token
+        );
     }
 
     // =========================

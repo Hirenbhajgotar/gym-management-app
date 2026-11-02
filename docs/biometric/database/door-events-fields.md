@@ -19,7 +19,8 @@ Audit log for all door lock/unlock attempts. Every door event (granted, denied, 
 |---|---|---|---|---|---|
 | `id` | bigint unsigned | NO | auto | — | Primary key |
 | `gym_id` | bigint unsigned | NO | — | DoorControlService | Foreign key to gyms |
-| `device_id` | bigint unsigned | NO | — | DoorControlService | Foreign key to biometric_devices |
+| `device_id` | bigint unsigned | YES | null | DoorControlService | Foreign key to biometric_devices; nulls on device deletion so the event is retained |
+| `device_serial` | varchar(255) | YES | null | DoorControlService / migration backfill | Snapshot of the terminal serial, retained after the device row is deleted |
 | `gym_member_id` | bigint unsigned | YES | null | DoorControlService | Foreign key to gym_members (nullable - may be null on denial) |
 | `attendance_id` | bigint unsigned | YES | null | DoorControlService | Foreign key to attendances (nullable - may be null if no attendance) |
 | `event_type` | varchar(50) | NO | — | DoorControlService | unlock_granted, unlock_denied, unlock_failed, lock_confirmed |
@@ -89,6 +90,15 @@ Audit log for all door lock/unlock attempts. Every door event (granted, denied, 
 | Migration | Change |
 |---|---|
 | `2026_03_28_000003_create_door_events_table` | Initial table creation |
+| `2026_10_31_000300_preserve_access_control_audit_after_device_deletion` | `device_id` becomes nullable with `nullOnDelete()`; adds `device_serial` and backfills it |
+
+## Retention Semantics
+
+`device_id` is nullable and its foreign key is `nullOnDelete()`: deleting a biometric terminal must not destroy its
+access-control history. The `device_serial` snapshot taken at write time (and backfilled for pre-existing rows) keeps
+the "which hardware" attribution for a retained event whose device row is gone. A `null` `device_id` therefore means
+"the terminal row was deleted", not "no terminal was involved". The migration's `down()` refuses to restore the
+restrictive key while such rows exist.
 
 ## Notes
 

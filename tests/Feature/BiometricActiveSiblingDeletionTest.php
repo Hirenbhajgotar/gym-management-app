@@ -160,8 +160,8 @@ class BiometricActiveSiblingDeletionTest extends TestCase
         $deleteCommand->update(['status' => AdmsCommandStatusEnum::SENT]);
         $deleteCommand->markAcknowledged('0');
 
-        // `DATA DELETE user Pin=N` is user-granular, so every template sharing the PIN
-        // converges to Deleted together once the terminal confirms.
+        // `DATA DELETE` is user-granular (PIN in the `USERINFO` schema, Pin in `user`),
+        // so every template sharing the PIN converges to Deleted together.
         $fingerprint->refresh();
         $this->assertSame(BiometricTemplateSyncStatusEnum::Deleted, $fingerprint->sync_status);
         $this->assertFalse($fingerprint->is_active);

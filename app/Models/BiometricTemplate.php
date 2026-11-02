@@ -9,6 +9,7 @@ use App\Enums\AdmsCommandStatusEnum;
 use App\Enums\BiometricProvenanceEnum;
 use App\Enums\BiometricTemplateSyncStatusEnum;
 use App\Enums\BiometricTypeEnum;
+use App\Traits\AssertsTransactionalAuditSink;
 use Database\Factories\BiometricTemplateFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 /**
  * @property int $id
@@ -74,6 +77,8 @@ use Illuminate\Support\Facades\Cache;
  */
 class BiometricTemplate extends Model
 {
+    use AssertsTransactionalAuditSink;
+
     /** @use HasFactory<BiometricTemplateFactory> */
     use HasFactory;
 
@@ -239,7 +244,7 @@ class BiometricTemplate extends Model
     /**
      * Restrict to templates whose credential lives on the ADMS terminal itself.
      *
-     * A terminal acknowledgement (`DATA DELETE user Pin=N`) only proves anything
+     * A terminal acknowledgement (`DATA DELETE` for the PIN) only proves anything
      * about credentials the terminal holds, so every convergence driven by an ADMS
      * ACK must be scoped to hardware-backed rows. A cloud/provider-backed row on the
      * same device shares the PIN but not the credential, and must never be
@@ -334,6 +339,35 @@ class BiometricTemplate extends Model
     }
 
     /**
+     * Template states that deleting their terminal must re-examine.
+     *
+     * `DeletionUnresolvable` is included even though it is not a live-or-pending state:
+     * a row can be parked there without carrying the obligation flag, and the delete
+     * hook is the one place that attaches the flag it is missing. The modal must count
+     * exactly what the hook will park, so both read this one scope.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function parkableByDeviceDeletion(Builder $query): void
+    {
+        $query
+            ->whereIn('sync_status', [
+                ...BiometricTemplateSyncStatusEnum::liveOrPendingCredentialStates(),
+                BiometricTemplateSyncStatusEnum::DeletionUnresolvable,
+            ])
+            // A row already parked at the obligation state has nothing new to record:
+            // re-parking it on every terminal deletion appended a duplicate "parked"
+            // audit entry. Its foreign key still nulls, which is what makes it
+            // dischargeable.
+            ->whereNot(function (Builder $query): void {
+                $query->where('is_erasure_obligation', true)
+                    ->where('sync_status', BiometricTemplateSyncStatusEnum::DeletionUnresolvable);
+            })
+            ->hardwareBacked();
+    }
+
+    /**
      * True when another active template for this member shares the device-bound PIN.
      *
      * The ADMS protocol can only erase a whole PIN, so while such a sibling exists the
@@ -363,7 +397,9 @@ class BiometricTemplate extends Model
      * True when a `user_delete` for this row's PIN has exhausted its hardware delivery budget.
      *
      * The terminal answered and rejected the erase `AdmsCommandKey::maxAttempts()` times, so
-     * the reconciler dead-letters it and no automated path remains. Unlike a cloud row, this
+     * the reconciler dead-letters it and no automated path remains. A row that only timed out
+     * while the terminal was offline is deliberately excluded: that is a transient outage and
+     * the reconciler re-drives it with a fresh budget. Unlike a cloud row, this
      * state is not written to the template, so the operator surface has to ask the command
      * log — that is the difference between an alerted failure and a silent one.
      *
@@ -383,7 +419,7 @@ class BiometricTemplate extends Model
             ->where('command_type', 'user_delete')
             ->where('command_payload->Pin', $this->resolvedCommandPin())
             ->where('status', AdmsCommandStatusEnum::FAILED)
-            ->where('attempt_count', '>=', AdmsCommandKey::maxAttempts())
+            ->deadLettered()
             ->exists();
     }
 
@@ -407,7 +443,7 @@ class BiometricTemplate extends Model
             ->where('gym_id', $gymId)
             ->where('command_type', 'user_delete')
             ->where('status', AdmsCommandStatusEnum::FAILED)
-            ->where('attempt_count', '>=', AdmsCommandKey::maxAttempts())
+            ->deadLettered()
             ->get(['device_id', 'command_payload']);
 
         $keys = [];
@@ -421,7 +457,15 @@ class BiometricTemplate extends Model
                 continue;
             }
 
-            $keys[self::hardwareDeleteCommandKey($command->device_id, (string) $pin)] = true;
+            // A ledger row whose device was deleted has no terminal to key against;
+            // it cannot be the exhausted delete for a template still bound to one.
+            $deviceId = $command->device_id;
+
+            if ($deviceId === null) {
+                continue;
+            }
+
+            $keys[self::hardwareDeleteCommandKey($deviceId, (string) $pin)] = true;
         }
 
         return $keys;
@@ -445,11 +489,12 @@ class BiometricTemplate extends Model
     /**
      * Whether this row is an erasure obligation the system cannot discharge by itself.
      *
-     * Two causes converge here and both need a human: a terminal `DeletionUnresolvable`
-     * row (no provider reference, or a provider that outlasted the cooldown) and a hardware
-     * row whose `user_delete` answered and rejected `maxAttempts()` times. The relation
-     * manager's "Needs Operator" filter is defined by this predicate so the two causes cannot
-     * drift apart.
+     * Three causes converge here and all need a human: a terminal `DeletionUnresolvable`
+     * row (no provider reference, or a provider that outlasted the cooldown), a hardware
+     * row whose `user_delete` answered and rejected `maxAttempts()` times, and any row
+     * carrying the durable `is_erasure_obligation` flag — including one a later state
+     * transition has converged. The relation manager's "Needs Operator" filter is defined
+     * by this predicate so the causes cannot drift apart.
      *
      * With no `$exhaustedHardwareDeleteKeys` the cap is read from the command log for this row
      * alone ({@see self::hasExhaustedHardwareDelete()}). A bulk caller passes the precomputed
@@ -461,6 +506,14 @@ class BiometricTemplate extends Model
      */
     public function requiresOperatorAttention(?array $exhaustedHardwareDeleteKeys = null): bool
     {
+        // A durable obligation flag is the strongest signal there is: the row records an
+        // erasure that has not been discharged, whatever state the rest of the lifecycle
+        // has converged it to. Surfacing it is fail-safe; hiding it is how an obligation
+        // survives with no operator able to see it.
+        if ($this->is_erasure_obligation) {
+            return true;
+        }
+
         if ($this->sync_status === BiometricTemplateSyncStatusEnum::DeletionUnresolvable) {
             return true;
         }
@@ -487,9 +540,9 @@ class BiometricTemplate extends Model
      *
      * @return array<int, string>
      */
-    public function getCacheableReferences(?string $templateRef = null): array
+    public function getCacheableReferences(): array
     {
-        $ref = $templateRef ?? (string) $this->template_ref;
+        $ref = (string) $this->template_ref;
         if (blank($ref)) {
             return [];
         }
@@ -512,6 +565,164 @@ class BiometricTemplate extends Model
     public function hasCloudProvider(): bool
     {
         return ! in_array($this->provider_type, [...self::HARDWARE_PROVIDER_TYPES, null], true);
+    }
+
+    /**
+     * Whether an operator may attest that this credential was physically erased.
+     *
+     * The action writes `Deleted` and clears `is_erasure_obligation`, which is a claim that
+     * the credential no longer exists. That claim is only honest when no automated path can
+     * still reach it:
+     *
+     * - a cloud-backed row is erased through its provider API — a human confirmation would
+     *   attest an erase the provider never performed;
+     * - a row still bound to a terminal can still be commanded to delete it, so the
+     *   automated path (or deleting the terminal, which carries the credential into the
+     *   tombstone) is the correct exit;
+     * - an already-`Deleted` row has nothing left to discharge.
+     */
+    public function canBeDischargedByOperator(): bool
+    {
+        return $this->is_erasure_obligation
+            && ! $this->hasCloudProvider()
+            && $this->enrolled_by_device_id === null
+            && $this->sync_status !== BiometricTemplateSyncStatusEnum::Deleted;
+    }
+
+    /**
+     * Park this credential as an erasure obligation no automated path can discharge.
+     *
+     * This is the single implementation of the invariant "the terminal state and the
+     * obligation flag are written together". It used to be copied into the delete hook,
+     * three de-provisioner arms and the reconciler, and the copies drifted: one arm could
+     * write `DeletionUnresolvable` without the flag and the operator surface then could not
+     * see it. Every producer must call this method.
+     *
+     * The entry is audited here as well as logged, because the log is rotation-bound and an
+     * auditor reconstructing "why was this credential never erased" needs the reason and
+     * the command/return code in the activity log.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public function parkAsUnresolvableObligation(string $reason, array $context = []): void
+    {
+        $this->assertAuditSinkIsTransactional();
+
+        DB::transaction(function () use ($reason, $context): void {
+            $fromStatus = $this->sync_status;
+
+            $this->forceFill([
+                'sync_status' => BiometricTemplateSyncStatusEnum::DeletionUnresolvable,
+                'is_active' => false,
+                'is_erasure_obligation' => true,
+            ])->save();
+
+            $logged = activity('biometric')
+                ->performedOn($this)
+                ->withProperties([
+                    'template_id' => $this->id,
+                    'gym_id' => $this->gym_id,
+                    'member_id' => $this->gym_member_id,
+                    'device_id' => $this->enrolled_by_device_id,
+                    'from_status' => $fromStatus?->value,
+                    'to_status' => BiometricTemplateSyncStatusEnum::DeletionUnresolvable->value,
+                    'reason' => $reason,
+                ] + $context)
+                ->log('Biometric erasure obligation parked for operator');
+
+            if ($logged === null) {
+                throw new RuntimeException(
+                    'The erasure obligation was not parked because its audit entry could not be written.'
+                );
+            }
+        });
+    }
+
+    /**
+     * Discharge the obligation if the row still carries it.
+     *
+     * The flag is the precondition, so a second click (or a concurrent discharge) affects
+     * zero rows and writes no second audit entry. Extracted so the panel action and a
+     * direct test exercise the same compare-and-set rather than two copies.
+     */
+    public function dischargeIfFlagged(?User $actor = null, string $description = 'Biometric erasure confirmed by operator after physical wipe'): bool
+    {
+        $this->assertAuditSinkIsTransactional();
+
+        $fromStatus = $this->sync_status;
+
+        return DB::transaction(function () use ($actor, $description, $fromStatus): bool {
+            $affected = self::query()
+                ->whereKey($this->getKey())
+                ->where('is_erasure_obligation', true)
+                ->update([
+                    'sync_status' => BiometricTemplateSyncStatusEnum::Deleted,
+                    'is_active' => false,
+                    'is_erasure_obligation' => false,
+                ]);
+
+            if ($affected !== 1) {
+                return false;
+            }
+
+            $activityLogger = activity('biometric')
+                ->performedOn($this)
+                ->withProperties([
+                    'template_id' => $this->id,
+                    'actor_id' => $actor?->getKey(),
+                    'from_status' => $fromStatus?->value,
+                    'to_status' => BiometricTemplateSyncStatusEnum::Deleted->value,
+                    'confirmed_at' => now()->toIso8601String(),
+                ]);
+
+            if ($actor !== null) {
+                $activityLogger->causedBy($actor);
+            }
+
+            if ($activityLogger->log($description) === null) {
+                throw new RuntimeException(
+                    'The erasure was not recorded because its audit entry could not be written.'
+                );
+            }
+
+            $this->refresh();
+            $this->clearTemplateRefCache();
+
+            return true;
+        });
+    }
+
+    /**
+     * Whether an operator may attest that a cloud credential with no reference is gone.
+     *
+     * The provider may hold a credential the API can no longer address. There is no
+     * automated erase and no reference to repair, so the only honest exit is a human
+     * attestation scoped to this row, with the same fail-closed audit requirement as the
+     * physical-wipe discharge.
+     */
+    public function canAttestCloudErasure(): bool
+    {
+        return $this->is_erasure_obligation
+            && $this->hasCloudProvider()
+            && blank($this->template_ref)
+            && $this->sync_status !== BiometricTemplateSyncStatusEnum::Deleted;
+    }
+
+    /**
+     * Converge this row to `Deleted` and clear the obligation flag.
+     *
+     * Every route that actually erases the credential — a provider confirmation, a terminal
+     * ACK, a proven non-delivery or an operator's physical-wipe attestation — must call this.
+     * Leaving the flag set made a correctly erased row surface forever with no action that
+     * could clear it, and blocked a later enrolment from superseding a dead obligation.
+     */
+    public function markErasureDischarged(): void
+    {
+        $this->forceFill([
+            'sync_status' => BiometricTemplateSyncStatusEnum::Deleted,
+            'is_active' => false,
+            'is_erasure_obligation' => false,
+        ])->save();
     }
 
     /**
@@ -538,34 +749,92 @@ class BiometricTemplate extends Model
      * load-bearing: a member's command PIN is their member id and is stable across
      * re-enrolments, so a PIN-scoped lookup would attribute an older enrolment's acknowledgement
      * to a brand-new `Pending` placeholder. The abandoned-placeholder sweep would then treat
-     * that placeholder as delivered and queue `DATA DELETE user Pin=N`, erasing the credential
+     * that placeholder as delivered and queue a hardware `DATA DELETE`, erasing the credential
      * the earlier enrolment actually put on the terminal.
      *
      * `SENT` counts as delivered. `markSent()` is reached when the terminal dequeues the
      * command, so a `SENT` `user_add` may already have been applied even though no
      * acknowledgement was recorded — treating it as undelivered would write off a live
      * credential as `Deleted` with no erase queued. Only `PENDING` proves non-delivery.
+     *
+     * When `enrolled_by_device_id` is null the ledger is still consulted, because the foreign
+     * key is not the only durable record of delivery: every canonical `user_add` key ends with
+     * the template id it enrolled, and the row's `gym_id` scopes the lookup. Without this the
+     * sweep and the de-provisioner lose the evidence the moment a row is detached without
+     * passing the tombstone hook (a restored dump, or a writer that nulls the FK directly),
+     * and converge a credential the terminal is holding to `Deleted`.
      */
     public function wasDeliveredToHardware(): bool
     {
-        if (! $this->enrolled_by_device_id) {
-            return false;
-        }
-
         // Durable check: hardware_confirmed_at is set when the device ACKs user_add
         if ($this->hardware_confirmed_at !== null) {
             return true;
         }
 
-        return AdmsDeviceCommand::query()
-            ->where('device_id', $this->enrolled_by_device_id)
+        $delivered = AdmsDeviceCommand::query()
+            ->where('gym_id', $this->gym_id)
             ->where('command_type', 'user_add')
-            ->whereIn('idempotency_key', $this->ownUserAddIdempotencyKeys())
             ->whereIn('status', [
                 AdmsCommandStatusEnum::SENT,
                 AdmsCommandStatusEnum::ACKNOWLEDGED,
-            ])
+            ]);
+
+        if ($this->enrolled_by_device_id !== null) {
+            return $delivered
+                ->where('device_id', $this->enrolled_by_device_id)
+                ->whereIn('idempotency_key', $this->ownUserAddIdempotencyKeys())
+                ->exists();
+        }
+
+        $templateKey = $this->getKey();
+
+        if (! is_numeric($templateKey)) {
+            return false;
+        }
+
+        return $delivered
+            ->where('idempotency_key', 'like', '%:' . $templateKey)
             ->exists();
+    }
+
+    /**
+     * The single evidence rule for "the hardware may still hold this credential".
+     *
+     * Both halves are deliberately read together: a row can be parked for what it *is*
+     * (sync state, obligation, acknowledgement) or for what the ledger *proves*
+     * (a `SENT`/`ACKNOWLEDGED` `user_add`). Splitting them at a call site is how the
+     * tombstone came to park a row the sweep then hard-deleted.
+     */
+    public function hasDurableHardwareEvidence(): bool
+    {
+        return $this->mayBeHeldByHardware() || $this->wasDeliveredToHardware();
+    }
+
+    /**
+     * Whether the terminal may still be holding this credential.
+     *
+     * This is the single evidence rule for "the hardware may still hold it": an
+     * explicit erasure obligation, a recorded hardware acknowledgement, or a state
+     * the terminal produces or is asked to produce (`Synced`, `Propagated`,
+     * `PendingDeletion`, and `DeletionUnresolvable`). A `Pending` placeholder with
+     * none of that evidence provably never reached flash and may be written off.
+     *
+     * `DeletionUnresolvable` is included deliberately: a row can be parked in that
+     * state without carrying the obligation flag, so the absence of the flag is not
+     * proof that an operator discharged the obligation.
+     */
+    public function mayBeHeldByHardware(): bool
+    {
+        if ($this->is_erasure_obligation || $this->hardware_confirmed_at !== null) {
+            return true;
+        }
+
+        return in_array($this->sync_status, [
+            BiometricTemplateSyncStatusEnum::Synced,
+            BiometricTemplateSyncStatusEnum::Propagated,
+            BiometricTemplateSyncStatusEnum::PendingDeletion,
+            BiometricTemplateSyncStatusEnum::DeletionUnresolvable,
+        ], true);
     }
 
     /**
@@ -612,29 +881,60 @@ class BiometricTemplate extends Model
     }
 
     /**
-     * Clear all cached template references for current and original attributes.
+     * Invalidate every cached template reference for this row's gym.
+     *
+     * Invalidation is a per-gym generation bump, not a delete of each reference key. A key
+     * now carries the terminal scope, so one reference has as many keys as there are
+     * terminals that resolve it, and the old "forget this ref" loop could only guess at
+     * them. Bumping the generation makes every previous key unreachable in one write; the
+     * entries themselves expire on their own TTL.
+     *
+     * The generation key is seeded before it is incremented. `Cache::increment()` is a
+     * no-op on a missing key for the database store (and for any store whose increment is
+     * implemented as a conditional UPDATE), so without the seed every invalidation did
+     * nothing on that store and stale attributions survived for the TTL. Production uses
+     * Redis, where increment creates the key, but the store must not decide correctness.
      */
     public function clearTemplateRefCache(): void
     {
-        $gymIds = array_filter([
+        $gymIds = array_values(array_unique(array_filter([
             $this->getOriginal('gym_id'),
             $this->gym_id,
-        ], fn (mixed $id): bool => is_numeric($id) && (int) $id > 0);
-
-        $origRef = $this->getOriginal('template_ref');
-
-        $allRefs = array_merge(
-            $this->getCacheableReferences(is_scalar($origRef) ? (string) $origRef : null),
-            $this->getCacheableReferences($this->template_ref),
-        );
+        ], fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)));
 
         foreach ($gymIds as $gymId) {
-            foreach ($allRefs as $ref) {
-                if (filled($ref)) {
-                    Cache::forget("biometric:template_ref:{$gymId}:" . hash('sha256', $ref));
-                }
-            }
+            $key = self::templateRefCacheGenerationKey((int) $gymId);
+
+            // `add()` is atomic: it seeds the key only when absent, so concurrent
+            // invalidators cannot reset a generation another writer just bumped.
+            Cache::add($key, 1);
+            Cache::increment($key);
         }
+    }
+
+    /**
+     * The cache key a scoped (or unscoped) reference lookup reads and writes.
+     *
+     * The scope is part of the key. Keying only on gym + reference made two terminals that
+     * share a PIN fight over one entry: terminal B's out-of-scope hit forgot A's key, A
+     * re-queried and overwrote B's, and every alternating punch paid a full active-template
+     * scan with in-memory decryption of the encrypted reference column.
+     */
+    public static function templateRefCacheKey(int $gymId, string $ref, ?int $deviceId = null): string
+    {
+        $generation = Cache::get(self::templateRefCacheGenerationKey($gymId));
+        $generation = is_numeric($generation) ? (int) $generation : 0;
+        $scope = $deviceId === null ? 'any' : (string) $deviceId;
+
+        return "biometric:template_ref:{$gymId}:{$generation}:{$scope}:" . hash('sha256', $ref);
+    }
+
+    /**
+     * The per-gym generation counter that scopes every reference-cache key.
+     */
+    public static function templateRefCacheGenerationKey(int $gymId): string
+    {
+        return "biometric:template_ref:generation:{$gymId}";
     }
 
     protected static function booted(): void
@@ -651,14 +951,21 @@ class BiometricTemplate extends Model
     /**
      * Resolve active template by hardware/external reference for a gym.
      * Decrypts in memory since template_ref is non-deterministically encrypted.
+     *
+     * `$deviceId` restricts the lookup to the requested terminal's provenance: a
+     * row enrolled on that device, or a cloud-backed row with no device (which
+     * the provider, not a terminal, holds). Without it a punch could resolve a
+     * template enrolled on an *unrelated* terminal in the same gym — the fallback
+     * used to scan every active row in the gym and was only safe while the
+     * deletion tombstone happened to deactivate orphans.
      */
-    public static function findByTemplateRef(int $gymId, string $ref): ?self
+    public static function findByTemplateRef(int $gymId, string $ref, ?int $deviceId = null): ?self
     {
         if (blank($ref)) {
             return null;
         }
 
-        $cacheKey = "biometric:template_ref:{$gymId}:" . hash('sha256', $ref);
+        $cacheKey = self::templateRefCacheKey($gymId, $ref, $deviceId);
         $cachedId = Cache::get($cacheKey);
 
         if ($cachedId === 0) {
@@ -668,7 +975,11 @@ class BiometricTemplate extends Model
         if ($cachedId !== null) {
             /** @var self|null $cached */
             $cached = self::query()->with('gymMember')->find($cachedId);
-            if ($cached && $cached->is_active && $cached->gym_id === $gymId && in_array($ref, $cached->getCacheableReferences(), true)) {
+            if ($cached
+                && $cached->is_active
+                && $cached->gym_id === $gymId
+                && $cached->belongsToTerminalScope($deviceId)
+                && in_array($ref, $cached->getCacheableReferences(), true)) {
                 return $cached;
             }
 
@@ -678,6 +989,14 @@ class BiometricTemplate extends Model
         $templates = self::query()
             ->where('gym_id', $gymId)
             ->where('is_active', true)
+            ->when($deviceId !== null, function (Builder $query) use ($deviceId): void {
+                $query->where(function (Builder $scope) use ($deviceId): void {
+                    $scope->where('enrolled_by_device_id', $deviceId)
+                        ->orWhere(function (Builder $unbound): void {
+                            $unbound->whereNull('enrolled_by_device_id')->cloudBacked();
+                        });
+                });
+            })
             ->with('gymMember')
             ->get();
 
@@ -689,9 +1008,34 @@ class BiometricTemplate extends Model
             }
         }
 
-        Cache::put($cacheKey, 0, 60);
+        // A negative result from one terminal must not poison another terminal's
+        // lookup for the same reference, so only an unscoped miss is cached.
+        if ($deviceId === null) {
+            Cache::put($cacheKey, 0, 60);
+        }
 
         return null;
+    }
+
+    /**
+     * Whether this row can be attributed to the given terminal.
+     *
+     * A null `$deviceId` means "no scope" (legacy callers). A scoped lookup only
+     * accepts a row enrolled on that device, or a cloud-backed row the provider
+     * (not a terminal) holds. An orphaned hardware row may be in a terminal's
+     * flash somewhere, but this punch did not come from it.
+     */
+    private function belongsToTerminalScope(?int $deviceId): bool
+    {
+        if ($deviceId === null) {
+            return true;
+        }
+
+        if ($this->enrolled_by_device_id === $deviceId) {
+            return true;
+        }
+
+        return $this->enrolled_by_device_id === null && $this->hasCloudProvider();
     }
 
     /**

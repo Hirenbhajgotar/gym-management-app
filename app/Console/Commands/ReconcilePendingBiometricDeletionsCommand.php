@@ -99,6 +99,15 @@ class ReconcilePendingBiometricDeletionsCommand extends Command
                             'member_id' => $template->gym_member_id,
                             'attempt_cap' => AdmsCommandKey::maxAttempts(),
                         ]);
+
+                        // Park it as an obligation, exactly like the de-provisioner's
+                        // `Exhausted` arm: without the flag the row stayed at
+                        // `PendingDeletion` with no operator surface and no automated path.
+                        $template->parkAsUnresolvableObligation('hardware delete attempts exhausted', [
+                            'device_id' => $template->enrolled_by_device_id,
+                            'attempt_cap' => AdmsCommandKey::maxAttempts(),
+                        ]);
+
                         $deadLetterCount++;
 
                         continue;
@@ -117,7 +126,9 @@ class ReconcilePendingBiometricDeletionsCommand extends Command
                         BiometricDeProvisionOutcome::ReDriven => $requeuedCount++,
                         BiometricDeProvisionOutcome::DeferredToSibling => $deferredSiblingCount++,
                         BiometricDeProvisionOutcome::Exhausted => $exhaustedCount++,
-                        BiometricDeProvisionOutcome::CloudUnresolvable => $unresolvableCount++,
+                        BiometricDeProvisionOutcome::CloudUnresolvable,
+                        BiometricDeProvisionOutcome::DeviceRemoved,
+                        BiometricDeProvisionOutcome::UnaddressablePin => $unresolvableCount++,
                         BiometricDeProvisionOutcome::CloudRetry => $retryableCount++,
                         // A live (PENDING/SENT) delete command already exists. A SENT command at
                         // the delivery cap is not re-leasable, and `app:reclaim-stale-device-commands`
@@ -175,7 +186,10 @@ class ReconcilePendingBiometricDeletionsCommand extends Command
      * True when a `user_delete` for this PIN and gym exhausted its delivery budget recently.
      *
      * The cooldown stops the reconciler re-driving a command that has just failed, so a
-     * deterministic firmware fault cannot spin hardware writes every hour.
+     * deterministic firmware fault cannot spin hardware writes every hour. A lease that
+     * timed out while the terminal was offline is excluded: the terminal never rejected the
+     * command, so it is a transient outage the de-provisioner re-drives with a fresh budget,
+     * not an abandoned erasure.
      *
      * The lookup is scoped by `gym_id` as well as device: device ids are not guaranteed
      * globally unique across a restored or sharded database, and a cross-tenant command must
@@ -189,7 +203,9 @@ class ReconcilePendingBiometricDeletionsCommand extends Command
             ->where('command_type', 'user_delete')
             ->where('command_payload->Pin', $pin)
             ->where('status', AdmsCommandStatusEnum::FAILED)
-            ->where('attempt_count', '>=', AdmsCommandKey::maxAttempts())
+            // Derived from the one dead-letter definition: exhausted at the cap and not a
+            // transient timeout. A second hand-written predicate here was a future drift.
+            ->deadLettered()
             ->where('updated_at', '>', now()->subHours(config()->integer('biometrics.adms.retry_cooldown_hours', 24)))
             ->exists();
     }

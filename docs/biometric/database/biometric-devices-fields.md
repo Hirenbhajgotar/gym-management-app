@@ -122,7 +122,7 @@ Stores biometric hardware devices deployed at gym locations. Each device has a p
 
 - `device_token` stored as hashed (like passwords) for security
 - `adms_comm_key_hash` and `adms_comm_key_salt` are hidden from model serialization and are **not** mass-assignable; writers must use `forceFill()` or a dedicated model method
-- `provider_config` is encrypted, hidden from model serialization, and contains API keys/secrets (including legacy `pushcommkey`/`comm_key` aliases)
+- `provider_config` is encrypted, hidden from model serialization, and contains API keys/secrets (including legacy `pushcommkey`/`comm_key` aliases as well as the optional `adms_user_table` schema override per [ADR-0007](../../adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md)); leaving `adms_user_table` unset inherits the global `ADMS_USER_TABLE` default
 - `door_controller_token` encrypted separately
 - `purpose` drives ALL business logic in CheckInService
 - `door_control_type` only relevant when purpose != attendance_only
@@ -134,3 +134,4 @@ Stores biometric hardware devices deployed at gym locations. Each device has a p
 - `provider_type = null` is the legacy native/dual-mode shape and is treated as device-native for verification, credential deletion, and cleanup; an explicit cloud provider's `comm_key` is preserved, and a cloud→native switch records `comm_key_source = 'cloud'` so it is not reclassified as an ADMS alias
 - New operator-entered keys must be exactly 6 alphanumeric characters; legacy keys of other lengths remain verifiable
 - A raw-whitespace verifier only authenticates when the terminal presents the exact raw form or a matching plaintext exists; otherwise rotate the key (`--reprovision-legacy`, the `Rotate Comm Key` action, or the edit page)
+- Deleting a device does not touch the credentials stored in its flash. Every hardware-backed template with delivery evidence (a confirmation, a terminal-held sync state, or an existing obligation) is detached and parked at `DeletionUnresolvable` with `is_erasure_obligation = true` for manual erasure, never reported as `Deleted`. A `Pending` row that provably never reached hardware (no confirmation and no `SENT`/`ACKNOWLEDGED` `user_add`) converges to `Deleted`. Cloud-backed templates on the same device stay on the provider erasure path. The tombstone, the delete, and the activity entry are one transaction, so a failed delete leaves both the device and its templates untouched. The ADMS command ledger survives the device (`device_id` nulls, `device_serial` is retained), and the terminal's `door_events` / `biometric_event_receipts` rows survive with a null `device_id` (door events keep a `device_serial` snapshot) instead of cascading.

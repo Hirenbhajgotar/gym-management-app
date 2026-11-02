@@ -80,6 +80,29 @@ class GymMemberPolicy extends BasePolicy
     }
 
     /**
+     * Determine whether the user can attest that a biometric credential was physically erased.
+     *
+     * This is the compliance exit for an erasure the system cannot discharge itself, and it
+     * writes a terminal `Deleted` state while clearing the only marker that the credential
+     * may still be live. It is therefore deliberately narrower than enrollBiometric(): a
+     * receptionist may enrol a member, but may not sign off an erasure. The record-aware
+     * form also requires the member to belong to one of the user's gyms.
+     */
+    public function dischargeBiometricErasure(User $user, GymMember|string|null $member = null): bool
+    {
+        if ($member instanceof GymMember && ! $this->userCanActOnMemberGym($user, $member)) {
+            return false;
+        }
+
+        return $user->hasAnyRole([
+            DefaultRole::SUPER_ADMIN->value,
+            DefaultRole::ADMIN->value,
+            DefaultRole::GYM_OWNER->value,
+            DefaultRole::MANAGER->value,
+        ]);
+    }
+
+    /**
      * Verify the member belongs to one of the gyms the user is attached to.
      *
      * Tenant isolation defence-in-depth: the panel already scopes the roster to
@@ -91,18 +114,6 @@ class GymMemberPolicy extends BasePolicy
      */
     private function userCanActOnMemberGym(User $user, GymMember $member): bool
     {
-        if ($user->hasRole(DefaultRole::SUPER_ADMIN->value)) {
-            return true;
-        }
-
-        $userGymIds = $user->relationLoaded('gyms')
-            ? $user->gyms->pluck('id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->all()
-            : $user->gyms()->pluck('gyms.id')->map(fn (mixed $id): int => is_numeric($id) ? (int) $id : 0)->all();
-
-        // $userGymIds is int-normalised above, and GymMember casts gym_id to
-        // integer, so the strict compare is apples-to-apples by construction
-        // rather than by whatever the PDO driver happens to return for the
-        // column.
-        return in_array($member->gym_id, $userGymIds, true);
+        return $this->userCanActOnGym($user, $member->gym_id);
     }
 }

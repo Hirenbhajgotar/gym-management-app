@@ -16,6 +16,7 @@ use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -140,11 +141,17 @@ class AdmsEventService
     {
         $member = null;
 
-        // 1. Check device-scoped template_ref first
+        // 1. Check device-scoped template_ref first. A null device is only a
+        // cloud-backed row: a hardware template orphaned by device deletion may
+        // still be held by a terminal this punch did not come from, so matching it
+        // here would attribute attendance to a member who never enrolled on this
+        // device.
         $template = BiometricTemplate::query()
-            ->where(function ($q) use ($device) {
+            ->where(function (Builder $q) use ($device): void {
                 $q->where('enrolled_by_device_id', $device->id)
-                    ->orWhereNull('enrolled_by_device_id');
+                    ->orWhere(function (Builder $unbound): void {
+                        $unbound->whereNull('enrolled_by_device_id')->cloudBacked();
+                    });
             })
             ->where('template_ref', $userId)
             ->where('gym_id', $device->gym_id)
@@ -152,7 +159,7 @@ class AdmsEventService
             ->first();
 
         if (! $template) {
-            $template = BiometricTemplate::findByTemplateRef($device->gym_id, $userId);
+            $template = BiometricTemplate::findByTemplateRef($device->gym_id, $userId, $device->id);
         }
 
         if ($template?->gymMember && $template->gymMember->gym_id === $device->gym_id) {

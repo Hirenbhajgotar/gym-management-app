@@ -94,8 +94,10 @@ class EditBiometricDevice extends EditRecord
 
         // The signature header is not a secret. The webhook secret, custom
         // API key/secret, custom headers, and the legacy ADMS aliases are
-        // deliberately never hydrated.
-        $allowed = array_merge(BiometricDeviceResource::providerConfigCommonFields(), $fields);
+        // deliberately never hydrated. `adms_user_table` is terminal state
+        // rather than provider configuration, so it is allow-listed here
+        // explicitly instead of living in providerConfigCommonFields().
+        $allowed = array_merge(BiometricDeviceResource::providerConfigCommonFields(), $fields, ['adms_user_table']);
 
         return array_intersect_key($config, array_flip($allowed));
     }

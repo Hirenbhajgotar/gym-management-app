@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class AdmsDeviceCommandResource extends BaseResource
 {
@@ -119,7 +120,13 @@ class AdmsDeviceCommandResource extends BaseResource
                 TextColumn::make('device.device_name')
                     ->label('Device')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('—'),
+
+                TextColumn::make('device_serial')
+                    ->label('Device Serial (SN)')
+                    ->searchable()
+                    ->placeholder('—'),
 
                 TextColumn::make('command_type')
                     ->label('Command')
@@ -200,27 +207,53 @@ class AdmsDeviceCommandResource extends BaseResource
                     ->label('Resend')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
-                    ->authorize(fn (AdmsDeviceCommand $record): bool => self::canResend($record))
-                    ->visible(fn (AdmsDeviceCommand $record): bool => $record->status === AdmsCommandStatusEnum::FAILED || ($record->status === AdmsCommandStatusEnum::SENT && $record->sent_at?->diffInHours(now()) >= 1))
+                    // Permission-only for an orphan row (the missing terminal is explained
+                    // inside the action, not hidden behind a disabled button), while a row
+                    // with a live terminal still requires the consent gate before it is even
+                    // offered. Folding "no device" into the gate made the explanation
+                    // unreachable; folding consent out of it would offer a resend that must
+                    // always be refused.
+                    ->authorize(fn (AdmsDeviceCommand $record): bool => $record->device_id === null
+                        ? self::isAuthorizedToResend($record)
+                        : self::canResend($record))
+                    ->visible(fn (AdmsDeviceCommand $record): bool => $record->status === AdmsCommandStatusEnum::FAILED
+                        || ($record->status === AdmsCommandStatusEnum::SENT && $record->sent_at?->diffInHours(now()) >= 1))
                     ->requiresConfirmation()
                     ->modalHeading('Resend Command to Device')
-                    ->modalDescription('This will reset the command status to pending so the device fetches it on the next poll.')
+                    ->modalDescription(fn (AdmsDeviceCommand $record): string => $record->device_id === null
+                        ? 'This command targeted a terminal that no longer exists. It cannot be delivered and the resend will be refused; the row remains in the ledger for audit.'
+                        : 'This will reset the command status to pending so the device fetches it on the next poll.')
                     ->action(function (AdmsDeviceCommand $record): void {
-                        if (! self::canResend($record)) {
+                        // A ledger row for a deleted terminal can never be fetched again;
+                        // re-queueing it would promise a delivery that cannot happen.
+                        if ($record->device_id === null) {
+                            self::refuseOrphanResend($record);
+
+                            return;
+                        }
+
+                        if (! $record->isConsentPermitted()) {
                             self::refuseResend($record);
 
                             return;
                         }
 
-                        $record->update([
-                            'status' => AdmsCommandStatusEnum::PENDING,
-                            'attempt_count' => 0,
-                            'sent_at' => null,
-                            'leased_at' => null,
-                            'expires_at' => null,
-                            'acknowledged_at' => null,
-                            'device_return_code' => null,
-                        ]);
+                        try {
+                            self::requeue($record);
+                        } catch (Throwable $exception) {
+                            Log::error('AdmsDeviceCommandResource: resend could not be audited', [
+                                'command_id' => $record->getKey(),
+                                'error_type' => $exception::class,
+                            ]);
+
+                            Notification::make()
+                                ->title('Command Was Not Re-queued')
+                                ->body('The reset was rolled back because it could not be audited. Try again once the audit sink is available.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
 
                         Notification::make()
                             ->title('Command re-queued')
@@ -240,11 +273,22 @@ class AdmsDeviceCommandResource extends BaseResource
                         ->action(function (Collection $records): void {
                             $count = 0;
                             $consentBlocked = 0;
+                            $orphanedCount = 0;
+                            $failedCount = 0;
                             /** @var AdmsDeviceCommand $record */
                             foreach ($records as $record) {
                                 // Per-record authorization stays: the bulk action must never
                                 // re-queue a command from another gym.
                                 if (! self::isAuthorizedToResend($record)) {
+                                    continue;
+                                }
+
+                                // A ledger row for a deleted terminal can never be fetched
+                                // again; re-queueing it would promise a delivery that cannot
+                                // happen. Leave it terminalised and tell the operator.
+                                if ($record->device_id === null) {
+                                    $orphanedCount++;
+
                                     continue;
                                 }
 
@@ -260,16 +304,17 @@ class AdmsDeviceCommandResource extends BaseResource
                                     continue;
                                 }
 
-                                $record->update([
-                                    'status' => AdmsCommandStatusEnum::PENDING,
-                                    'attempt_count' => 0,
-                                    'sent_at' => null,
-                                    'leased_at' => null,
-                                    'expires_at' => null,
-                                    'acknowledged_at' => null,
-                                    'device_return_code' => null,
-                                ]);
-                                $count++;
+                                try {
+                                    self::requeue($record);
+                                    $count++;
+                                } catch (Throwable $exception) {
+                                    $failedCount++;
+
+                                    Log::error('AdmsDeviceCommandResource: bulk resend could not be audited', [
+                                        'command_id' => $record->getKey(),
+                                        'error_type' => $exception::class,
+                                    ]);
+                                }
                             }
 
                             if ($consentBlocked > 0) {
@@ -280,10 +325,31 @@ class AdmsDeviceCommandResource extends BaseResource
                                     ->send();
                             }
 
-                            Notification::make()
-                                ->title("{$count} commands re-queued")
-                                ->success()
-                                ->send();
+                            if ($orphanedCount > 0) {
+                                Notification::make()
+                                    ->title("{$orphanedCount} command(s) skipped")
+                                    ->body('Some selected commands cannot be delivered because the terminal they targeted was deleted. They remain in the ledger for audit.')
+                                    ->danger()
+                                    ->send();
+                            }
+
+                            if ($failedCount > 0) {
+                                Notification::make()
+                                    ->title("{$failedCount} command(s) not re-queued")
+                                    ->body('The reset was rolled back because the audit entry could not be written. Try again once the audit sink is available.')
+                                    ->danger()
+                                    ->send();
+                            }
+
+                            // Only claim a successful re-queue when at least one row was
+                            // actually re-queued; a run that skipped every row must not show
+                            // a green "0 commands re-queued" beside the red skip notices.
+                            if ($count > 0) {
+                                Notification::make()
+                                    ->title("{$count} commands re-queued")
+                                    ->success()
+                                    ->send();
+                            }
                         }),
                     DeleteBulkAction::make()
                         ->authorize(fn (): bool => auth()->user()?->can('deleteAny', AdmsDeviceCommand::class) ?? false),
@@ -292,28 +358,64 @@ class AdmsDeviceCommandResource extends BaseResource
     }
 
     /**
-     * Determine whether a single command may be re-queued.
+     * Determine whether the signed-in user may re-queue this command.
      *
-     * A `user_add` or `user_update` pushes the member's PIN and name back onto a terminal,
-     * so it must not be re-queued once biometric consent is absent or revoked
-     * (ADR-003 / OpenSpec §4). An unresolvable target member is refused too, because
+     * Consent is part of it: a `user_add` or `user_update` pushes the member's PIN and name
+     * back onto a terminal, so it must not be re-queued once biometric consent is absent or
+     * revoked (ADR-003 / OpenSpec §4). An unresolvable target member is refused too, because
      * consent cannot be proven for a member we cannot identify.
+     *
+     * This is deliberately *not* a deliverability check. A row whose `device_id` is null
+     * targets a terminal that has been deleted; the action says so explicitly, and folding
+     * that case in here made the explanation unreachable (the button was disabled instead).
      */
     public static function canResend(AdmsDeviceCommand $record): bool
     {
-        return self::isAuthorizedToResend($record) && $record->isConsentPermitted();
+        return self::isAuthorizedToResend($record)
+            && $record->isConsentPermitted();
+    }
+
+    /**
+     * Return a command to the queue without destroying its dead-letter evidence.
+     *
+     * The reset and the audit share the model's single writer
+     * ({@see AdmsDeviceCommand::requeueForOperator()}), so the ledger action and the
+     * template "Retry Erasure" action cannot diverge on what a resend means. `attempt_count`
+     * is reset; `max_attempt_count` is deliberately not, so the row stays retained and the
+     * retention evidence survives.
+     */
+    protected static function requeue(AdmsDeviceCommand $record): void
+    {
+        $record->requeueForOperator(auth()->user());
     }
 
     /**
      * Determine whether the signed-in user may re-queue this specific command.
      *
-     * Kept separate from the consent gate so the bulk action can skip a command that belongs
-     * to another tenant silently, while still telling the operator about a command that was
-     * authorized but refused by the consent gate.
+     * Kept permission-only and separate from the consent gate so the bulk action can skip
+     * a command that belongs to another tenant silently, while still telling the operator
+     * about a command that was authorized but refused by the consent gate. The orphaned
+     * (`device_id === null`) check deliberately lives in the action loops: a missing
+     * terminal is not an authorization failure.
      */
     public static function isAuthorizedToResend(AdmsDeviceCommand $record): bool
     {
         return auth()->user()?->can('resend', $record) ?? false;
+    }
+
+    protected static function refuseOrphanResend(AdmsDeviceCommand $record): void
+    {
+        Log::warning('AdmsDeviceCommandResource: resend refused because the target terminal was deleted', [
+            'command_id' => $record->id,
+            'gym_id' => $record->gym_id,
+            'command_type' => $record->command_type,
+        ]);
+
+        Notification::make()
+            ->title('Resend Refused')
+            ->body('This command cannot be delivered because the terminal it targeted was deleted. It remains in the ledger for audit; queue the operation again for a replacement terminal if it is still required.')
+            ->danger()
+            ->send();
     }
 
     protected static function refuseResend(AdmsDeviceCommand $record): void
@@ -338,8 +440,8 @@ class AdmsDeviceCommandResource extends BaseResource
             ->schema([
                 Section::make('Command Details')
                     ->schema([
-                        TextEntry::make('device.device_name')->label('Device'),
-                        TextEntry::make('device.device_serial')->label('Device Serial (SN)')->placeholder('—'),
+                        TextEntry::make('device.device_name')->label('Device')->placeholder('—'),
+                        TextEntry::make('device_serial')->label('Device Serial (SN)')->placeholder('—'),
                         TextEntry::make('command_type')->label('Command Type')->badge(),
                         TextEntry::make('status')->label('Status')->badge(),
                         TextEntry::make('created_at')->label('Created At')->dateTime(),

@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Auth\Access\AuthorizationException;
 use App\Biometrics\Exceptions\MemberArchivedException;
+use App\Enums\BiometricTemplateSyncStatusEnum;
 use App\Enums\PaymentStatus;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Notifications\MembershipExpiryNotification;
 use App\Observers\GymMemberObserver;
 use App\Services\MemberArchiveService;
 use App\Services\MemberFreezeService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,6 +29,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -183,6 +185,30 @@ class GymMember extends Model
     ];
 
     /**
+     * Set only by the gym cascade after the tenant guard has already allowed the delete.
+     *
+     * The gym-level guard is the authority: it refuses while obligations exist, and the
+     * audited owner purge exports the register before overriding it. When the cascade
+     * reaches a member, the register has therefore already been protected, so that
+     * member-level refusal must not turn the audited purge back into a rollback loop.
+     */
+    protected bool $deletingWithinAuditedTenantCascade = false;
+
+    /**
+     * Delete this member as part of a gym cascade that has already passed the tenant guard.
+     */
+    public function deleteWithinAuditedTenantCascade(): ?bool
+    {
+        $this->deletingWithinAuditedTenantCascade = true;
+
+        try {
+            return $this->delete();
+        } finally {
+            $this->deletingWithinAuditedTenantCascade = false;
+        }
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array{
@@ -244,6 +270,29 @@ class GymMember extends Model
                         $member->membership_end = $membershipEndDate;
                     }
                 }
+            }
+        });
+
+        // `biometric_templates.gym_member_id` is cascade-on-delete, so a member hard
+        // delete silently destroys the register of outstanding erasures one level below
+        // the gym guard. Refuse while an obligation would be cascaded away.
+        static::deleting(function (self $member): void {
+            if ($member->deletingWithinAuditedTenantCascade) {
+                return;
+            }
+
+            $hasOutstandingObligation = $member->biometricTemplates()
+                ->withTrashed()
+                ->where(function (Builder $query): void {
+                    $query->where('is_erasure_obligation', true)
+                        ->orWhere('sync_status', BiometricTemplateSyncStatusEnum::DeletionUnresolvable);
+                })
+                ->exists();
+
+            if ($hasOutstandingObligation) {
+                throw new RuntimeException(
+                    "Cannot delete gym member {$member->id}: their biometric erasure obligations would be destroyed by the foreign-key cascade. Discharge or re-drive each obligation before deleting the member."
+                );
             }
         });
     }

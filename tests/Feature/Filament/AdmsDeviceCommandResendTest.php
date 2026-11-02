@@ -18,6 +18,7 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -325,6 +326,48 @@ class AdmsDeviceCommandResendTest extends TestCase
             AdmsDeviceCommandResource::canResend($foreign),
             'canResend() composes the tenant guard, so a cross-tenant record can never be re-queued.'
         );
+    }
+
+    /**
+     * `prunable()` deliberately retains dead-lettered rows, so a resend must not destroy the
+     * evidence that the cap was reached. The reset is audited with the values it replaced.
+     */
+    public function test_resend_preserves_the_dead_letter_high_water_mark_and_audits_the_reset(): void
+    {
+        $this->actingAs($this->owner);
+        Filament::setTenant($this->gym);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $command = $this->failedUserAdd($this->consentedMember(), [
+            'attempt_count' => 3,
+            'device_return_code' => 'E-DEADLETTER',
+            'acknowledged_at' => now()->subDays(200),
+        ]);
+
+        Livewire::test(ListAdmsDeviceCommands::class)
+            ->callTableAction('resend', $command);
+
+        $command->refresh();
+
+        $this->assertSame(0, $command->attempt_count);
+        $this->assertSame(
+            3,
+            $command->max_attempt_count,
+            'The high-water mark must survive the reset or the row becomes prunable evidence.'
+        );
+
+        $activity = Activity::query()
+            ->where('log_name', 'adms')
+            ->where('subject_type', AdmsDeviceCommand::class)
+            ->where('subject_id', $command->id)
+            ->where('description', 'ADMS command re-queued by operator')
+            ->first();
+
+        $this->assertNotNull($activity, 'An operator resend must be auditable.');
+        $this->assertSame($this->owner->id, (int) $activity->causer_id);
+        $this->assertSame(3, (int) $activity->properties['previous_attempt_count']);
+        $this->assertSame('E-DEADLETTER', $activity->properties['previous_device_return_code']);
+        $this->assertSame(3, (int) $activity->properties['max_attempt_count']);
     }
 
     public function test_user_delete_commands_are_not_subject_to_the_consent_gate(): void

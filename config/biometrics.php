@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Enums\AdmsUserTableEnum;
+
+$admsUserTableEnv = env('ADMS_USER_TABLE');
+
 return [
     'liveness_threshold' => env('BIOMETRIC_LIVENESS_THRESHOLD', 0.75),
     'confidence_threshold' => env('BIOMETRIC_CONFIDENCE_THRESHOLD', 0.80),
@@ -70,6 +74,20 @@ return [
     'adms' => [
         'enabled' => filter_var(env('ADMS_ENABLED', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
         'require_comm_key' => filter_var(env('ADMS_REQUIRE_COMM_KEY', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+        'user_table' => AdmsUserTableEnum::resolve($admsUserTableEnv)->value,
+
+        /*
+         * Whether ADMS_USER_TABLE is unset or one of the recognised schemas.
+         *
+         * A blank (`ADMS_USER_TABLE=`) or misspelled value used to select the legacy
+         * `user` schema by falling through an `??` chain, silently reintroducing the
+         * hardware `-1004` failure the schema negotiation exists to remove. The value
+         * above therefore resolves invalid input to the documented `USERINFO` default
+         * instead of coercing it to `user`; this flag lets the production boot guard
+         * report the misconfiguration once.
+         */
+        'user_table_is_valid' => $admsUserTableEnv === null
+            || AdmsUserTableEnum::tryParse($admsUserTableEnv) !== null,
         'pbkdf2_iterations' => filter_var(env('ADMS_PBKDF2_ITERATIONS', 100000), FILTER_VALIDATE_INT, [
             'options' => ['default' => 100000, 'min_range' => 1],
         ]),

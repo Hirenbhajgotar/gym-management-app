@@ -69,11 +69,22 @@ class BiometricSchemaIntegrityTest extends TestCase
         $this->assertTrue(Schema::hasColumn('adms_device_commands', 'device_id'));
         $this->assertTrue(Schema::hasColumn('adms_device_commands', 'command_type'));
         $this->assertTrue(Schema::hasColumn('adms_device_commands', 'command_payload'));
+        $this->assertTrue(Schema::hasColumn('adms_device_commands', 'device_serial'));
+        $this->assertTrue(Schema::hasColumn('adms_device_commands', 'user_table'));
         $this->assertTrue(Schema::hasColumn('adms_device_commands', 'status'));
         $this->assertTrue(Schema::hasColumn('adms_device_commands', 'attempt_count'));
         $this->assertTrue(Schema::hasColumn('adms_device_commands', 'leased_at'));
         $this->assertTrue(Schema::hasColumn('adms_device_commands', 'expires_at'));
         $this->assertTrue(Schema::hasColumn('adms_device_commands', 'idempotency_key'));
+    }
+
+    public function test_door_events_table_keeps_audit_identity_after_device_deletion(): void
+    {
+        $this->assertTrue(Schema::hasTable('door_events'));
+
+        // The serial snapshot is what keeps a retained access event attributable once
+        // `device_id` has been nulled by the terminal's deletion.
+        $this->assertTrue(Schema::hasColumn('door_events', 'device_serial'));
     }
 
     public function test_nullable_provider_type_migration_throws_on_down(): void

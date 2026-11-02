@@ -13,12 +13,17 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class GymResource extends BaseResource
 {
@@ -108,11 +113,100 @@ class GymResource extends BaseResource
                 DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
-                    ->successNotification(null),
+                    ->successNotification(null)
+                    ->action(function (Gym $record, DeleteAction $action): void {
+                        try {
+                            if ($record->delete() !== true) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Gym Was Not Deleted')
+                                    ->body('The deletion was refused. Refresh the table and retry, or contact support if it keeps failing.')
+                                    ->send();
+
+                                return;
+                            }
+                        } catch (Throwable $exception) {
+                            // A policy pass is not a guarantee: a terminal or an obligation can
+                            // be created between the check and the delete. Surface it as a
+                            // legible red notification, not a Livewire error page.
+                            Log::error('GymResource: row delete failed', [
+                                'gym_id' => $record->getKey(),
+                                'error_type' => $exception::class,
+                            ]);
+
+                            Notification::make()
+                                ->danger()
+                                ->title('Gym Was Not Deleted')
+                                ->body('The deletion failed before it could complete, so the gym is unchanged. Retry after checking that no biometric terminal or erasure obligation remains; if it keeps failing, contact support.')
+                                ->send();
+
+                            return;
+                        }
+
+                        $action->success();
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    // Filament's DeleteBulkAction authorises with deleteAny() only, which
+                    // carries no record predicate, so the per-gym guard in GymPolicy::delete()
+                    // would be bypassed. Re-check it per record and report the refusals.
+                    DeleteBulkAction::make()
+                        ->action(function (Collection $records, DeleteBulkAction $action): void {
+                            $deletedCount = 0;
+                            $refusedCount = 0;
+                            $failedCount = 0;
+
+                            /** @var Gym $record */
+                            foreach ($records as $record) {
+                                if (! Gate::allows('delete', $record)) {
+                                    $refusedCount++;
+
+                                    continue;
+                                }
+
+                                // A policy pass is not a guarantee: a device can be created
+                                // between the check and the delete, and any future listener
+                                // can throw. Count the failure per record instead of letting
+                                // it escape as a 500 after earlier gyms have committed.
+                                try {
+                                    if ($record->delete() === true) {
+                                        $deletedCount++;
+                                    } else {
+                                        $failedCount++;
+                                    }
+                                } catch (Throwable $exception) {
+                                    $failedCount++;
+
+                                    Log::error('GymResource: bulk delete failed for one gym', [
+                                        'gym_id' => $record->getKey(),
+                                        'error_type' => $exception::class,
+                                    ]);
+                                }
+                            }
+
+                            if ($deletedCount > 0) {
+                                $action->success();
+                            }
+
+                            if ($refusedCount > 0) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title("{$refusedCount} gym(s) refused")
+                                    ->body("{$refusedCount} selected gym(s) could not be deleted because they still have biometric terminals or outstanding erasure obligations, or your policy does not permit it. Retire each terminal and discharge its obligations first. {$deletedCount} gym(s) were deleted.")
+                                    ->persistent()
+                                    ->send();
+                            }
+
+                            if ($failedCount > 0) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title("{$failedCount} gym(s) failed")
+                                    ->body("{$failedCount} selected gym(s) could not be deleted because the deletion failed. They are unchanged. Check the application log for the failure and retry; {$deletedCount} gym(s) were deleted.")
+                                    ->persistent()
+                                    ->send();
+                            }
+                        }),
                 ]),
             ])
             ->modifyQueryUsing(function ($query) {

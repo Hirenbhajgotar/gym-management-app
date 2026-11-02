@@ -20,9 +20,11 @@ Stores server-to-device commands queued for biometric hardware terminals operati
 |---|---|---|---|---|---|
 | `id` | bigint unsigned | NO | auto | — | Primary key (used as command ID in ADMS protocol strings `C:{id}:...`) |
 | `gym_id` | bigint unsigned | NO | — | Command creation | Foreign key to `gyms` |
-| `device_id` | bigint unsigned | NO | — | Command creation | Foreign key to `biometric_devices` |
+| `device_id` | bigint unsigned | YES | — | Command creation | Foreign key to `biometric_devices`. Nulls when the device is deleted so the ledger survives its terminal |
+| `device_serial` | varchar(255) | YES | null | Command creation | Snapshot of the terminal serial at queue time; retained after `device_id` is nulled |
 | `command_type` | varchar(255) | NO | — | Command creation | Type of command: `user_add`, `user_delete`, `user_update`, `reboot`, `clear_log` |
 | `command_payload` | json | YES | null | Command creation | Key-value arguments needed to format the command (e.g., `{"Pin": "42", "Name": "John"}`) |
+| `user_table` | varchar(255) | YES | null | Command creation | Wire schema snapshotted at queue time (`USERINFO` or `user`). Null on pre-snapshot rows, which fall back to the configured default |
 | `status` | varchar(255) | NO | pending | Command lifecycle | `AdmsCommandStatusEnum`: `pending`, `sent`, `acknowledged`, `failed` |
 | `attempt_count` | unsigned int | NO | 0 | Command lease/delivery | Delivery attempt counter, capped at max attempts |
 | `epoch_credential_user_add_id` | bigint unsigned | YES | null | BiometricDeProvisioner | ID of the `user_add` command that established the credential epoch |
@@ -46,13 +48,13 @@ Stores server-to-device commands queued for biometric hardware terminals operati
 | Relationship | Type | Foreign Key | Related Model |
 |---|---|---|---|
 | `gym()` | belongsTo | `gym_id` | `Gym` |
-| `device()` | belongsTo | `device_id` | `BiometricDevice` |
+| `device()` | belongsTo | `device_id` | `BiometricDevice` (null after device deletion) |
 
 ## Key Methods & Scopes
 
 | Method / Scope | Purpose |
 |---|---|
-| `toAdmsCommandString()` | Builds formatted protocol string for terminal (e.g. `C:12:DATA DELETE user Pin=42`) |
+| `toAdmsCommandString()` | Builds the formatted protocol string for the command's snapshotted schema (e.g. `C:12:DATA DELETE USERINFO PIN=42`) |
 | `markSent()` | Transitions status to `AdmsCommandStatusEnum::SENT` and records `sent_at` timestamp |
 | `markAcknowledged(string $returnCode)` | Transitions status to `ACKNOWLEDGED` (if code `0`) or `FAILED`, setting `acknowledged_at` |
 | `prunable()` | Returns Builder for acknowledged/failed commands past `command_retention_days` (default 90d) |
@@ -67,12 +69,18 @@ Stores server-to-device commands queued for biometric hardware terminals operati
 
 ## Command String Formats
 
-The ADMS push protocol uses colon-delimited string commands returned in response to `getrequest`:
+The ADMS push protocol uses colon-delimited string commands returned in response to `getrequest`. In accordance with [ADR-0007](../../adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md), commands support both the default `USERINFO` and the legacy/modern `user` schema. The schema is snapshotted on the row when the command is queued (`user_table`), not resolved from the device at delivery. The terminal serial is snapshotted alongside it (`device_serial`) so the row still names its hardware after the device is deleted.
 
-- **Delete user from hardware memory**:
-  `C:{id}:DATA DELETE user Pin={memberId}`
-- **Update / Add user**:
+No user field other than the identifying `Pin`/`PIN` and `Name` is serialized. `Passwd`/`Card` were removed because no producer ever wrote them.
+
+- **Update / Add user (Default `USERINFO`)**:
+  `C:{id}:DATA UPDATE USERINFO PIN={memberId}\tName={name}\tPri=0`
+- **Delete user from hardware memory (Default `USERINFO`)**:
+  `C:{id}:DATA DELETE USERINFO PIN={memberId}`
+- **Update / Add user (Alternative `user`)**:
   `C:{id}:DATA UPDATE user Pin={memberId}\tName={name}\tPri=0`
+- **Delete user from hardware memory (Alternative `user`)**:
+  `C:{id}:DATA DELETE user Pin={memberId}`
 - **Reboot hardware terminal**:
   `C:{id}:REBOOT`
 - **Clear terminal event logs**:
@@ -93,3 +101,6 @@ The ADMS push protocol uses colon-delimited string commands returned in response
 |---|---|
 | `2026_09_23_133303_create_adms_device_commands_table` | Initial table creation with compound index on `(device_id, status)` |
 | `2026_10_18_000000_add_epoch_credential_to_adms_device_commands_table` | Added `epoch_credential_user_add_id` column to track credential epochs |
+| `2026_10_31_000100_add_user_table_to_adms_device_commands_table` | Added `user_table` and backfilled queued commands from their device's schema override |
+| `2026_10_31_000200_keep_adms_command_ledger_after_device_deletion` | Made `device_id` nullable with `nullOnDelete` and added the `device_serial` snapshot |
+| `2026_10_31_000300_preserve_access_control_audit_after_device_deletion` | Made `door_events.device_id` and `biometric_event_receipts.device_id` nullable with `nullOnDelete`; added the `door_events.device_serial` snapshot |

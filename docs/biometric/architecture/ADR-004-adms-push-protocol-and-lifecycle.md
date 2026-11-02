@@ -41,7 +41,7 @@ We designed and implemented a dual-channel architecture:
 
 ### 3. Server-to-Device Command Queue with Status Enum
 - Modeled via `AdmsDeviceCommand` and typed with `AdmsCommandStatusEnum` (`PENDING`, `SENT`, `ACKNOWLEDGED`, `FAILED`).
-- Commands are formatted dynamically per the ADMS protocol specification (e.g. `C:{id}:DATA DELETE user Pin={pin}`).
+- Commands are formatted dynamically per the ADMS protocol specification (e.g. `C:{id}:DATA DELETE USERINFO PIN={pin}`, or the legacy `C:{id}:DATA DELETE user Pin={pin}` for terminals configured with the `user` table).
 - Terminals dequeue the oldest pending command on poll, mark it `SENT`, and acknowledge execution via `devicecmd`.
 
 ### 4. Three-Layer Expired Member Grace Period
