@@ -28,10 +28,16 @@ class ReclaimStaleDeviceCommands extends Command
 
         $reclaimedCount = 0;
         $failedCount = 0;
+        $orphanedCount = 0;
         $maxAttempts = AdmsCommandKey::maxAttempts();
 
         AdmsDeviceCommand::query()
             ->where('status', AdmsCommandStatusEnum::SENT)
+            // A preserved delivered `user_add` is durable evidence, not in-flight work.
+            // It is deliberately kept at `SENT` by the terminal tombstone and must outlive
+            // every lease window; cancelling it would make `wasDeliveredToHardware()` false
+            // and converge a live credential to `Deleted` with no erasure.
+            ->whereNull('preserved_evidence_at')
             ->where(function (Builder $query) use ($staleThreshold) {
                 $query->whereNull('leased_at')
                     ->orWhere('leased_at', '<', $staleThreshold)
@@ -40,15 +46,54 @@ class ReclaimStaleDeviceCommands extends Command
                             ->where('expires_at', '<', now());
                     });
             })
-            ->chunkById(100, function ($staleCommands) use (&$reclaimedCount, &$failedCount, $maxAttempts) {
+            ->chunkById(100, function ($staleCommands) use (&$reclaimedCount, &$failedCount, &$orphanedCount, $maxAttempts) {
                 foreach ($staleCommands as $command) {
+                    if ($command->device_id === null) {
+                        // Belt and braces alongside `preserved_evidence_at`: a delivered
+                        // `user_add` for a deleted terminal is evidence even if the marker
+                        // is missing (a restored dump, or a row preserved before this
+                        // column existed). Never cancel it.
+                        if ($command->command_type === 'user_add') {
+                            $orphanedCount++;
+
+                            continue;
+                        }
+
+                        // The terminal was deleted, so no poll will ever lease this
+                        // row again. Returning it to PENDING would resurrect a
+                        // command that cannot be delivered and would leave it
+                        // immortal: prunable() only keeps PENDING rows alive.
+                        $affected = AdmsDeviceCommand::query()
+                            ->where('id', $command->id)
+                            ->where('status', AdmsCommandStatusEnum::SENT)
+                            ->update([
+                                'status' => AdmsCommandStatusEnum::CANCELLED,
+                                'device_return_code' => AdmsDeviceCommand::TERMINAL_DELETED_CODE,
+                                'leased_at' => null,
+                                'expires_at' => null,
+                            ]);
+
+                        if ($affected > 0) {
+                            $orphanedCount++;
+
+                            Log::warning('ADMS: stale command for a deleted terminal cancelled; it can never be delivered', [
+                                'command_id' => $command->id,
+                                'gym_id' => $command->gym_id,
+                                'command_type' => $command->command_type,
+                                'attempt_count' => $command->attempt_count,
+                            ]);
+                        }
+
+                        continue;
+                    }
+
                     if ($command->attempt_count >= $maxAttempts) {
                         $affected = AdmsDeviceCommand::query()
                             ->where('id', $command->id)
                             ->where('status', AdmsCommandStatusEnum::SENT)
                             ->update([
                                 'status' => AdmsCommandStatusEnum::FAILED,
-                                'device_return_code' => 'timeout_max_attempts',
+                                'device_return_code' => AdmsDeviceCommand::TIMEOUT_MAX_ATTEMPTS_CODE,
                                 'leased_at' => null,
                                 'expires_at' => null,
                             ]);
@@ -88,7 +133,7 @@ class ReclaimStaleDeviceCommands extends Command
                 }
             });
 
-        $this->info("Reclaimed {$reclaimedCount} commands to pending; marked {$failedCount} as failed.");
+        $this->info("Reclaimed {$reclaimedCount} commands to pending; marked {$failedCount} as failed; cancelled {$orphanedCount} orphaned commands.");
 
         return self::SUCCESS;
     }

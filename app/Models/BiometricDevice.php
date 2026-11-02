@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Biometrics\ValueObjects\AdmsCommandKey;
 use App\Casts\ProviderConfigCast;
+use App\Enums\AdmsCommandStatusEnum;
+use App\Enums\AdmsUserTableEnum;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricProvidersEnum;
+use App\Enums\BiometricTemplateSyncStatusEnum;
+use App\Exceptions\DeviceDeletionVetoedException;
 use App\Exceptions\UnreadableProviderConfigException;
 use App\Observers\BiometricDeviceObserver;
+use App\Traits\AssertsTransactionalAuditSink;
 use Database\Factories\BiometricDeviceFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -22,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Stringable;
@@ -95,6 +102,7 @@ use Throwable;
 #[ObservedBy([BiometricDeviceObserver::class])]
 class BiometricDevice extends Model
 {
+    use AssertsTransactionalAuditSink;
     use HasFactory;
 
     public const NAVIGATION_BADGE_CACHE_KEY = 'nav_badge:biometric_device:tenant_id:';
@@ -112,6 +120,37 @@ class BiometricDevice extends Model
     public const MIN_PBKDF2_ITERATIONS = 100000;
 
     public const MAX_PBKDF2_ITERATIONS = 1000000;
+
+    /**
+     * Template ids parked as erasure obligations by the last `deleting` hook.
+     *
+     * Captured on the instance rather than persisted: it is the hand-off between
+     * the pre-delete tombstone and the in-transaction audit entry.
+     *
+     * @var list<int>
+     */
+    private array $parkedTemplateIds = [];
+
+    /**
+     * Template ids provably never delivered and converged to `Deleted` on deletion.
+     *
+     * @var list<int>
+     */
+    private array $writtenOffTemplateIds = [];
+
+    /**
+     * Ledger rows terminalised because the terminal they targeted no longer exists.
+     *
+     * @var array<int, int>
+     */
+    private array $cancelledCommandIds = [];
+
+    /**
+     * Delivered `user_add` rows deliberately left `SENT` as durable delivery evidence.
+     *
+     * @var array<int, int>
+     */
+    private array $preservedCommandIds = [];
 
     protected $fillable = [
         'gym_id',
@@ -177,6 +216,400 @@ class BiometricDevice extends Model
         static::saving(static function (self $device): void {
             $device->deriveProviderConfigProvenance();
         });
+
+        static::deleting(static function (self $device): void {
+            // Order is load-bearing: the tombstone reads `SENT` `user_add` rows as delivery
+            // evidence, so the ledger must not be cancelled before it has decided.
+            $device->tombstoneEnrolledTemplates();
+            $device->cancelOrphanedCommands();
+        });
+
+        static::deleted(static function (self $device): void {
+            $device->recordDeletionAudit();
+        });
+    }
+
+    /**
+     * Delete the terminal and its credential tombstones atomically.
+     *
+     * The `deleting` hook parks each credential the terminal may still hold, cancels the
+     * ledger rows that can never be delivered again, and the `deleted` hook writes the
+     * audit entry. All of it must commit or roll back with the row itself: a parked
+     * template that survives a failed delete advertises an erasure obligation for a
+     * terminal that still exists, and an audit entry written before the delete commits
+     * would record a deletion that never happened. The transaction is opened here so every
+     * model path — the row action, the bulk action and a direct `delete()` — shares it.
+     *
+     * A `deleting` listener can halt the delete by returning `false`, which Eloquent
+     * reports as a normal `false` return *after* the tombstone has already written. That
+     * halt is converted into a rollback here, so the parked templates and the cancelled
+     * ledger rows go back with it and the caller receives `false`.
+     */
+    public function delete(): ?bool
+    {
+        try {
+            return DB::transaction(function (): bool {
+                // Lock the device row for the duration of the transaction. A command insert
+                // that starts between the cancellation sweep and the DELETE takes a shared
+                // lock on this row for its foreign-key check; the exclusive lock here makes
+                // it wait, then fail once the row is gone. Without it a `PENDING` command
+                // could be created after the sweep and be orphaned by `nullOnDelete()`.
+                $locked = static::query()->whereKey($this->getKey())->lockForUpdate()->first();
+
+                if ($locked === null) {
+                    // A second `delete()` on a model whose row is already gone would run
+                    // the whole tombstone/audit unit again and write a duplicate deletion
+                    // entry, because `Model::delete()` reports success even when the
+                    // DELETE affects zero rows.
+                    return false;
+                }
+
+                if (parent::delete() !== true) {
+                    throw DeviceDeletionVetoedException::whileDeleting();
+                }
+
+                return true;
+            });
+        } catch (DeviceDeletionVetoedException) {
+            return false;
+        }
+    }
+
+    /**
+     * Delegate a "quiet" delete to the audited path.
+     *
+     * `Model::deleteQuietly()` runs the delete inside `withoutEvents()`, which mutes the
+     * `deleting` and `deleted` hooks — so it used to commit a terminal delete with no
+     * credential tombstone, no cancelled commands and no audit entry, while returning
+     * `true`. This is a compliance-critical path, so the quiet variant must not be a
+     * bypass. Query-builder deletes (`BiometricDevice::query()->delete()`) still bypass
+     * model events; callers must not use them for this model.
+     */
+    public function deleteQuietly(): bool
+    {
+        return $this->delete() === true;
+    }
+
+    /**
+     * The terminal-specific ADMS wire schema, or null when it inherits the
+     * global `biometrics.adms.user_table` default.
+     *
+     * Only the current key (`adms_user_table`) is read. The speculative
+     * `user_table` fallback that shipped in this changeset was removed: nothing
+     * ever wrote it, so it could only shadow the global default with a stale
+     * value. An unreadable ciphertext is treated as "no override" instead of
+     * throwing on the command-enqueue path; {@see ProviderConfigCast} returns
+     * null for unreadable ciphertext, so there is no exception to catch.
+     */
+    public function admsUserTableOverride(): ?AdmsUserTableEnum
+    {
+        $config = is_array($this->provider_config) ? $this->provider_config : [];
+
+        return AdmsUserTableEnum::tryParse($config['adms_user_table'] ?? null);
+    }
+
+    /**
+     * Split this device's candidates into the rows the delete hook parks and the rows it
+     * writes off, using the single evidence rule.
+     *
+     * Delivery is resolved for the whole candidate set in one ledger query rather than one
+     * `wasDeliveredToHardware()` per row: the modal and the hook both run this on a device
+     * with many enrolled templates, and the N+1 was the cost the modal could not afford.
+     *
+     * @return array{parked: Collection<int, BiometricTemplate>, written_off: Collection<int, BiometricTemplate>}
+     */
+    public function partitionTemplatesForDeletion(): array
+    {
+        $candidates = $this->templates()->parkableByDeviceDeletion()->get();
+
+        if ($candidates->isEmpty()) {
+            return ['parked' => $candidates, 'written_off' => $candidates];
+        }
+
+        $deliveredIds = $this->deliveredTemplateIds();
+
+        $isDelivered = static function (BiometricTemplate $template) use ($deliveredIds): bool {
+            $id = $template->getKey();
+
+            return is_numeric($id) && isset($deliveredIds[(int) $id]);
+        };
+
+        $isParkable = fn (BiometricTemplate $template): bool => $template->mayBeHeldByHardware() || $isDelivered($template);
+
+        return [
+            'parked' => $candidates->filter($isParkable)->values(),
+            'written_off' => $candidates->reject($isParkable)->values(),
+        ];
+    }
+
+    /**
+     * The templates that deleting this terminal will park for manual erasure.
+     *
+     * @return Collection<int, BiometricTemplate>
+     */
+    public function parkedTemplatesForDeletion(): Collection
+    {
+        return $this->partitionTemplatesForDeletion()['parked'];
+    }
+
+    public function parkedTemplateCount(): int
+    {
+        return $this->parkedTemplatesForDeletion()->count();
+    }
+
+    /**
+     * Template ids whose own `user_add` reached this terminal, in one query.
+     *
+     * Every canonical key embeds the template id as its last segment, so the ledger is
+     * parseable without a join — the same fact {@see BiometricTemplate::wasDeliveredToHardware()}
+     * uses to survive a null foreign key.
+     *
+     * @return array<int, true>
+     */
+    private function deliveredTemplateIds(): array
+    {
+        $commands = AdmsDeviceCommand::query()
+            ->where('device_id', $this->id)
+            ->where('command_type', 'user_add')
+            ->whereIn('status', [
+                AdmsCommandStatusEnum::SENT,
+                AdmsCommandStatusEnum::ACKNOWLEDGED,
+            ])
+            ->get(['idempotency_key']);
+
+        $ids = [];
+
+        foreach ($commands as $command) {
+            $key = $command->idempotency_key;
+
+            if (! is_string($key)) {
+                continue;
+            }
+
+            $templateId = AdmsCommandKey::tryParse($key)?->templateId;
+
+            if ($templateId !== null) {
+                $ids[$templateId] = true;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Convert every hardware template the deleted terminal may still hold into an
+     * operator erasure obligation.
+     *
+     * Deleting the device row does not touch the terminal's flash, so the
+     * credential may still be held by the hardware. Writing `Deleted` here (or
+     * letting the null foreign key mean "never delivered") is a false attestation
+     * of biometric erasure. The evidence rule is
+     * {@see BiometricTemplate::hasDurableHardwareEvidence()}: a row that may be on
+     * the terminal, or that the command ledger proves was delivered, is parked at
+     * {@see BiometricTemplateSyncStatusEnum::DeletionUnresolvable} — excluded from
+     * the automated reconciler and surfaced in the "Needs Operator" filter — and
+     * flagged as an erasure obligation so a later enrolment cannot supersede it.
+     *
+     * A row that the ledger proves never reached the hardware cannot be in flash,
+     * so it converges to `Deleted` instead. Either way the ids are captured for
+     * {@see self::recordDeletionAudit()}.
+     *
+     * The `nullOnDelete` foreign key still nulls `enrolled_by_device_id` after
+     * this hook. That is referential integrity for writers that bypass model
+     * events; it is never treated as evidence that the credential was erased.
+     */
+    private function tombstoneEnrolledTemplates(): void
+    {
+        $this->parkedTemplateIds = [];
+        $this->writtenOffTemplateIds = [];
+
+        // One candidate scope and one delivery query, shared with the delete modal.
+        // The modal used to pre-filter `liveOrPendingCredentialStates()` only, so a
+        // device whose sole credential was already `DeletionUnresolvable` promised
+        // "no live enrolled templates" while this hook re-parked it.
+        ['parked' => $parked, 'written_off' => $writtenOff] = $this->partitionTemplatesForDeletion();
+
+        foreach ($parked as $template) {
+            // One shared transition owns the "terminal state + obligation flag" invariant;
+            // the flag is a compliance discriminator and is deliberately not mass-assignable.
+            $template->parkAsUnresolvableObligation('terminal deleted while it may still hold the credential', [
+                'device_id' => $this->id,
+                'device_serial' => $this->device_serial,
+            ]);
+
+            $id = $template->getKey();
+
+            if (is_numeric($id)) {
+                $this->parkedTemplateIds[] = (int) $id;
+            }
+        }
+
+        foreach ($writtenOff as $template) {
+            // No acknowledgement, no terminal-held state and no ledger evidence: the
+            // credential never left the queue, so there is nothing in flash to erase.
+            $template->markErasureDischarged();
+
+            $id = $template->getKey();
+
+            if (is_numeric($id)) {
+                $this->writtenOffTemplateIds[] = (int) $id;
+            }
+        }
+
+        if ($this->parkedTemplateIds !== []) {
+            Log::warning('BiometricDevice: terminal deleted while it may still hold biometric credentials; templates parked for manual erasure', [
+                'device_id' => $this->id,
+                'gym_id' => $this->gym_id,
+                'device_serial' => $this->device_serial,
+                'template_ids' => $this->parkedTemplateIds,
+            ]);
+        }
+    }
+
+    /**
+     * Terminalise every ledger row this terminal can never deliver again.
+     *
+     * The foreign key nulls when the delete commits, so a `PENDING` command would
+     * otherwise have no device to lease it, no terminal to poll it, and no path back to
+     * a terminal state. This method therefore terminalises `PENDING` rows as `CANCELLED`
+     * and delivered (`SENT`) rows as `FAILED`, both carrying
+     * {@see AdmsDeviceCommand::TERMINAL_DELETED_CODE} so a cancelled orphan is
+     * distinguishable from an operator cancellation.
+     *
+     * A `SENT` `user_add` is deliberately left `SENT`: it is the durable evidence
+     * {@see BiometricTemplate::wasDeliveredToHardware()} probes after the foreign key is
+     * nulled. Cancelling it (as this method used to) destroyed the only proof that a
+     * credential reached the terminal, and the abandoned-placeholder sweep then wrote off
+     * a live credential. An undelivered `PENDING` `user_add` is still cancelled, because
+     * the terminal provably never received it.
+     *
+     * The idempotency key is deliberately preserved: it is the durable evidence of what
+     * the row was for, and a replacement terminal uses a device-scoped key of its own.
+     */
+    private function cancelOrphanedCommands(): void
+    {
+        $this->cancelledCommandIds = [];
+        $this->preservedCommandIds = [];
+
+        $candidates = AdmsDeviceCommand::query()
+            ->where('device_id', $this->id)
+            ->whereIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
+            ->get(['id', 'status', 'command_type']);
+
+        $cancelIds = [];
+        $failIds = [];
+
+        foreach ($candidates as $command) {
+            $id = $command->id;
+
+            if ($id <= 0) {
+                continue;
+            }
+
+            if ($command->command_type === 'user_add' && $command->status === AdmsCommandStatusEnum::SENT) {
+                $this->preservedCommandIds[] = $id;
+
+                continue;
+            }
+
+            if ($command->status === AdmsCommandStatusEnum::SENT) {
+                $failIds[] = $id;
+
+                continue;
+            }
+
+            $cancelIds[] = $id;
+        }
+
+        if ($cancelIds !== []) {
+            AdmsDeviceCommand::query()
+                ->whereIn('id', $cancelIds)
+                ->where('status', AdmsCommandStatusEnum::PENDING)
+                ->update([
+                    'status' => AdmsCommandStatusEnum::CANCELLED,
+                    'device_return_code' => AdmsDeviceCommand::TERMINAL_DELETED_CODE,
+                    'leased_at' => null,
+                    'expires_at' => null,
+                ]);
+        }
+
+        if ($failIds !== []) {
+            AdmsDeviceCommand::query()
+                ->whereIn('id', $failIds)
+                ->where('status', AdmsCommandStatusEnum::SENT)
+                ->update([
+                    'status' => AdmsCommandStatusEnum::FAILED,
+                    'device_return_code' => AdmsDeviceCommand::TERMINAL_DELETED_CODE,
+                    'leased_at' => null,
+                    'expires_at' => null,
+                ]);
+        }
+
+        if ($this->preservedCommandIds !== []) {
+            // The marker is what lets the reclaim sweep and `prunable()` tell this row
+            // apart from a live in-flight `SENT` command after the foreign key is nulled.
+            AdmsDeviceCommand::query()
+                ->whereIn('id', $this->preservedCommandIds)
+                ->where('status', AdmsCommandStatusEnum::SENT)
+                ->update(['preserved_evidence_at' => now()]);
+        }
+
+        $this->cancelledCommandIds = [...$cancelIds, ...$failIds];
+
+        if ($this->cancelledCommandIds === [] && $this->preservedCommandIds === []) {
+            return;
+        }
+
+        // A terminal offline for weeks can carry hundreds of rows. The ids are not copied
+        // into the durable audit entry: the set is reconstructible from the ledger itself
+        // (cancelled rows carry `terminal_deleted`, preserved rows carry
+        // `preserved_evidence_at`, both scoped to this gym and the deletion timestamp).
+        Log::warning('BiometricDevice: terminal deleted with ledger rows that can never be delivered again', [
+            'device_id' => $this->id,
+            'gym_id' => $this->gym_id,
+            'device_serial' => $this->device_serial,
+            'cancelled_command_count' => count($this->cancelledCommandIds),
+            'preserved_delivered_user_add_count' => count($this->preservedCommandIds),
+        ]);
+    }
+
+    /**
+     * Write the deletion audit entry, unconditionally and inside the delete transaction.
+     *
+     * The entry is written even when no templates were touched, because "this
+     * terminal was deleted and it held no credentials" is itself an auditable
+     * fact. It is deliberately not wrapped in a `try/catch`: the log is optional
+     * as a feature, but a deletion that cannot be audited must not commit, so the
+     * exception propagates and {@see self::delete()} rolls the transaction back.
+     *
+     * That guarantee only holds when the sink actually participates in this
+     * transaction, so it is enforced rather than assumed. `ACTIVITY_LOGGER_ENABLED=false`
+     * makes `ActivityLogger::log()` return `null` without writing anything, and a
+     * separate `activitylog.database_connection` commits the entry on another
+     * connection — in both cases the delete would commit unaudited if this method
+     * only relied on an exception. The refusal is explicit: configure a sink that
+     * shares the connection, or delete the terminal through a path that can write
+     * one.
+     */
+    private function recordDeletionAudit(): void
+    {
+        $this->assertAuditSinkIsTransactional();
+
+        activity()
+            ->performedOn($this)
+            ->withProperties([
+                'gym_id' => $this->gym_id,
+                'action' => 'biometric_device_deleted',
+                'device_serial' => $this->device_serial,
+                'template_ids' => $this->parkedTemplateIds,
+                'written_off_template_ids' => $this->writtenOffTemplateIds,
+                'cancelled_command_count' => count($this->cancelledCommandIds),
+                'preserved_delivered_user_add_count' => count($this->preservedCommandIds),
+                // The full id set is queryable from the ledger: cancelled rows carry
+                // `terminal_deleted`, preserved rows carry `preserved_evidence_at`.
+                'evidence_recorded_at' => now()->toIso8601String(),
+            ])
+            ->log('Biometric terminal deleted');
     }
 
     /**

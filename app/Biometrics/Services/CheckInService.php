@@ -186,7 +186,7 @@ class CheckInService
 
         // 2. If not found by direct ID, check template_ref
         if (! $gymMember) {
-            $template = BiometricTemplate::findByTemplateRef($device->gym_id, $idStr);
+            $template = BiometricTemplate::findByTemplateRef($device->gym_id, $idStr, $device->id);
             if ($template?->gymMember && $template->gymMember->gym_id === $device->gym_id) {
                 $gymMember = $template->gymMember;
             }

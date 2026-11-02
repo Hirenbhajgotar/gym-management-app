@@ -166,8 +166,8 @@ Custom/on-premise devices that cannot directly call the provider API can sync en
 
 ## ADMS Protocol Constraints & Limitations
 
-- **Coarse-Grained User Deletion**: The eSSL/ZKTeco push protocol (`iclock`) de-provisions credentials using `DATA DELETE user Pin=%s`. This command removes the entire user record and all associated biometric modalities (face, fingerprints) from the physical terminal hardware.
-- **Template-Level Granularity**: Because the protocol cannot delete a single biometric template independently without wiping the user, `BiometricDataDeletionService::deleteSingleTemplate()` retains hardware user records if active sibling templates exist for the same member on the device, and only issues `DATA DELETE user` when all templates for that member on the device are decommissioned.
+- **Coarse-Grained User Deletion**: The eSSL/ZKTeco push protocol (`iclock`) de-provisions credentials using a schema-negotiated `DATA DELETE` command (either `DATA DELETE USERINFO PIN=%s` or `DATA DELETE user Pin=%s`, per the terminal's snapshotted schema). This command removes the entire user record and all associated biometric modalities (face, fingerprints) from the physical terminal hardware.
+- **Template-Level Granularity**: Because the protocol cannot delete a single biometric template independently without wiping the user, `BiometricDataDeletionService::deleteSingleTemplate()` retains hardware user records if active sibling templates exist for the same member on the device, and only issues the `DATA DELETE` command when all templates for that member on the device are decommissioned.
 
 ## GDPR Compliance
 

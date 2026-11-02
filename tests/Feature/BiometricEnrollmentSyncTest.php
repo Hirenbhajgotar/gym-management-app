@@ -1436,7 +1436,7 @@ class BiometricEnrollmentSyncTest extends TestCase
         $command->update(['status' => AdmsCommandStatusEnum::SENT]);
         $command->markAcknowledged('0');
 
-        // DATA DELETE user Pin=N is user-granular, so both modalities converge together.
+        // DATA DELETE is user-granular, so both modalities converge together.
         $fingerprint->refresh();
         $face->refresh();
         $this->assertSame(BiometricTemplateSyncStatusEnum::Deleted, $fingerprint->sync_status);

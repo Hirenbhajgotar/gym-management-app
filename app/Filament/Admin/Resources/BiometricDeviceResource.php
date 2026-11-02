@@ -9,6 +9,7 @@ use App\Biometrics\Services\CommKeyReveal;
 use App\Biometrics\Services\DeviceTokenReveal;
 use App\Biometrics\Services\WebhookSecretReveal;
 use App\Biometrics\Services\WebhookSecretRotationService;
+use App\Enums\AdmsUserTableEnum;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricProvidersEnum;
@@ -54,7 +55,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Throwable;
@@ -544,6 +547,20 @@ class BiometricDeviceResource extends BaseResource
                                     )
                                     ->helperText('Exactly 6 letters or numbers after whitespace is removed; a 6-digit number is recommended for universal device compatibility. Leave blank on edit to keep the current key, except when switching from Device-Native to a cloud provider that would stop reading the only plaintext comm_key. A new key is shown only in the one-time reveal window; the stored value is never displayed.')
                                     ->visible(fn (Get $get): bool => (bool) $get('adms_enabled')),
+
+                                Select::make('provider_config.adms_user_table')
+                                    ->label('ADMS User Table Format')
+                                    ->options(AdmsUserTableEnum::class)
+                                    ->placeholder('Inherit global default (' . config()->string('biometrics.adms.user_table', AdmsUserTableEnum::UserInfo->value) . ')')
+                                    ->nullable()
+                                    // On create, a blank selector must not persist the key at
+                                    // all, so the terminal inherits the global default. On edit,
+                                    // the key is always dehydrated so clearing the selector
+                                    // removes an existing override.
+                                    ->dehydrated(fn (string $operation, mixed $state): bool => $operation === 'edit' || filled($state))
+                                    ->helperText('Leave blank to inherit ADMS_USER_TABLE. Choose USERINFO for standard eSSL/ZKTeco firmware, or user for modern SpeedFace/Linux/Android terminals.')
+                                    ->visible(fn (Get $get, ?BiometricDevice $record): bool => self::providerConfigEditable($get, $record)
+                                        && (bool) $get('adms_enabled')),
 
                                 Placeholder::make('adms_setup_info')
                                     ->label('ADMS Configuration')
@@ -1065,15 +1082,156 @@ class BiometricDeviceResource extends BaseResource
                         }),
 
                     EditAction::make(),
-                    DeleteAction::make(),
+                    DeleteAction::make()
+                        ->modalHeading('Delete biometric terminal')
+                        ->modalDescription(fn (BiometricDevice $record): string => self::deleteModalDescription($record))
+                        ->action(function (BiometricDevice $record, DeleteAction $action): void {
+                            $parkedTemplateCount = self::parkedTemplateCount($record);
+
+                            try {
+                                if (! $record->delete()) {
+                                    Notification::make()
+                                        ->title('Terminal Was Not Deleted')
+                                        ->body('The deletion was refused. Refresh the table and retry, or contact support if it keeps failing.')
+                                        ->danger()
+                                        ->send();
+
+                                    return;
+                                }
+                            } catch (Throwable $exception) {
+                                // A misconfigured audit sink or a future listener must surface
+                                // as a legible red notification, not a Livewire error page.
+                                Log::error('BiometricDeviceResource: row delete failed for one terminal', [
+                                    'device_id' => $record->getKey(),
+                                    'gym_id' => $record->gym_id,
+                                    'error_type' => $exception::class,
+                                ]);
+
+                                Notification::make()
+                                    ->title('Terminal Was Not Deleted')
+                                    ->body($exception->getMessage())
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            if ($parkedTemplateCount > 0) {
+                                $action->successNotification(
+                                    fn (Notification $notification): Notification => $notification->body(
+                                        "{$parkedTemplateCount} enrolled template(s) were parked for manual erasure."
+                                    )
+                                );
+                            }
+
+                            $action->success();
+                        }),
                 ]),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->modalHeading('Delete biometric terminals')
+                        ->modalDescription(self::bulkDeleteModalDescription())
+                        ->action(function (Collection $records, DeleteBulkAction $action): void {
+                            $deletedCount = 0;
+                            $refusedCount = 0;
+                            $failedCount = 0;
+
+                            /** @var BiometricDevice $record */
+                            foreach ($records as $record) {
+                                // The permission-only deleteAny() gate does not carry the
+                                // tenant predicate, so every record must clear the policy's
+                                // per-record delete() check before it is destroyed.
+                                if (! Gate::allows('delete', $record)) {
+                                    $refusedCount++;
+
+                                    continue;
+                                }
+
+                                // Each delete is atomic on its own (tombstone, ledger
+                                // cancellation, DELETE and audit share one transaction), but
+                                // the selection as a whole is not: record N failing must not
+                                // be counted as success, and must not abort the rows that
+                                // could be deleted. Filament's own DeleteBulkAction reports a
+                                // single success unconditionally and has no per-record
+                                // buckets, which is why this override exists.
+                                try {
+                                    if ($record->delete() === true) {
+                                        $deletedCount++;
+                                    } else {
+                                        $failedCount++;
+                                    }
+                                } catch (Throwable $exception) {
+                                    $failedCount++;
+
+                                    Log::error('BiometricDeviceResource: bulk delete failed for one terminal', [
+                                        'device_id' => $record->getKey(),
+                                        'gym_id' => $record->gym_id,
+                                        'error_type' => $exception::class,
+                                    ]);
+                                }
+                            }
+
+                            // Only claim success for terminals that were actually deleted.
+                            if ($deletedCount > 0) {
+                                $action->success();
+                            }
+
+                            if ($refusedCount > 0) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title("{$refusedCount} terminal(s) refused")
+                                    ->body("{$refusedCount} selected terminal(s) could not be deleted because they belong to another gym or your policy does not permit it. {$deletedCount} terminal(s) were deleted.")
+                                    ->persistent()
+                                    ->send();
+                            }
+
+                            if ($failedCount > 0) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title("{$failedCount} terminal(s) failed")
+                                    ->body("{$failedCount} selected terminal(s) could not be deleted: the audit sink refused the deletion or the record changed while it was being deleted. {$deletedCount} terminal(s) were deleted.")
+                                    ->persistent()
+                                    ->send();
+                            }
+                        }),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    private const DELETE_RETENTION_MESSAGE = 'Door unlock events and webhook receipts are retained for audit; they are no longer cascade-deleted with the terminal.';
+
+    /**
+     * The number of templates the delete hook will park.
+     *
+     * Delegated to the model so the modal and the hook read one candidate set and one
+     * evidence rule: the modal used to pre-filter `liveOrPendingCredentialStates()`, which
+     * excluded an already-`DeletionUnresolvable` row the hook re-parks, and it ran the
+     * delivery check per row.
+     */
+    private static function parkedTemplateCount(BiometricDevice $record): int
+    {
+        return $record->parkedTemplateCount();
+    }
+
+    private static function deleteModalDescription(BiometricDevice $record): string
+    {
+        $parkedTemplateCount = self::parkedTemplateCount($record);
+
+        $description = 'This action cannot be undone. Deleting the terminal removes it from this application, but it cannot erase credentials stored in the terminal\'s flash memory.';
+
+        $description .= $parkedTemplateCount > 0
+            ? " {$parkedTemplateCount} enrolled template(s) will be parked for manual erasure and will need an operator."
+            : ' No live enrolled templates are recorded for it.';
+
+        return $description . ' ' . self::DELETE_RETENTION_MESSAGE;
+    }
+
+    private static function bulkDeleteModalDescription(): string
+    {
+        return 'This action cannot be undone. Deleting the terminals removes them from this application, but it cannot erase credentials stored in their flash memory. Enrolled templates are parked for manual erasure and will need an operator. Only records you are authorised to delete in this tenant will be deleted. ' . self::DELETE_RETENTION_MESSAGE;
     }
 
     public static function infolist(Infolist $infolist): Infolist
@@ -1455,8 +1613,14 @@ class BiometricDeviceResource extends BaseResource
     /**
      * Non-secret provider_config fields that are rendered for every provider.
      *
-     * Edit-page fill and the form drift test derive from this list; the edit
-     * page must not hardcode the signature header.
+     * These fields are only rendered while {@see self::providerConfigEditable()}
+     * permits it: an unreadable stored payload hides them until the operator
+     * opts into replacing it. Edit-page fill and the form drift test derive from
+     * this list; the edit page must not hardcode the signature header.
+     *
+     * `adms_user_table` is deliberately not here: it is ADMS terminal state, not
+     * provider configuration, and it is rendered only when ADMS is enabled. It is
+     * hydrated by {@see EditBiometricDevice::providerConfigForForm()} explicitly.
      *
      * @return array<int, string>
      */

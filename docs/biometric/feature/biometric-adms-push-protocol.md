@@ -23,7 +23,7 @@ related_docs:
 
 The **ADMS (Automatic Data Master Server)** push protocol provides seamless integration for smart hardware terminals (primarily **eSSL**, **ZKTeco**, and compatible OEM models) as well as **Hikvision ISAPI** access control terminals.
 
-Unlike purely webhook-driven cloud setups, ADMS-capable hardware terminals verify biometrics directly on-chip and autonomously push attendance verification events to the server. Simultaneously, the server uses a command queue to push user provisioning and deprovisioning operations (`DATA UPDATE user`, `DATA DELETE user`) down to the physical memory of the hardware terminals when members register or expire.
+Unlike purely webhook-driven cloud setups, ADMS-capable hardware terminals verify biometrics directly on-chip and autonomously push attendance verification events to the server. Simultaneously, the server uses a command queue to push user provisioning and deprovisioning operations (`DATA UPDATE USERINFO`, `DATA DELETE USERINFO`, or configurable `user` table per [ADR-0007](../../adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md)) down to the physical memory of the hardware terminals when members register or expire.
 
 ---
 
@@ -51,7 +51,7 @@ Terminals can operate in **Dual-Channel Mode**, leveraging the best capabilities
                     ▼
        GET /api/iclock/getrequest
    (Server-to-Device Command Polling:
-    DATA DELETE user Pin=..., etc.)
+    DATA DELETE USERINFO PIN=..., etc.)
 ```
 
 1. **Vendor Webhook (`/api/v1/biometric/webhook/{token}`)**:
@@ -91,7 +91,7 @@ All ADMS endpoints are publicly accessible to terminals without session cookies,
 - **Query Parameters**:
   - `SN`: Device hardware serial number.
 - **Response**:
-  - If commands pending: formatted ADMS command string (e.g. `C:15:DATA DELETE user Pin=42`).
+  - If commands pending: formatted ADMS command string in the schema snapshotted on the command (e.g. `C:15:DATA DELETE USERINFO PIN=42`, or `C:15:DATA DELETE user Pin=42` for terminals configured with the legacy `user` table).
   - If no commands: `OK`.
 - **Side Effect**: Marks the dequeued `AdmsDeviceCommand` as `sent` (`AdmsCommandStatusEnum::SENT`).
 
@@ -126,6 +126,8 @@ Terminal Event (SN, userId, timestamp, status, verifyMode)
   │
   ├─► Step 2: Member Resolution
   │   Find GymMember matching BiometricTemplate.template_ref OR GymMember.id
+  │   (template lookups are scoped to this terminal's device, plus cloud rows
+  │    with no device; an orphan enrolled elsewhere is never attributed here)
   │
   ├─► Step 3: Guard Verification (MembershipGuard)
   │   - Active membership validity
@@ -209,7 +211,7 @@ Old executed commands (`ACKNOWLEDGED` and `FAILED`) are pruned automatically usi
 
 ### Member Archival Deprovisioning & Hardware Credential Epoch Tracking
 When an operator archives a member (or when `app:archive-inactive-gym-members` executes the 2-year inactivity sweep), [MemberArchiveService](../../../app/Services/MemberArchiveService.php) immediately initiates physical credential revocation via [BiometricDeProvisioner](../../../app/Biometrics/Services/BiometricDeProvisioner.php):
-- **Synchronous Command Queuing**: Queues a `DATA DELETE user Pin={memberId}` command for all active and pending templates across assigned hardware terminals.
+- **Synchronous Command Queuing**: Queues a schema-negotiated `DATA DELETE` command (e.g. `C:{id}:DATA DELETE USERINFO PIN={memberId}`, or the lowercase `user` variant) for all active and pending templates across assigned hardware terminals.
 - **Hardware Credential Epoch Tracking**: To prevent dead-letter loops where a previous deletion command failed at the maximum attempt cap, [AdmsDeviceCommand](../../../app/Models/AdmsDeviceCommand.php) tracks `epoch_credential_user_add_id`. When a restored member re-enrolls, the subsequent `user_add` establishes a new credential epoch. If the member is later archived again, `BiometricDeProvisioner::hasUnconsumedHardwareCredential()` recognizes the newer epoch and safely re-drives the terminal deletion without getting blocked by previous attempt caps.
 - **Biometric Operator Attention**: Stuck or unresolvable deletions that reach the attempt cap are automatically surfaced to operators via the `BiometricOperatorAttentionWidget` and the "Needs Operator" filter on `BiometricTemplatesRelationManager`.
 

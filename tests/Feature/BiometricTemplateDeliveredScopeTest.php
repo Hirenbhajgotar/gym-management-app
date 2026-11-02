@@ -22,7 +22,7 @@ use Tests\TestCase;
 /**
  * A member's ADMS command PIN is their member id and is stable across re-enrolments, so an
  * acknowledgement for an earlier enrolment must never be attributed to a later placeholder.
- * Getting this wrong lets the abandoned-placeholder sweep queue `DATA DELETE user Pin=N` and
+ * Getting this wrong lets the abandoned-placeholder sweep queue a hardware delete and
  * erase a credential the member is still using.
  */
 class BiometricTemplateDeliveredScopeTest extends TestCase

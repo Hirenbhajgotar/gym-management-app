@@ -24,16 +24,20 @@ use App\Models\AdmsDeviceCommand;
 use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\GymMember;
+use App\Traits\AssertsTransactionalAuditSink;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use RuntimeException;
 use Throwable;
 
 class BiometricEnrollController extends Controller
 {
+    use AssertsTransactionalAuditSink;
+
     public function __construct(
         protected BiometricProviderRegistry $registry,
         protected BiometricDataDeletionService $deletionService,
@@ -672,23 +676,65 @@ class BiometricEnrollController extends Controller
             : BiometricTemplateSyncStatusEnum::DeletionUnresolvable;
 
         try {
-            // `is_erasure_obligation` is a compliance discriminator and is deliberately not
-            // mass-assignable, so the marker row is forced rather than filled.
-            BiometricTemplate::query()->forceCreate([
-                'gym_member_id' => $member->id,
-                'gym_id' => $device->gym_id,
-                'enrolled_by_device_id' => $device->id,
-                'biometric_type' => $biometricType->value,
-                // `??` is itself null-safe: a null `$ref` or a never-configured device falls
-                // through to the next operand instead of raising, so the nullsafe operators are
-                // redundant here.
-                'provider_type' => $ref->provider ?? $device->provider_type->value ?? 'unknown',
-                'template_ref' => $ref?->toJson(),
-                'is_active' => false,
-                'is_erasure_obligation' => true,
-                'sync_status' => $status,
-                'enrolled_at' => null,
-            ]);
+            DB::transaction(function () use ($device, $member, $biometricType, $ref, $reason, $status): void {
+                // `is_erasure_obligation` is a compliance discriminator and is deliberately not
+                // mass-assignable, so the marker row is forced rather than filled.
+                $template = BiometricTemplate::query()->forceCreate([
+                    'gym_member_id' => $member->id,
+                    'gym_id' => $device->gym_id,
+                    'enrolled_by_device_id' => $device->id,
+                    'biometric_type' => $biometricType->value,
+                    // `??` is itself null-safe: a null `$ref` or a never-configured device falls
+                    // through to the next operand instead of raising, so the nullsafe operators are
+                    // redundant here.
+                    'provider_type' => $ref->provider ?? $device->provider_type->value ?? 'unknown',
+                    'template_ref' => $ref?->toJson(),
+                    'is_active' => false,
+                    'is_erasure_obligation' => true,
+                    'sync_status' => $status,
+                    'enrolled_at' => null,
+                ]);
+
+                if ($status === BiometricTemplateSyncStatusEnum::DeletionUnresolvable) {
+                    // The one park writer: state, durable flag and transactional audit entry.
+                    // A null reference has no automated exit, so the row must be self-describing
+                    // and visible to the operator surface from the moment it is written.
+                    $template->parkAsUnresolvableObligation(
+                        'a refused enrolment may have left a remote template with no reference',
+                        [
+                            'device_id' => $device->id,
+                            'member_id' => $member->id,
+                            'provider' => $ref?->provider,
+                            'reason' => $reason,
+                        ]
+                    );
+
+                    return;
+                }
+
+                // A reference-backed orphan is re-driven by the reconciler, but the entry that
+                // says why the row exists must be as durable as the row itself.
+                $this->assertAuditSinkIsTransactional();
+
+                $logged = activity('biometric')
+                    ->performedOn($template)
+                    ->withProperties([
+                        'template_id' => $template->id,
+                        'gym_id' => $device->gym_id,
+                        'member_id' => $member->id,
+                        'device_id' => $device->id,
+                        'provider' => $ref?->provider,
+                        'sync_status' => $status->value,
+                        'reason' => $reason,
+                    ])
+                    ->log('Biometric template orphaned by refused enrolment and queued for provider erasure');
+
+                if ($logged === null) {
+                    throw new RuntimeException(
+                        'The orphaned remote template was not recorded because its audit entry could not be written.'
+                    );
+                }
+            });
         } catch (Throwable $e) {
             // Losing the marker is worse than losing the log line, so both are
             // attempted and the failure to persist is recorded loudly.

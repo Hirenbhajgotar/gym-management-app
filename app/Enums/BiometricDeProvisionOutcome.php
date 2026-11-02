@@ -7,11 +7,13 @@ namespace App\Enums;
 /**
  * Outcome of requesting erasure of a biometric template, wherever its credential lives.
  *
- * `Deleted` is written only when a terminal confirms `DATA DELETE user Pin=N`, a provider
+ * `Deleted` is written only when a terminal confirms a hardware `DATA DELETE`, a provider
  * confirms the API erase, or the template provably never reached the hardware and so has no
- * credential to erase. Every other outcome leaves the obligation outstanding, and an
- * outstanding obligation always has a row state (`PendingDeletion`) that the hourly reconciler
- * revisits — except `CloudUnresolvable`, which is terminal and needs an operator.
+ * credential to erase. Every other outcome either leaves the obligation retryable in
+ * `PendingDeletion` (`Queued`, `AlreadyQueued`, `ReDriven`, `DeferredToSibling`,
+ * `CloudRetry`, `DeviceUnavailable`) or parks it at `DeletionUnresolvable` with the durable
+ * obligation flag for an operator (`Exhausted`, `UnaddressablePin`, `DeviceRemoved`,
+ * `CloudUnresolvable`). The parked outcomes are not revisited by the hourly reconciler.
  */
 enum BiometricDeProvisionOutcome: string
 {
@@ -33,8 +35,23 @@ enum BiometricDeProvisionOutcome: string
     /** The `user_delete` for this PIN has exhausted its delivery budget and needs an operator. */
     case Exhausted = 'exhausted';
 
+    /**
+     * The PIN cannot be expressed on the wire (empty, non-scalar, or carrying protocol
+     * control characters), so no `user_delete` for it can ever be delivered. The template is
+     * parked at `DeletionUnresolvable` for manual erasure rather than queued and quarantined.
+     */
+    case UnaddressablePin = 'unaddressable_pin';
+
     /** Device row is missing or is not ADMS-enabled, so no command can be emitted yet. */
     case DeviceUnavailable = 'device_unavailable';
+
+    /**
+     * The enrolling terminal no longer exists, so the credential it may still
+     * hold cannot be erased through the command queue. The template is parked at
+     * `DeletionUnresolvable` for an operator rather than falsely converging to
+     * `Deleted`.
+     */
+    case DeviceRemoved = 'device_removed';
 
     /** A cloud/provider-backed credential was confirmed erased through the provider API. */
     case CloudErased = 'cloud_erased';
