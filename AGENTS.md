@@ -511,3 +511,17 @@ Use `.ocr/skills/SKILL.md` to learn:
 
 Keep this managed block so `ocr init` can refresh the instructions.
 <!-- OCR:END -->
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (`Hirenbhajgotar/gym-management-app`) via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical triage roles mapped 1:1 to their default label strings. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.

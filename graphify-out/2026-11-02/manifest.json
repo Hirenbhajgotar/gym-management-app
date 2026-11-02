@@ -888,9 +888,9 @@
     "semantic_hash": ""
   },
   "app/Biometrics/Services/BiometricReceiptService.php": {
-    "mtime": 1790683142.953577,
-    "seen": 1790693264.1204312,
-    "ast_hash": "50200a89c7b307667646357074b1ce47",
+    "mtime": 1793521457.8473747,
+    "seen": 1793624257.586166,
+    "ast_hash": "5357eddeae61fa33304d6a20fed568ac",
     "semantic_hash": ""
   },
   "app/Biometrics/Services/BiometricTimestampParser.php": {
@@ -1038,9 +1038,9 @@
     "semantic_hash": ""
   },
   "app/Console/Commands/CleanupSupersededTemplatesCommand.php": {
-    "mtime": 1793457520.917285,
-    "seen": 1793464920.7321541,
-    "ast_hash": "8ead1d0b740bb3ebf14f3344b5736c2b",
+    "mtime": 1793521449.5421395,
+    "seen": 1793624257.5873208,
+    "ast_hash": "798d198146b304f1a37b62ca225a38bb",
     "semantic_hash": ""
   },
   "app/Console/Commands/DeleteOldLeads.php": {
@@ -1092,15 +1092,15 @@
     "semantic_hash": ""
   },
   "app/Console/Commands/ReclaimStaleDeviceCommands.php": {
-    "mtime": 1793457835.429351,
-    "seen": 1793464920.7321744,
-    "ast_hash": "eef254e0a6a90651febafcb70866be3d",
+    "mtime": 1793608729.1498046,
+    "seen": 1793624257.5875978,
+    "ast_hash": "9e965ef8c56794b5a8a0e5b9c0ec85fd",
     "semantic_hash": ""
   },
   "app/Console/Commands/ReconcilePendingBiometricDeletionsCommand.php": {
-    "mtime": 1793438686.0570655,
-    "seen": 1793444381.5941064,
-    "ast_hash": "075275ae46d6f72034906e628b07c0e5",
+    "mtime": 1793609066.8246222,
+    "seen": 1793624257.587655,
+    "ast_hash": "ca4b90c80b937dd5f9973dd740caf1d2",
     "semantic_hash": ""
   },
   "app/Console/Commands/ReconcileSubscriptionsCommand.php": {
@@ -2148,9 +2148,9 @@
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/AdmsDeviceCommandResource.php": {
-    "mtime": 1793457798.3841288,
-    "seen": 1793464920.732618,
-    "ast_hash": "9180e02cd9f09482cc92f77aa7eaa5e8",
+    "mtime": 1793542898.3520372,
+    "seen": 1793624257.5953183,
+    "ast_hash": "8a5185174c677f1bef126c200b2c605e",
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/BaseEmployeeResource.php": {
@@ -2160,9 +2160,9 @@
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/BiometricDeviceResource.php": {
-    "mtime": 1793458411.3922634,
-    "seen": 1793464920.732626,
-    "ast_hash": "81d930690546fc185aa1c19190d03f22",
+    "mtime": 1793610347.921378,
+    "seen": 1793624257.5954216,
+    "ast_hash": "0997ecbcac9eb4c6ab8e52e4c8137504",
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/ExpenseBudgetResource.php": {
@@ -2190,9 +2190,9 @@
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/GymResource.php": {
-    "mtime": 1782797901.8960252,
-    "seen": 1790693264.120736,
-    "ast_hash": "1a2e44aef2597c0b0ee7af883be70137",
+    "mtime": 1793610333.868613,
+    "seen": 1793624257.5963118,
+    "ast_hash": "dc378da252730208fb0df5c5ec235806",
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/LeadResource.php": {
@@ -2364,9 +2364,9 @@
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/GymMemberResource/RelationManagers/BiometricTemplatesRelationManager.php": {
-    "mtime": 1793458460.1929379,
-    "seen": 1793464920.7327032,
-    "ast_hash": "1907959f251fedde58fc1d297b918a33",
+    "mtime": 1793618923.858966,
+    "seen": 1793624257.596192,
+    "ast_hash": "0b1f5fc724b5bad19fd0236413340759",
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/GymMemberResource/RelationManagers/MeasurementsRelationManager.php": {
@@ -3618,9 +3618,9 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/Api/BiometricEnrollController.php": {
-    "mtime": 1793264488.0609183,
-    "seen": 1793284536.9426785,
-    "ast_hash": "9dc90cf66eb31b03bf60bf92064bf243",
+    "mtime": 1793611662.2830305,
+    "seen": 1793624257.6041248,
+    "ast_hash": "b6ff20734a5f7caa7dfe64fac4857f0e",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Api/BiometricOfflineSyncController.php": {
@@ -4128,9 +4128,9 @@
     "semantic_hash": ""
   },
   "app/Models/AdmsDeviceCommand.php": {
-    "mtime": 1793458010.183412,
-    "seen": 1793464920.7333949,
-    "ast_hash": "4cc44a48fdd47b0625f3fbc8651d7af4",
+    "mtime": 1793610478.1141248,
+    "seen": 1793624257.608533,
+    "ast_hash": "f5afa662e8b93f134d853acf5c3e28ba",
     "semantic_hash": ""
   },
   "app/Models/Attendances.php": {
@@ -4146,21 +4146,21 @@
     "semantic_hash": ""
   },
   "app/Models/BiometricDevice.php": {
-    "mtime": 1793458130.8527968,
-    "seen": 1793464920.7334008,
-    "ast_hash": "9f1325e2d86f93219e2772e2684dd2d7",
+    "mtime": 1793608812.653362,
+    "seen": 1793624257.608623,
+    "ast_hash": "626548cd58c401745e0c6201465e2aa3",
     "semantic_hash": ""
   },
   "app/Models/BiometricEventReceipt.php": {
-    "mtime": 1793457485.0973358,
-    "seen": 1793464920.733403,
-    "ast_hash": "90da322650c9449cdfefb5fe95aa1c29",
+    "mtime": 1793521466.086203,
+    "seen": 1793624257.6086798,
+    "ast_hash": "759400d3361da0b1abb56192cf27a5fb",
     "semantic_hash": ""
   },
   "app/Models/BiometricTemplate.php": {
-    "mtime": 1793462859.9645534,
-    "seen": 1793464920.7334046,
-    "ast_hash": "e4023f741b5781fbfcc718f89b32cd5b",
+    "mtime": 1793611923.170612,
+    "seen": 1793624257.6087062,
+    "ast_hash": "97e6b79ab6e1de417fc33a68bc4c8f91",
     "semantic_hash": ""
   },
   "app/Models/Blog.php": {
@@ -4254,15 +4254,15 @@
     "semantic_hash": ""
   },
   "app/Models/Gym.php": {
-    "mtime": 1791384841.828825,
-    "seen": 1791457874.7020469,
-    "ast_hash": "b743218900647a1d94598a98ed27bd98",
+    "mtime": 1793611851.5675454,
+    "seen": 1793624257.6091602,
+    "ast_hash": "3b969072fe024fd5825567eefdd6181e",
     "semantic_hash": ""
   },
   "app/Models/GymMember.php": {
-    "mtime": 1793264543.7630413,
-    "seen": 1793284536.9429321,
-    "ast_hash": "471523284a107f3043777b2f121cc9df",
+    "mtime": 1793611742.5427833,
+    "seen": 1793624257.6091855,
+    "ast_hash": "99ee9483a3a15c9869fb3a9222dea8e8",
     "semantic_hash": ""
   },
   "app/Models/GymSetting.php": {
@@ -4818,9 +4818,9 @@
     "semantic_hash": ""
   },
   "app/Observers/GymObserver.php": {
-    "mtime": 1783528782.830219,
-    "seen": 1790693264.1212478,
-    "ast_hash": "a5f7bfbf0c0d7d723fbf42c511ceaf03",
+    "mtime": 1793611755.145633,
+    "seen": 1793624257.6133907,
+    "ast_hash": "154a9a4bbd0ea2179af2ec88dcf424a4",
     "semantic_hash": ""
   },
   "app/Observers/LeadObserver.php": {
@@ -4896,9 +4896,9 @@
     "semantic_hash": ""
   },
   "app/Observers/UserObserver.php": {
-    "mtime": 1783701803.4602659,
-    "seen": 1790693264.1212628,
-    "ast_hash": "c4a32baa3b91bcf0393031e7af19eb3b",
+    "mtime": 1793609802.41364,
+    "seen": 1793624257.6137788,
+    "ast_hash": "5493cda8a35de76c9cc17734e4f26238",
     "semantic_hash": ""
   },
   "app/Observers/WhatsAppAccountObserver.php": {
@@ -4992,15 +4992,15 @@
     "semantic_hash": ""
   },
   "app/Policies/GymMemberPolicy.php": {
-    "mtime": 1793438807.883864,
-    "seen": 1793444381.5954926,
-    "ast_hash": "d1aecb97f834d539de0b21f58b9cee5b",
+    "mtime": 1793521478.3178442,
+    "seen": 1793624257.614239,
+    "ast_hash": "ca2d4a8f8ea8e4e6b7abf4bb13356228",
     "semantic_hash": ""
   },
   "app/Policies/GymPolicy.php": {
-    "mtime": 1782797907.5305252,
-    "seen": 1790693264.1212823,
-    "ast_hash": "8a346ab60a12f6a388789a1566046f09",
+    "mtime": 1793609816.2936747,
+    "seen": 1793624257.614266,
+    "ast_hash": "0775de30b66cdcc3d38605017db330a2",
     "semantic_hash": ""
   },
   "app/Policies/ImportPolicy.php": {
@@ -5400,9 +5400,9 @@
     "semantic_hash": ""
   },
   "app/Services/TwilioAccountManager.php": {
-    "mtime": 1784871237.2511065,
-    "seen": 1790693264.1213844,
-    "ast_hash": "e4cee78b4aebc7c2be3ef3558a852f60",
+    "mtime": 1793612224.5430603,
+    "seen": 1793624257.6172469,
+    "ast_hash": "cfc978fea9a9264a21a006fd97011049",
     "semantic_hash": ""
   },
   "app/Services/TwilioWhatsAppService.php": {
@@ -8286,9 +8286,9 @@
     "semantic_hash": ""
   },
   "routes/console.php": {
-    "mtime": 1793289895.691338,
-    "seen": 1793345606.3699675,
-    "ast_hash": "77a5f381f20fef7108c154b473676069",
+    "mtime": 1793609776.4935687,
+    "seen": 1793624257.6370997,
+    "ast_hash": "83d4156d6663bfc2172f5ebc959ed44b",
     "semantic_hash": ""
   },
   "routes/web.php": {
@@ -8334,9 +8334,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/AdmsProtocolTest.php": {
-    "mtime": 1793457694.7480245,
-    "seen": 1793464920.7351708,
-    "ast_hash": "61e584e8b2a990f38650256a9801f70c",
+    "mtime": 1793526598.402182,
+    "seen": 1793624257.6380777,
+    "ast_hash": "a1880317ebc1af416b006fb0a16a645a",
     "semantic_hash": ""
   },
   "tests/Feature/AntiPassbackLockReleaseTest.php": {
@@ -8388,9 +8388,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/BiometricRound2RemediationTest.php": {
-    "mtime": 1793462891.3177228,
-    "seen": 1793464920.735253,
-    "ast_hash": "9a638586c20087979d3450ffc52dc4f5",
+    "mtime": 1793526598.4011786,
+    "seen": 1793624257.6393256,
+    "ast_hash": "c5035370fff7b58097b171dfc83e8fc9",
     "semantic_hash": ""
   },
   "tests/Feature/BiometricScalabilityTest.php": {
@@ -8424,9 +8424,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/CleanDeletedGymOwnersCommandTest.php": {
-    "mtime": 1782797915.5772972,
-    "seen": 1790693264.1221037,
-    "ast_hash": "680df039475c574de45b78e4719120a3",
+    "mtime": 1793613199.8166246,
+    "seen": 1793624257.6396785,
+    "ast_hash": "4c684e5a14e45ce16edc4bc130af4505",
     "semantic_hash": ""
   },
   "tests/Feature/CleanupExpiredDeviceMembersTest.php": {
@@ -9354,9 +9354,9 @@
     "semantic_hash": ""
   },
   "CHANGELOG.md": {
-    "mtime": 1793457373.6662683,
-    "seen": 1793464920.737786,
-    "ast_hash": "b32bb852bd7637c7fea4fe8ac474231c",
+    "mtime": 1793522053.126331,
+    "seen": 1793624257.679685,
+    "ast_hash": "a9273756447d95d2a4fa8545a846bdd8",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
@@ -13890,9 +13890,9 @@
     "semantic_hash": ""
   },
   "docs/biometric/database/door-events-fields.md": {
-    "mtime": 1780389210.3618648,
-    "seen": 1790693264.1234193,
-    "ast_hash": "85566516b3528b101256d277db1311ae",
+    "mtime": 1793522078.221644,
+    "seen": 1793624257.6805294,
+    "ast_hash": "9ace34181afe3d89d56b33061a3cb5fe",
     "semantic_hash": ""
   },
   "docs/biometric/database/gym-members-fields.md": {
@@ -14232,9 +14232,9 @@
     "semantic_hash": ""
   },
   ".gemini/settings.json": {
-    "mtime": 1777111189.4343202,
-    "seen": 1790693264.1203008,
-    "ast_hash": "1c1318c14c7ae91acef03a48951f69fc",
+    "mtime": 1793624020.6415608,
+    "seen": 1793624257.581638,
+    "ast_hash": "dd3b55e6816dee2c00ee2797567014b0",
     "semantic_hash": ""
   },
   ".opencode/skills/brand/scripts/extract-colors.cjs": {
@@ -14916,9 +14916,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Filament/AdmsDeviceCommandResendTest.php": {
-    "mtime": 1791354292.0379512,
-    "seen": 1791357755.9319372,
-    "ast_hash": "ba478dc1358c3a8552a8957be8833eac",
+    "mtime": 1793521825.0086167,
+    "seen": 1793624257.6407013,
+    "ast_hash": "b01ee06c71ed7fc7502306f7197730b1",
     "semantic_hash": ""
   },
   "tests/Feature/Filament/BiometricDeviceInfolistTest.php": {
@@ -15702,9 +15702,9 @@
     "semantic_hash": ""
   },
   "app/Biometrics/Services/BiometricDeProvisioner.php": {
-    "mtime": 1793458177.675038,
-    "seen": 1793464920.7320638,
-    "ast_hash": "7240bec631093b89e9f6e4eccdff578d",
+    "mtime": 1793610551.2655275,
+    "seen": 1793624257.586103,
+    "ast_hash": "d29ae79e842cf65ff689d24094dcd6ec",
     "semantic_hash": ""
   },
   "app/Biometrics/Services/BiometricTemplateSuperseder.php": {
@@ -15720,9 +15720,9 @@
     "semantic_hash": ""
   },
   "app/Enums/BiometricDeProvisionOutcome.php": {
-    "mtime": 1793439194.8980641,
-    "seen": 1793444381.594191,
-    "ast_hash": "95c0d68d2e216dcf00e35e47a1c78f12",
+    "mtime": 1793540748.5775652,
+    "seen": 1793624257.5887115,
+    "ast_hash": "ae484989cf16f938a68eca7470dd07ad",
     "semantic_hash": ""
   },
   "database/migrations/2026_10_06_000000_soft_delete_superseded_biometric_templates.php": {
@@ -15738,15 +15738,15 @@
     "semantic_hash": ""
   },
   "tests/Feature/AdmsDeviceCommandRetentionAndLeaseTest.php": {
-    "mtime": 1793457673.3559356,
-    "seen": 1793464920.7351663,
-    "ast_hash": "97a46ba2007362ba08df6caa220c0cfe",
+    "mtime": 1793521794.517696,
+    "seen": 1793624257.6379795,
+    "ast_hash": "12e5a8c79f5f6bdf25dce5639abfeb92",
     "semantic_hash": ""
   },
   "tests/Feature/BiometricDeProvisionOutcomeTest.php": {
-    "mtime": 1793462644.1642902,
-    "seen": 1793464920.7352157,
-    "ast_hash": "b0242b72098687dd02980b5790538848",
+    "mtime": 1793526621.1217868,
+    "seen": 1793624257.6386573,
+    "ast_hash": "2b0a806b6299cf240c6e5d2031bb078f",
     "semantic_hash": ""
   },
   "tests/Feature/BiometricSupersededReasonTest.php": {
@@ -16278,9 +16278,9 @@
     "semantic_hash": ""
   },
   "app/Filament/Admin/Widgets/BiometricOperatorAttentionWidget.php": {
-    "mtime": 1792330718.9106123,
-    "seen": 1792338541.491499,
-    "ast_hash": "bdb73ebf1793cc76713be0e2723a72fa",
+    "mtime": 1793610307.2395182,
+    "seen": 1793624257.5995395,
+    "ast_hash": "fa0b4797a8f53fdf66a3a0bd47c3e594",
     "semantic_hash": ""
   },
   "database/migrations/2026_10_17_000100_add_cloud_erasure_cooldown_to_biometric_templates_table.php": {
@@ -16590,15 +16590,15 @@
     "semantic_hash": ""
   },
   "database/migrations/2026_10_31_000000_set_null_on_delete_for_biometric_templates_enrolled_by_device_id.php": {
-    "mtime": 1793457675.3666387,
-    "seen": 1793464920.734543,
-    "ast_hash": "1838e5e7e4f68f26bbf688bd927d1ddf",
+    "mtime": 1793610433.4036696,
+    "seen": 1793624257.6285808,
+    "ast_hash": "aba8f071d18e5a1486ccaac1cd7dc4c6",
     "semantic_hash": ""
   },
   "tests/Feature/Filament/BiometricDeviceDeleteTest.php": {
-    "mtime": 1793460754.3627746,
-    "seen": 1793464920.7353482,
-    "ast_hash": "6b565ed0afae6bb9ec6c379a16c172b7",
+    "mtime": 1793542713.3555615,
+    "seen": 1793624257.640942,
+    "ast_hash": "608a4947ff522402e93ee97dc455a363",
     "semantic_hash": ""
   },
   "app/Enums/AdmsUserTableEnum.php": {
@@ -16614,15 +16614,15 @@
     "semantic_hash": ""
   },
   "database/migrations/2026_10_31_000200_keep_adms_command_ledger_after_device_deletion.php": {
-    "mtime": 1793457410.7833233,
-    "seen": 1793464920.7345471,
-    "ast_hash": "2cfff56763109d3d27f0cf01a0243339",
+    "mtime": 1793610440.6372395,
+    "seen": 1793624257.628627,
+    "ast_hash": "dc96095f4c17ec35f81bc7cf3abba733",
     "semantic_hash": ""
   },
   "docs/adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md": {
-    "mtime": 1793457350.1295996,
-    "seen": 1793464920.7378223,
-    "ast_hash": "1bc4498e268fedb5caabce477c1ab24d",
+    "mtime": 1793522066.827124,
+    "seen": 1793624257.680227,
+    "ast_hash": "199f9651b41ba6302f6415a6cb86fbbe",
     "semantic_hash": ""
   },
   "app/Casts/AdmsUserTableCast.php": {
@@ -16632,9 +16632,9 @@
     "semantic_hash": ""
   },
   "database/migrations/2026_10_31_000300_preserve_access_control_audit_after_device_deletion.php": {
-    "mtime": 1793457410.781292,
-    "seen": 1793464920.7345495,
-    "ast_hash": "f41adb3d74936364ecfa97bf3b00cb0c",
+    "mtime": 1793610450.4197292,
+    "seen": 1793624257.6286464,
+    "ast_hash": "3c44a77fa694bb45876a42566ddc5397",
     "semantic_hash": ""
   },
   "tests/Feature/AdmsUserTableCastTest.php": {
@@ -16644,15 +16644,15 @@
     "semantic_hash": ""
   },
   "tests/Feature/Filament/AdmsCommandLedgerOrphanTest.php": {
-    "mtime": 1793457941.2086565,
-    "seen": 1793464920.7353265,
-    "ast_hash": "ed1de6ab46a0660f279e4d9d262fb9a5",
+    "mtime": 1793618936.1588893,
+    "seen": 1793624257.6406631,
+    "ast_hash": "af277cdb8acc05f60fa3d7f08e969ec8",
     "semantic_hash": ""
   },
   "tests/Feature/Filament/BiometricDeviceBulkDeleteAuthorizationTest.php": {
-    "mtime": 1793457889.7742245,
-    "seen": 1793464920.7353413,
-    "ast_hash": "57cb5fa236baa6a6c78ab5ab7f28a3b1",
+    "mtime": 1793522602.04923,
+    "seen": 1793624257.6408532,
+    "ast_hash": "7b093bb2a4d894e772bacbd10ffcdff3",
     "semantic_hash": ""
   },
   "tests/Feature/Filament/BiometricDeviceUserTableFormTest.php": {
@@ -16662,27 +16662,141 @@
     "semantic_hash": ""
   },
   "tests/Feature/Filament/BiometricErasureDischargeTest.php": {
-    "mtime": 1793457722.9024734,
-    "seen": 1793464920.7353694,
-    "ast_hash": "d8b9513b0a8bc1a1b01bea341d571886",
+    "mtime": 1793603663.551651,
+    "seen": 1793624257.6410973,
+    "ast_hash": "a413f488b91464d6965cdfe2c1268ec4",
     "semantic_hash": ""
   },
   "tests/Feature/Migrations/BiometricAuditRetentionMigrationTest.php": {
-    "mtime": 1793457552.0360453,
-    "seen": 1793464920.7354589,
-    "ast_hash": "13d57d406cd2d412790de6b8cdcb5757",
+    "mtime": 1793521997.7104228,
+    "seen": 1793624257.6425247,
+    "ast_hash": "c8e86fb2147b267a8ec11faf84f16db8",
     "semantic_hash": ""
   },
   "tests/Feature/Migrations/BiometricSchemaMigrationTest.php": {
-    "mtime": 1793457737.3681805,
-    "seen": 1793464920.7354603,
-    "ast_hash": "d161a12b51db046630064e8c4707116f",
+    "mtime": 1793523737.6854267,
+    "seen": 1793624257.642552,
+    "ast_hash": "d94e93f5b5e5bbdcb065fd517a806f7c",
     "semantic_hash": ""
   },
   "tests/Feature/ReclaimStaleDeviceCommandsTest.php": {
-    "mtime": 1793458135.1414943,
-    "seen": 1793464920.7354927,
-    "ast_hash": "e2dd49719fef616bdbc677ad84e8e333",
+    "mtime": 1793521782.8888662,
+    "seen": 1793624257.6430385,
+    "ast_hash": "3e1930072f34295eab35b3a15d8d91b2",
+    "semantic_hash": ""
+  },
+  "app/Console/Commands/ReleasePendingTwilioResources.php": {
+    "mtime": 1793609764.5074997,
+    "seen": 1793624257.5877125,
+    "ast_hash": "9ad337f2d1dfe650f2fa03219bce1f87",
+    "semantic_hash": ""
+  },
+  "app/Exceptions/DeviceDeletionVetoedException.php": {
+    "mtime": 1793520975.8413546,
+    "seen": 1793624257.5907216,
+    "ast_hash": "480aba5b2b00dc5cae43bce3d50035bb",
+    "semantic_hash": ""
+  },
+  "app/Jobs/ReleaseTenantTwilioResources.php": {
+    "mtime": 1793609711.658641,
+    "seen": 1793624257.6074572,
+    "ast_hash": "afe07b2c73aefc78148dcfa80f1aaa1f",
+    "semantic_hash": ""
+  },
+  "app/Models/BiometricErasureRegisterExport.php": {
+    "mtime": 1793608624.078393,
+    "seen": 1793624257.60865,
+    "ast_hash": "e03e96a28647b9a0c0d6be2f67898707",
+    "semantic_hash": ""
+  },
+  "app/Models/WhatsAppAccountRelease.php": {
+    "mtime": 1793611923.1715994,
+    "seen": 1793624257.610105,
+    "ast_hash": "6799812ce271e00d8b418d99d7dd0f2e",
+    "semantic_hash": ""
+  },
+  "app/Traits/AssertsTransactionalAuditSink.php": {
+    "mtime": 1793540236.6246195,
+    "seen": 1793624257.6180243,
+    "ast_hash": "7f17de51426390881f18580e5377e7b5",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_01_000000_add_device_serial_to_biometric_event_receipts_table.php": {
+    "mtime": 1793522746.0097463,
+    "seen": 1793624257.62867,
+    "ast_hash": "135e7ca7db8acea003298f446c0c6f77",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_01_000100_add_max_attempt_count_to_adms_device_commands_table.php": {
+    "mtime": 1793541262.2281787,
+    "seen": 1793624257.6286888,
+    "ast_hash": "89aadf7f5b5e3f04376d199981e6af0b",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_01_000200_clear_erasure_obligation_on_deleted_templates.php": {
+    "mtime": 1793541337.4945452,
+    "seen": 1793624257.628713,
+    "ast_hash": "513b5e074b641bd7d7cc69b8363f0bfb",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_02_000000_add_evidence_and_rearm_columns_to_adms_device_commands_table.php": {
+    "mtime": 1793608553.8108492,
+    "seen": 1793624257.628761,
+    "ast_hash": "e2adaba949afd255722e3d9190bb7e93",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_02_000100_create_biometric_erasure_register_exports_table.php": {
+    "mtime": 1793608553.8108492,
+    "seen": 1793624257.6288104,
+    "ast_hash": "195e8ec4f5527782bafb1e509c85f292",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_02_000200_create_whatsapp_account_releases_table.php": {
+    "mtime": 1793608553.8138561,
+    "seen": 1793624257.6288347,
+    "ast_hash": "40cb8913a4ab5876bec2b6be0bf870b6",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_02_000300_flag_legacy_deletion_unresolvable_templates.php": {
+    "mtime": 1793608553.8138561,
+    "seen": 1793624257.6288564,
+    "ast_hash": "b132cf74b93abf521f7a010abe9dd1b5",
+    "semantic_hash": ""
+  },
+  "tests/Feature/AdmsNullDeviceReconciliationTest.php": {
+    "mtime": 1793522030.4743814,
+    "seen": 1793624257.638015,
+    "ast_hash": "e8ceeacce9e5a61d77f56d0950c887a6",
+    "semantic_hash": ""
+  },
+  "tests/Feature/BiometricErasureLifecycleRound4Test.php": {
+    "mtime": 1793603767.5545704,
+    "seen": 1793624257.6388829,
+    "ast_hash": "37e874e9d09815a3285088449cf1c50d",
+    "semantic_hash": ""
+  },
+  "tests/Feature/BiometricErasureRound5RemediationTest.php": {
+    "mtime": 1793613285.4457471,
+    "seen": 1793624257.6389165,
+    "ast_hash": "6c94036b303790c4573c2efb5be2c2b3",
+    "semantic_hash": ""
+  },
+  "tests/Feature/BiometricEvidenceAtDetachTest.php": {
+    "mtime": 1793525221.1712532,
+    "seen": 1793624257.638944,
+    "ast_hash": "32fbec64b8775a6d6d3cd14ee458fd0b",
+    "semantic_hash": ""
+  },
+  "tests/Feature/BiometricTemplateRefCacheScopeTest.php": {
+    "mtime": 1793521917.118871,
+    "seen": 1793624257.6395009,
+    "ast_hash": "62cec10d33cee4b84194c3b20a089126",
+    "semantic_hash": ""
+  },
+  "tests/Feature/Filament/GymDeletionBiometricGuardTest.php": {
+    "mtime": 1793542750.297734,
+    "seen": 1793624257.6411562,
+    "ast_hash": "6d3b5687481932883c58e8c5566ecac0",
     "semantic_hash": ""
   }
 }
