@@ -223,7 +223,7 @@ class AppServiceProvider extends ServiceProvider
             );
         }
 
-        if (! config()->boolean('biometrics.adms.require_comm_key', true)) {
+        if (! config()->boolean('biometrics.adms.require_comm_key', false)) {
             $this->logInsecureAdmsOnce(
                 'key_enforcement_disabled',
                 'ADMS: communication key enforcement is disabled (ADMS_REQUIRE_COMM_KEY=false).'

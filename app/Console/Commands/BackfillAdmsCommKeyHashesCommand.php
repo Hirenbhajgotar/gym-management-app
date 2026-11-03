@@ -408,7 +408,7 @@ class BackfillAdmsCommKeyHashesCommand extends Command
                         continue;
                     }
 
-                    $removable = $this->removableCommKeyAliases($device, $rawConfig);
+                    $removable = $device->removableCommKeyAliases($rawConfig);
                     $preserved = array_values(array_diff($this->filledCommKeyAliases($rawConfig), $removable));
 
                     if ($removable === []) {
@@ -463,7 +463,7 @@ class BackfillAdmsCommKeyHashesCommand extends Command
                             // chunk snapshot: a concurrent native→cloud change
                             // leaves provider_config untouched, and the locked
                             // row may protect `comm_key` as a cloud credential.
-                            $removable = $this->removableCommKeyAliases($locked, $config);
+                            $removable = $locked->removableCommKeyAliases($config);
 
                             if ($removable === []) {
                                 throw new StaleDeviceSnapshotException(sprintf(
@@ -994,27 +994,6 @@ class BackfillAdmsCommKeyHashesCommand extends Command
         }
 
         return serialize($value);
-    }
-
-    /**
-     * Every alias that may be deleted under the row's current provider policy.
-     *
-     * @param  array<array-key, mixed>  $config
-     * @return list<string>
-     */
-    private function removableCommKeyAliases(BiometricDevice $device, array $config): array
-    {
-        $removable = [];
-
-        if (array_key_exists('pushcommkey', $config)) {
-            $removable[] = 'pushcommkey';
-        }
-
-        if (array_key_exists('comm_key', $config) && $device->mayDeleteCommKeyAlias()) {
-            $removable[] = 'comm_key';
-        }
-
-        return $removable;
     }
 
     /**

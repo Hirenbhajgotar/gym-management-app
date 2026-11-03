@@ -86,7 +86,7 @@ php artisan biometrics:backfill-adms-comm-keys --reprovision-legacy --reveal
 - Config sources: [`.env.example`](file:///c:/xampp/htdocs/projects/gym-app/.env.example), [`.env.testing`](file:///c:/xampp/htdocs/projects/gym-app/.env.testing), [`config/`](file:///c:/xampp/htdocs/projects/gym-app/config)
 - Required env vars: `APP_KEY`, `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `MYSQL_TEST_DATABASE`, `REDIS_HOST`, `REVERB_APP_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `META_APP_ID`, `META_APP_SECRET`
 - Biometrics hardware config ([`config/biometrics.php`](file:///c:/xampp/htdocs/projects/gym-app/config/biometrics.php)):
-  - `ADMS_REQUIRE_COMM_KEY`: Enforces authentication keys for edge hardware requests (default `true`).
+  - `ADMS_REQUIRE_COMM_KEY`: When `true`, refuses every terminal without a provisioned communication key (default `false`; unkeyed terminals authenticate by hardware Serial Number).
   - `ADMS_PBKDF2_ITERATIONS`: Iterations for key derivation (default 100,000).
   - `ADMS_COMMAND_LEASE_SECONDS`: Atomic command lease TTL (default 600s).
   - `ADMS_MAX_ATTEMPTS`: Maximum delivery retries before dead-letter circuit breaker (default 3).
