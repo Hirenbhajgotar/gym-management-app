@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
-## [v1.8.0] - 2026-11-04 (Current GitHub Release)
+## [v1.8.10] - 2026-11-04 (Current GitHub Release)
 
 ### Breaking Changes
 - **ADMS Communication Key Enforcement Is Now Opt-In (`ADMS_REQUIRE_COMM_KEY=false`)**:
