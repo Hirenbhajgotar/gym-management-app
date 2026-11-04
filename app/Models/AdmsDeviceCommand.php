@@ -450,6 +450,16 @@ class AdmsDeviceCommand extends Model
             return sprintf('C:%d:DATA DELETE %s %s=%s', $this->id, $wireTable, $pinKey, $pin);
         }
 
+        if ($wireTable === 'USERINFO') {
+            return sprintf(
+                "C:%d:DATA UPDATE USERINFO PIN=%s\tNAME=%s\tName=%s\tPri=0\tPrivilege=0",
+                $this->id,
+                $pin,
+                $name,
+                $name
+            );
+        }
+
         return sprintf(
             "C:%d:DATA UPDATE %s %s=%s\tName=%s\tPri=0",
             $this->id,
