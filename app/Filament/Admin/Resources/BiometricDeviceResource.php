@@ -501,8 +501,9 @@ class BiometricDeviceResource extends BaseResource
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function (mixed $state, Set $set): void {
                                         if (! is_string($state)) {
-                                            $set('adms_comm_key', null);
-
+                                            // Leave malformed Livewire state untouched so the
+                                            // field rule rejects it, instead of silently
+                                            // normalising it to "blank" and saving.
                                             return;
                                         }
 
@@ -513,16 +514,20 @@ class BiometricDeviceResource extends BaseResource
                                     })
                                     ->dehydrateStateUsing(fn (mixed $state): ?string => is_string($state) && $state !== '' ? BiometricDevice::sanitizeCommKey($state) : null)
                                     ->rules([
-                                        fn (string $operation, Get $get, ?BiometricDevice $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($operation, $get, $record): void {
+                                        fn (Get $get, ?BiometricDevice $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get, $record): void {
+                                            if ($value !== null && ! is_string($value)) {
+                                                $fail('The ADMS Communication Key must be a string.');
+
+                                                return;
+                                            }
+
                                             $cleaned = BiometricDevice::sanitizeCommKey($value);
-                                            $transitionRequiresKey = self::commKeyTransitionRequiresKey($get, $record);
-                                            $isRequired = self::commKeyRequired($operation, $get, $record);
+                                            $transitionRequiresKey = (bool) $get('adms_enabled')
+                                                && self::commKeyTransitionRequiresKey($get, $record);
 
                                             if ($cleaned === '') {
-                                                if ($isRequired) {
-                                                    $fail($transitionRequiresKey
-                                                        ? 'Enter a new ADMS Communication Key before switching away from device-native. The existing plaintext comm_key alias is not read for a cloud provider.'
-                                                        : 'The ADMS Communication Key is required when ADMS is enabled.');
+                                                if ($transitionRequiresKey) {
+                                                    $fail('Enter a new ADMS Communication Key before switching away from device-native. The existing plaintext comm_key alias is not read for a cloud provider.');
                                                 }
 
                                                 return;
@@ -535,8 +540,6 @@ class BiometricDeviceResource extends BaseResource
                                             }
                                         },
                                     ])
-                                    ->required(fn (string $operation, Get $get, ?BiometricDevice $record): bool => self::commKeyRequired($operation, $get, $record)
-                                        && ! self::commKeyTransitionRequiresKey($get, $record))
                                     ->hintAction(
                                         FormAction::make('generateCommKey')
                                             ->label('Generate')
@@ -545,7 +548,9 @@ class BiometricDeviceResource extends BaseResource
                                                 $set('adms_comm_key', BiometricDevice::generateCommKey());
                                             })
                                     )
-                                    ->helperText('Exactly 6 letters or numbers after whitespace is removed; a 6-digit number is recommended for universal device compatibility. Leave blank on edit to keep the current key, except when switching from Device-Native to a cloud provider that would stop reading the only plaintext comm_key. A new key is shown only in the one-time reveal window; the stored value is never displayed.')
+                                    ->helperText(fn (string $operation): string => $operation === 'create'
+                                        ? 'Optional. Leave blank for devices that do not send pushcommkey (e.g. eSSL MB20) to authenticate by Serial Number only. For devices supporting a push communication key, enter exactly 6 letters or numbers (a 6-digit number is recommended).'
+                                        : 'Leave blank to keep the current key. Enter a new 6-digit key to rotate. When switching from a device-native device to a cloud provider you must enter a new key: the plaintext comm_key alias is not read for a cloud provider. A new key is shown only in the one-time reveal window; the stored value is never displayed.')
                                     ->visible(fn (Get $get): bool => (bool) $get('adms_enabled')),
 
                                 Select::make('provider_config.adms_user_table')
@@ -954,52 +959,11 @@ class BiometricDeviceResource extends BaseResource
                         ->modalDescription('This invalidates the current key. You must update the physical terminal immediately; use Reveal Comm Key to read the new key.')
                         ->modalSubmitActionLabel('Rotate')
                         ->action(function (BiometricDevice $record): void {
-                            // The comm-key rotation also rewrites provider_config
-                            // (alias cleanup). It must share the edit page's lock
-                            // so a concurrent save cannot overwrite the hash or
-                            // the cleanup.
-                            try {
-                                $lock = Cache::lock(
-                                    WebhookSecretRotationService::providerConfigLockKey(self::deviceKey($record)),
-                                    WebhookSecretRotationService::LOCK_TTL_SECONDS
-                                );
+                            $plainKey = BiometricDevice::generateCommKey();
+                            $salt = BiometricDevice::generateCommKeySalt();
+                            $removedAliases = [];
 
-                                $acquired = $lock->get();
-                            } catch (Throwable $exception) {
-                                Log::warning('ADMS: could not create the comm key rotation lock', [
-                                    'device_id' => $record->getKey(),
-                                    'exception' => $exception::class,
-                                ]);
-
-                                Notification::make()
-                                    ->danger()
-                                    ->title('Communication key was not rotated')
-                                    ->body('The provider configuration lock could not be created. Nothing was changed; try again once the cache is healthy.')
-                                    ->persistent()
-                                    ->send();
-
-                                return;
-                            }
-
-                            if (! $acquired) {
-                                Notification::make()
-                                    ->danger()
-                                    ->title('Communication key was not rotated')
-                                    ->body('Another change to this device is in progress. Nothing was changed; wait a moment and try again.')
-                                    ->persistent()
-                                    ->send();
-
-                                return;
-                            }
-
-                            try {
-                                // Re-read under the lock so alias removal operates
-                                // on the config another writer may have changed.
-                                $record->refresh();
-
-                                $plainKey = BiometricDevice::generateCommKey();
-                                $salt = BiometricDevice::generateCommKeySalt();
-
+                            $rotated = self::withProviderConfigLock($record, 'Communication key was not rotated', function () use ($record, $plainKey, $salt, &$removedAliases): bool {
                                 try {
                                     $config = is_array($record->provider_config) ? $record->provider_config : null;
                                 } catch (Throwable) {
@@ -1008,36 +972,24 @@ class BiometricDeviceResource extends BaseResource
                                     $config = null;
                                 }
 
-                                $removedAliases = [];
-
-                                if ($config !== null) {
-                                    if (array_key_exists('pushcommkey', $config)) {
-                                        unset($config['pushcommkey']);
-                                        $removedAliases[] = 'pushcommkey';
-                                    }
-
-                                    if ($record->mayDeleteCommKeyAlias() && array_key_exists('comm_key', $config)) {
-                                        unset($config['comm_key']);
-                                        $removedAliases[] = 'comm_key';
-                                    }
-                                }
-
                                 $attributes = [
                                     'adms_comm_key_hash' => BiometricDevice::hashCommKey($plainKey, $salt),
                                     'adms_comm_key_salt' => $salt,
                                 ];
 
                                 if ($config !== null) {
-                                    $attributes['provider_config'] = $config;
+                                    $stripping = $record->stripCommKeyAliases($config);
+                                    $attributes['provider_config'] = $stripping->config;
+                                    $removedAliases = $stripping->removedAliases;
                                 }
 
                                 $record->forceFill($attributes)->saveQuietly();
-                            } finally {
-                                try {
-                                    $lock->release();
-                                } catch (Throwable) {
-                                    // The lock TTL is the backstop.
-                                }
+
+                                return true;
+                            });
+
+                            if (! $rotated) {
+                                return;
                             }
 
                             CommKeyReveal::forget($record->id);
@@ -1078,6 +1030,110 @@ class BiometricDeviceResource extends BaseResource
                                 ->success()
                                 ->title('Communication key rotated')
                                 ->body('Use Reveal Comm Key to read the new one-time key.')
+                                ->send();
+                        }),
+
+                    Action::make('removeCommKey')
+                        ->label('Remove Comm Key')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->visible(fn (BiometricDevice $record): bool => $record->adms_enabled
+                            && $record->hasCommKeyConfigured()
+                            && ! $record->providerConfigIsUnreadable())
+                        ->authorize(fn (BiometricDevice $record): bool => auth()->user()?->can('rotateCredentials', $record) ?? false)
+                        ->requiresConfirmation()
+                        ->modalHeading('Remove communication key')
+                        ->modalDescription('This device will authenticate by Serial Number only. Clear the key on the terminal\'s own menu as well, or the terminal will keep sending the old one.')
+                        ->modalSubmitActionLabel('Remove key')
+                        ->form([
+                            TextInput::make('reason')
+                                ->label('Reason (optional)')
+                                ->maxLength(255),
+                        ])
+                        ->action(function (BiometricDevice $record, array $data): void {
+                            if (config()->boolean('biometrics.adms.require_comm_key', false)) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Communication key was not removed')
+                                    ->body('Server-wide key enforcement (ADMS_REQUIRE_COMM_KEY) is enabled, so this device would stop authenticating. Disable enforcement first.')
+                                    ->persistent()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $removedAliases = [];
+
+                            $removed = self::withProviderConfigLock($record, 'Communication key was not removed', function () use ($record, &$removedAliases): bool {
+                                try {
+                                    $rawConfig = $record->provider_config;
+                                    $config = is_array($rawConfig) ? $rawConfig : [];
+                                    $hadConfig = $rawConfig !== null;
+                                } catch (Throwable $exception) {
+                                    Log::warning('ADMS: comm key removal refused on an unreadable provider_config', [
+                                        'device_id' => $record->getKey(),
+                                        'exception' => $exception::class,
+                                    ]);
+
+                                    Notification::make()
+                                        ->danger()
+                                        ->title('Communication key was not removed')
+                                        ->body('The provider configuration cannot be decrypted. Repair or replace it before removing the key.')
+                                        ->persistent()
+                                        ->send();
+
+                                    return false;
+                                }
+
+                                $stripping = $record->stripCommKeyAliases($config);
+
+                                $attributes = [
+                                    'adms_comm_key_hash' => null,
+                                    'adms_comm_key_salt' => null,
+                                ];
+
+                                if ($hadConfig) {
+                                    $attributes['provider_config'] = $stripping->config;
+                                }
+
+                                $removedAliases = $stripping->removedAliases;
+
+                                $record->forceFill($attributes)->saveQuietly();
+
+                                return true;
+                            });
+
+                            if (! $removed) {
+                                return;
+                            }
+
+                            CommKeyReveal::forget($record->id);
+                            resolve(AdmsDeviceAuthenticator::class)->resetFailures($record);
+
+                            $reason = is_string($data['reason'] ?? null) ? trim($data['reason']) : '';
+
+                            try {
+                                activity()
+                                    ->performedOn($record)
+                                    ->withProperties([
+                                        'gym_id' => $record->gym_id,
+                                        'action' => 'adms_comm_key_removed',
+                                        'removed_aliases' => $removedAliases,
+                                        'provider_type' => $record->provider_type?->value,
+                                        'reason' => $reason === '' ? null : $reason,
+                                    ])
+                                    ->log('ADMS device comm key removed');
+                            } catch (Throwable $exception) {
+                                Log::warning('ADMS: comm key removal audit failed', [
+                                    'device_id' => $record->getKey(),
+                                    'exception' => $exception::class,
+                                ]);
+                            }
+
+                            Notification::make()
+                                ->success()
+                                ->title('Communication key removed')
+                                ->body('The terminal now authenticates by Serial Number. Clear the key on the device itself if it still sends one.')
                                 ->send();
                         }),
 
@@ -1567,6 +1623,66 @@ class BiometricDeviceResource extends BaseResource
         return is_int($key) || is_string($key) ? $key : 0;
     }
 
+    /**
+     * Run a provider_config mutation while holding this device's lock.
+     *
+     * The callback returns true when it changed the row; false means it already
+     * reported why the mutation was refused. Lock acquisition failures are
+     * reported here so rotation and removal cannot drift.
+     *
+     * @param  Closure(): bool  $callback
+     */
+    private static function withProviderConfigLock(BiometricDevice $record, string $failureTitle, Closure $callback): bool
+    {
+        try {
+            $lock = Cache::lock(
+                WebhookSecretRotationService::providerConfigLockKey(self::deviceKey($record)),
+                WebhookSecretRotationService::LOCK_TTL_SECONDS
+            );
+
+            $acquired = $lock->get();
+        } catch (Throwable $exception) {
+            Log::warning('ADMS: could not create the provider configuration lock', [
+                'device_id' => $record->getKey(),
+                'exception' => $exception::class,
+            ]);
+
+            self::notifyLockFailure($failureTitle, 'The provider configuration lock could not be created. Nothing was changed; try again once the cache is healthy.');
+
+            return false;
+        }
+
+        if (! $acquired) {
+            self::notifyLockFailure($failureTitle, 'Another change to this device is in progress. Nothing was changed; wait a moment and try again.');
+
+            return false;
+        }
+
+        try {
+            // Re-read under the lock so the mutation operates on the config
+            // another writer may have changed.
+            $record->refresh();
+
+            return $callback();
+        } finally {
+            try {
+                $lock->release();
+            } catch (Throwable) {
+                // The lock TTL is the backstop.
+            }
+        }
+    }
+
+    private static function notifyLockFailure(string $title, string $body): void
+    {
+        Notification::make()
+            ->danger()
+            ->title($title)
+            ->body($body)
+            ->persistent()
+            ->send();
+    }
+
     public static function resolvedAppUrl(): string
     {
         return self::configString('app.url', request()->root() ?: 'http://localhost');
@@ -1681,22 +1797,10 @@ class BiometricDeviceResource extends BaseResource
     }
 
     /**
-     * A key is required on create, when the device has no verifier at all, or
-     * when the transition would stop reading the last native plaintext alias.
+     * A bare `comm_key` alias is only dropped when the provider leaves
+     * device-native mode, so the switch is the only place a replacement key is
+     * mandatory. Normal create and edit allow a serial-only terminal.
      */
-    private static function commKeyRequired(string $operation, Get $get, ?BiometricDevice $record): bool
-    {
-        if (! (bool) $get('adms_enabled')) {
-            return false;
-        }
-
-        if ($operation === 'create' || $record === null || ! $record->hasCommKeyConfigured()) {
-            return true;
-        }
-
-        return self::commKeyTransitionRequiresKey($get, $record);
-    }
-
     private static function commKeyTransitionRequiresKey(Get $get, ?BiometricDevice $record): bool
     {
         if ($record === null || ! $record->hasOnlyPlaintextCommKeyAlias()) {
