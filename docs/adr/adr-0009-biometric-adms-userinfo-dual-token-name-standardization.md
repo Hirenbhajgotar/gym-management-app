@@ -1,18 +1,18 @@
 ---
 title: "ADR-0009: Biometric ADMS USERINFO Dual-Token Name and Attribute Standardization"
-status: "Accepted"
+status: "Superseded"
 date: "2026-11-04"
 authors: "Lead Architect, Biometric Systems Engineer, Senior Full-Stack Engineer"
 tags: ["architecture", "decision", "biometrics", "adms", "hardware-integration", "zkteco", "essl", "mb20", "push-protocol"]
 supersedes: ""
-superseded_by: ""
+superseded_by: "docs/adr/adr-0010-biometric-adms-operlog-handling-and-clean-wire-token-standardization.md"
 ---
 
 # ADR-0009: Biometric ADMS USERINFO Dual-Token Name and Attribute Standardization
 
 ## Status
 
-**Accepted**
+**Superseded** by [ADR-0010](adr-0010-biometric-adms-operlog-handling-and-clean-wire-token-standardization.md)
 
 ## Context
 
