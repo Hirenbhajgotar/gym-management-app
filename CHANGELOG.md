@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **Native `OPERLOG` Ingestion & Hardware Audit Observability**:
+  - Implemented `AdmsController::handleOperlog()` to handle device-native operational/audit events pushed to `/iclock/cdata?table=OPERLOG`.
+  - Acknowledges `OPERLOG` with `200 OK` and updates device heartbeat, eliminating the 5-second infinite HTTP 400 retry loop on physical terminals.
+  - See [ADR-0010](docs/adr/adr-0010-biometric-adms-operlog-handling-and-clean-wire-token-standardization.md).
+
+### Fixed
+- **Clean Standardized Wire Protocol Tokens on ADMS User Commands**:
+  - Removed duplicate, non-standard tokens (`NAME=` and `Privilege=0`) from `AdmsDeviceCommand::userCommandString()`.
+  - Standardized `USERINFO` and `user` wire formats to strict vendor-compliant single-token representations (`Name={name}\tPri=0`).
+  - Added name trim sanitization and strict 24-character bounds clamping (`mb_substr(trim($sanitized), 0, 24)`) matching embedded flash memory structs in ZKTeco/eSSL hardware.
+
+
 ---
 
 ## [v1.8.10] - 2026-11-04 (Current GitHub Release)
