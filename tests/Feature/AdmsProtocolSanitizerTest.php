@@ -34,6 +34,7 @@ class AdmsProtocolSanitizerTest extends TestCase
         $this->assertStringNotContainsString("\tDATA UPDATE", $commandString);
         $this->assertStringStartsWith('C:42:DATA UPDATE USERINFO PIN=123', $commandString);
         $this->assertStringContainsString('Name=John Doe  DATA UPDATE USERINFO PIN=999 Pri=9', $commandString);
+        $this->assertStringContainsString('NAME=John Doe  DATA UPDATE USERINFO PIN=999 Pri=9', $commandString);
     }
 
     /**
@@ -82,9 +83,29 @@ class AdmsProtocolSanitizerTest extends TestCase
         // Emitting `Passwd=`/`Card=` unconditionally turned "unspecified" into
         // "explicitly empty", which can clear a card already on the terminal.
         $this->assertSame(
-            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0",
+            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tNAME=Hiren Sarla\tPri=0\tPrivilege=0",
             $command->toAdmsCommandString()
         );
+    }
+
+    public function test_payload_accepts_case_insensitive_name_key(): void
+    {
+        foreach (['name', 'NAME', 'Name'] as $key) {
+            $command = new AdmsDeviceCommand([
+                'command_type' => 'user_add',
+                'command_payload' => [
+                    'Pin' => '369',
+                    $key => 'Hiren Sarla',
+                ],
+            ]);
+            $command->id = 10;
+
+            $this->assertSame(
+                "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tNAME=Hiren Sarla\tPri=0\tPrivilege=0",
+                $command->toAdmsCommandString(),
+                "Failed asserting key [{$key}] is recognized as user name"
+            );
+        }
     }
 
     public function test_password_and_card_are_never_emitted_because_nothing_produces_them(): void
@@ -104,7 +125,7 @@ class AdmsProtocolSanitizerTest extends TestCase
         // state the application never set onto the wire, so the fields are ignored
         // rather than sanitised and appended.
         $this->assertSame(
-            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0",
+            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tNAME=Hiren Sarla\tPri=0\tPrivilege=0",
             $command->toAdmsCommandString()
         );
     }

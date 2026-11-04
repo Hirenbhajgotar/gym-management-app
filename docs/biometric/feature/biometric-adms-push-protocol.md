@@ -1,13 +1,16 @@
 ---
 feature: Biometric ADMS Push Protocol
 status: accepted
-last_updated: 2026-10-30
+last_updated: 2026-11-04
 author: docs-agent
 related_docs:
   - ../architecture/ADR-004-adms-push-protocol-and-lifecycle.md
   - ../../adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md
   - ../../adr/adr-0005-biometric-adms-communication-key-hardware-standardization.md
   - ../../adr/adr-0006-biometric-adms-legacy-hardware-endpoint-and-transport-compatibility.md
+  - ../../adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md
+  - ../../adr/adr-0008-biometric-adms-per-device-comm-key-negotiation.md
+  - ../../adr/adr-0009-biometric-adms-userinfo-dual-token-name-standardization.md
   - ../architecture/ADR-002-door-access-attendance-integrity.md
   - ../database/adms-device-commands-fields.md
   - ../database/biometric-templates-fields.md
@@ -91,7 +94,7 @@ All ADMS endpoints are publicly accessible to terminals without session cookies,
 - **Query Parameters**:
   - `SN`: Device hardware serial number.
 - **Response**:
-  - If commands pending: formatted ADMS command string in the schema snapshotted on the command (e.g. `C:15:DATA DELETE USERINFO PIN=42`, or `C:15:DATA DELETE user Pin=42` for terminals configured with the legacy `user` table).
+  - If commands pending: formatted ADMS command string terminated with a trailing newline `\n` in the schema snapshotted on the command (e.g. `C:15:DATA UPDATE USERINFO PIN=42\tName=John Doe\tNAME=John Doe\tPri=0\tPrivilege=0` under [ADR-0009](../../adr/adr-0009-biometric-adms-userinfo-dual-token-name-standardization.md), `C:15:DATA DELETE USERINFO PIN=42`, or `C:15:DATA DELETE user Pin=42` for terminals configured with the legacy `user` table under [ADR-0007](../../adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md)).
   - If no commands: `OK`.
 - **Side Effect**: Marks the dequeued `AdmsDeviceCommand` as `sent` (`AdmsCommandStatusEnum::SENT`).
 

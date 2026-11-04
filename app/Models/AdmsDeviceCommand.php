@@ -416,7 +416,7 @@ class AdmsDeviceCommand extends Model
      */
     private function serializedName(array $payload): string
     {
-        $rawName = $payload['Name'] ?? '';
+        $rawName = $payload['Name'] ?? $payload['name'] ?? $payload['NAME'] ?? '';
 
         if (! is_string($rawName) && ! is_numeric($rawName)) {
             return '';
@@ -430,11 +430,12 @@ class AdmsDeviceCommand extends Model
     /**
      * Build a PIN-addressed command under the given wire schema.
      *
-     * The two schemas differ only in the master-table token and the casing of
-     * the `Pin` key; every other byte is identical. `Passwd` and `Card` are
-     * deliberately never emitted: nothing in the application produces them, and
-     * emitting an empty value would clear a card already assigned on the
-     * terminal.
+     * The two schemas differ in the master-table token, key casing, and compatibility parameters:
+     * - `USERINFO` emits dual name tokens (`Name` & `NAME`) and dual privilege tokens (`Pri=0` & `Privilege=0`)
+     *   to ensure compatibility with firmware token parsers (e.g. eSSL MB20) that expect uppercase attributes.
+     * - `user` emits standard single tokens (`Pin`, `Name`, `Pri=0`).
+     * `Passwd` and `Card` are deliberately never emitted: nothing in the application produces them,
+     * and emitting an empty value would clear a card already assigned on the terminal.
      *
      * @param  array{0: string, 1: string}  $schema  Wire table and PIN key.
      */
@@ -444,6 +445,18 @@ class AdmsDeviceCommand extends Model
 
         if ($this->command_type === 'user_delete') {
             return sprintf('C:%d:DATA DELETE %s %s=%s', $this->id, $wireTable, $pinKey, $pin);
+        }
+
+        if ($wireTable === 'USERINFO') {
+            return sprintf(
+                "C:%d:DATA UPDATE %s %s=%s\tName=%s\tNAME=%s\tPri=0\tPrivilege=0",
+                $this->id,
+                $wireTable,
+                $pinKey,
+                $pin,
+                $name,
+                $name
+            );
         }
 
         return sprintf(
