@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+---
+
+## [v1.8.0] - 2026-11-04 (Current GitHub Release)
+
 ### Breaking Changes
 - **ADMS Communication Key Enforcement Is Now Opt-In (`ADMS_REQUIRE_COMM_KEY=false`)**:
   - `config('biometrics.adms.require_comm_key')` now defaults to `false` (previously `true`). Terminals without a provisioned communication key authenticate by hardware Serial Number (`SN`) instead of being rejected.
@@ -99,6 +103,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Published [ADR-0004: Member Archival Lifecycle, Cryptographic Biometric Credential Erasure, and Access Revocation Architecture](docs/adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md).
   - Published [ADR-0005: Biometric ADMS Communication Key Hardware Standardization and Sanitization Architecture](docs/adr/adr-0005-biometric-adms-communication-key-hardware-standardization.md).
   - Published [ADR-0006: Biometric ADMS Legacy Hardware Endpoint, ASPX Routing, and Transport Compatibility](docs/adr/adr-0006-biometric-adms-legacy-hardware-endpoint-and-transport-compatibility.md).
+  - Published [ADR-0007: Biometric ADMS Multi-Device Table Schema Negotiation and Wire Protocol Standardization](docs/adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md).
+  - Published [ADR-0008: Biometric ADMS Per-Device Communication Key Negotiation and Unkeyed Legacy Hardware Support](docs/adr/adr-0008-biometric-adms-per-device-comm-key-negotiation.md).
+  - Published [ADR-0009: Biometric ADMS USERINFO Dual-Token Name and Attribute Standardization](docs/adr/adr-0009-biometric-adms-userinfo-dual-token-name-standardization.md).
   - Created [Biometric Templates Field Reference](docs/biometric/database/biometric-templates-fields.md).
   - Updated field references for [Gym Members](docs/biometric/database/gym-members-fields.md), [ADMS Device Commands](docs/biometric/database/adms-device-commands-fields.md), and [Biometric Devices](docs/biometric/database/biometric-devices-fields.md).
 
@@ -109,12 +116,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Updated `Schedule::job()` registration to pass the `SubscriptionRenewalJob::class` string rather than instantiating the job (`new SubscriptionRenewalJob()`), deferring instantiation to scheduled run time and preventing unnecessary overhead during console kernel and route bootstrapping.
 
 ### Fixed
+- **eSSL MB20 Biometric User Name Display Blank on Device**:
+  - Resolved an issue where member names remained completely blank on eSSL MB20 physical terminal LCD screens despite the device returning execution code `Return=0` (Success) on `user_add` commands.
+  - Standardized dual name tokens (`Name=%s\tNAME=%s`) and dual privilege tokens (`Pri=0\tPrivilege=0`) for the `USERINFO` wire schema in `AdmsDeviceCommand::toAdmsCommandString()`, ensuring compatibility with uppercase C tokenizers on Linux/ZEM-based firmware while preserving backward compatibility with mixed-case parsers.
+  - Added case-insensitive name payload extraction (`$payload['Name'] ?? $payload['name'] ?? $payload['NAME'] ?? ''`) in `AdmsDeviceCommand::serializedName()`.
+  - Enforced single trailing newline (`\n`) on all command responses returned by `AdmsController::getRequest()` to meet line-oriented socket parsing requirements on embedded terminals.
+  - Added test coverage in `AdmsProtocolSanitizerTest` (dual token assertions, case-insensitive payload aliases, and delimiter sanitization) and `AdmsProtocolTest` (trailing newline verification).
 - **Queue Serialization in Subscription Renewal (`SubscriptionRenewalJob`)**:
   - Resolved `RazorpayService` lazily on demand within `processPayment()` rather than resolving and assigning it to an instance property in `__construct()`. This prevents queue worker serialization errors and stale service state when dispatching `SubscriptionRenewalJob` to queued drivers (e.g. Redis).
 - **Razorpay Configuration Resilience (`config/services.php`)**:
   - Hardened Razorpay environment variable mapping (`key_id`, `key_secret`, and `webhook_secret`) with explicit `(string)` casting and empty string fallbacks (`(string) env('...', '')`), avoiding null values and strict typing runtime errors when configuration is evaluated without configured secrets.
 
-## [v1.8.0] - 2026-10-11 (Current GitHub Release)
+## [v1.8.0] - 2026-10-11
 
 ### Breaking Changes
 - **Enforce ADMS Device Communication Key by Default (`ADMS_REQUIRE_COMM_KEY=true`)**:
