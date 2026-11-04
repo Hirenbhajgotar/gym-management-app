@@ -7,6 +7,7 @@ namespace Tests\Feature\Filament;
 use App\Biometrics\Services\AdmsDeviceAuthenticator;
 use App\Biometrics\Services\CommKeyReveal;
 use App\Biometrics\Services\DeviceTokenReveal;
+use App\Biometrics\Services\WebhookSecretRotationService;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricProvidersEnum;
@@ -17,6 +18,7 @@ use App\Exceptions\UnreadableProviderConfigException;
 use App\Filament\Admin\Resources\BiometricDeviceResource;
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\CreateBiometricDevice;
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\EditBiometricDevice;
+use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\ListBiometricDevices;
 use App\Models\BiometricDevice;
 use App\Models\Gym;
 use App\Models\Role;
@@ -162,6 +164,26 @@ class BiometricDeviceCommKeyFormTest extends TestCase
         $this->assertStringNotContainsString($token, json_encode(session()->all()) ?: '');
     }
 
+    public function test_create_allows_blank_comm_key_for_unkeyed_adms_device(): void
+    {
+        Livewire::test(CreateBiometricDevice::class)
+            ->fillForm([
+                'device_name' => 'Unkeyed MB20 Terminal',
+                'device_serial' => 'SN-FORM-UNKEYED-001',
+                'device_type' => BiometricTypeEnum::Fingerprint->value,
+                'purpose' => BiometricDevicePurpose::AttendanceOnly->value,
+                'adms_enabled' => true,
+                'adms_comm_key' => '',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $device = BiometricDevice::query()->where('device_serial', 'SN-FORM-UNKEYED-001')->firstOrFail();
+        $this->assertFalse($device->hasCommKeyConfigured());
+        $this->assertNull($device->adms_comm_key_hash);
+        $this->assertNull($device->adms_comm_key_salt);
+    }
+
     public function test_a_seven_digit_key_is_rejected(): void
     {
         Livewire::test(CreateBiometricDevice::class)
@@ -220,6 +242,31 @@ class BiometricDeviceCommKeyFormTest extends TestCase
         // plaintext removal, so a blank save must not destroy recovery material.
         $this->assertSame('123456', $device->provider_config['pushcommkey'] ?? null);
         $this->assertSame('safe', $device->provider_config['other_setting'] ?? null);
+    }
+
+    public function test_editing_unkeyed_device_can_provision_new_comm_key(): void
+    {
+        $device = BiometricDevice::factory()->create([
+            'gym_id' => $this->gym->id,
+            'device_serial' => 'SN-EDIT-UNKEYED-001',
+            'provider_type' => null,
+            'adms_enabled' => true,
+            'status' => BiometricDeviceStatusEnum::Active,
+            'adms_comm_key_hash' => null,
+            'adms_comm_key_salt' => null,
+            'provider_config' => null,
+        ]);
+
+        Livewire::test(EditBiometricDevice::class, ['record' => $device->getRouteKey()])
+            ->fillForm([
+                'adms_comm_key' => '654321',
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $device->refresh();
+        $this->assertTrue($device->hasCommKeyConfigured());
+        $this->assertTrue($device->verifyCommKey('654321'));
     }
 
     public function test_editing_with_a_new_key_rotates_the_hash_and_cleans_legacy_plaintext(): void
@@ -330,6 +377,326 @@ class BiometricDeviceCommKeyFormTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertFalse($authenticator->isLockedOut($device->refresh()));
+    }
+
+    public function test_removing_a_comm_key_clears_the_hash_and_native_aliases(): void
+    {
+        $device = BiometricDevice::factory()
+            ->admsEnabled('SN-REMOVE-KEY-001')
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'provider_config' => ['pushcommkey' => '123456', 'comm_key' => '123456', 'other_setting' => 'safe'],
+            ]);
+
+        Livewire::test(ListBiometricDevices::class)
+            ->callTableAction('removeCommKey', $device);
+
+        $device->refresh();
+
+        $this->assertNull($device->adms_comm_key_hash);
+        $this->assertNull($device->adms_comm_key_salt);
+        $this->assertFalse($device->hasCommKeyConfigured());
+        $this->assertArrayNotHasKey('pushcommkey', $device->provider_config);
+        $this->assertArrayNotHasKey('comm_key', $device->provider_config);
+        $this->assertSame('safe', $device->provider_config['other_setting'] ?? null);
+    }
+
+    public function test_removing_a_comm_key_preserves_a_cloud_provider_comm_key(): void
+    {
+        $device = BiometricDevice::factory()
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'device_serial' => 'SN-REMOVE-KEY-CLOUD-001',
+                'provider_type' => BiometricProvidersEnum::Rekognition,
+                'adms_enabled' => true,
+                'provider_config' => ['pushcommkey' => '123456', 'comm_key' => 'cloud-provider-key', 'other_setting' => 'safe'],
+            ]);
+
+        Livewire::test(ListBiometricDevices::class)
+            ->callTableAction('removeCommKey', $device);
+
+        $device->refresh();
+
+        $this->assertNull($device->adms_comm_key_hash);
+        $this->assertArrayNotHasKey('pushcommkey', $device->provider_config);
+        $this->assertSame('cloud-provider-key', $device->provider_config['comm_key'] ?? null);
+        $this->assertSame('safe', $device->provider_config['other_setting'] ?? null);
+    }
+
+    public function test_removing_a_comm_key_keeps_the_provenance_marker_on_a_preserved_cloud_credential(): void
+    {
+        $device = BiometricDevice::factory()
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'device_serial' => 'SN-REMOVE-KEY-PROVENANCE-001',
+                'provider_type' => BiometricProvidersEnum::Rekognition,
+                'adms_enabled' => true,
+                'provider_config' => ['comm_key' => 'cloud-provider-key', 'other_setting' => 'safe'],
+            ]);
+
+        // Only the saving hook may mark a retained comm_key as cloud-sourced.
+        $device->provider_type = null;
+        $device->save();
+
+        $this->assertSame('cloud', $device->refresh()->provider_config['comm_key_source'] ?? null);
+
+        Livewire::test(ListBiometricDevices::class)
+            ->callTableAction('removeCommKey', $device);
+
+        $device->refresh();
+
+        $this->assertNull($device->adms_comm_key_hash);
+        // The preserved credential is a provider secret, so it stays marked and
+        // therefore stays out of the ADMS alias set.
+        $this->assertSame('cloud', $device->provider_config['comm_key_source'] ?? null);
+        $this->assertSame('cloud-provider-key', $device->provider_config['comm_key'] ?? null);
+        $this->assertFalse($device->hasCommKeyConfigured());
+    }
+
+    public function test_removing_a_comm_key_drops_a_stale_provenance_marker(): void
+    {
+        $device = BiometricDevice::factory()
+            ->admsEnabled('SN-REMOVE-KEY-STALE-MARKER-001')
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'provider_config' => ['pushcommkey' => '123456', 'comm_key_source' => 'cloud', 'other_setting' => 'safe'],
+            ]);
+
+        Livewire::test(ListBiometricDevices::class)
+            ->callTableAction('removeCommKey', $device);
+
+        $device->refresh();
+
+        $this->assertNull($device->adms_comm_key_hash);
+        $this->assertArrayNotHasKey('pushcommkey', $device->provider_config);
+        $this->assertArrayNotHasKey('comm_key_source', $device->provider_config);
+        $this->assertSame('safe', $device->provider_config['other_setting'] ?? null);
+    }
+
+    public function test_removing_a_comm_key_is_refused_while_global_key_enforcement_is_enabled(): void
+    {
+        config(['biometrics.adms.require_comm_key' => true]);
+
+        $device = BiometricDevice::factory()
+            ->admsEnabled('SN-REMOVE-KEY-ENFORCED-001')
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'provider_config' => ['pushcommkey' => '123456'],
+            ]);
+
+        Livewire::test(ListBiometricDevices::class)
+            ->callTableAction('removeCommKey', $device)
+            ->assertNotified('Communication key was not removed');
+
+        $device->refresh();
+
+        $this->assertNotNull($device->adms_comm_key_hash);
+        $this->assertTrue($device->hasCommKeyConfigured());
+        $this->assertSame('123456', $device->provider_config['pushcommkey'] ?? null);
+    }
+
+    public function test_removing_a_comm_key_forgets_the_pending_reveal_and_clears_the_lockout(): void
+    {
+        $device = BiometricDevice::factory()
+            ->admsEnabled('SN-REMOVE-KEY-REVEAL-001')
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'provider_config' => [],
+            ]);
+
+        CommKeyReveal::put($device->id, '123456');
+
+        /** @var AdmsDeviceAuthenticator $authenticator */
+        $authenticator = resolve(AdmsDeviceAuthenticator::class);
+        Cache::put(AdmsDeviceAuthenticator::LOCKOUT_PREFIX . $device->id, true, now()->addMinutes(15));
+
+        $this->assertTrue($authenticator->isLockedOut($device));
+
+        Livewire::test(ListBiometricDevices::class)
+            ->callTableAction('removeCommKey', $device);
+
+        $this->assertFalse($authenticator->isLockedOut($device->refresh()));
+        $this->assertFalse(CommKeyReveal::exists($device->id));
+    }
+
+    public function test_remove_comm_key_action_is_hidden_when_the_device_has_no_key(): void
+    {
+        $device = BiometricDevice::factory()->admsEnabled('SN-REMOVE-KEY-UNKEYED-001')->create([
+            'gym_id' => $this->gym->id,
+        ]);
+
+        Livewire::test(ListBiometricDevices::class)
+            ->assertTableActionHidden('removeCommKey', $device);
+    }
+
+    public function test_remove_comm_key_action_is_hidden_when_the_provider_config_is_unreadable(): void
+    {
+        $device = BiometricDevice::factory()
+            ->admsEnabled('SN-REMOVE-KEY-CORRUPT-001')
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'provider_config' => ['pushcommkey' => '123456'],
+            ]);
+
+        DB::table('biometric_devices')
+            ->where('id', $device->id)
+            ->update(['provider_config' => 'not-a-valid-encrypted-payload']);
+
+        Livewire::test(ListBiometricDevices::class)
+            ->assertTableActionHidden('removeCommKey', $device->refresh());
+    }
+
+    public function test_removing_a_comm_key_records_the_operator_reason_and_aliases_in_the_audit_log(): void
+    {
+        $device = BiometricDevice::factory()
+            ->admsEnabled('SN-REMOVE-KEY-AUDIT-001')
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'provider_config' => ['pushcommkey' => '123456', 'comm_key' => '123456', 'other_setting' => 'safe'],
+            ]);
+
+        Livewire::test(ListBiometricDevices::class)
+            ->callTableAction('removeCommKey', $device, data: [
+                'reason' => 'Legacy MB20 without a pushcommkey menu',
+            ]);
+
+        $activity = DB::table('activity_log')
+            ->where('description', 'ADMS device comm key removed')
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($activity, 'Expected an audit entry for the removed comm key');
+
+        $properties = json_decode((string) $activity->properties, true);
+
+        $this->assertSame('adms_comm_key_removed', $properties['action']);
+        $this->assertSame(['pushcommkey', 'comm_key'], $properties['removed_aliases']);
+        $this->assertNull($properties['provider_type']);
+        $this->assertSame('Legacy MB20 without a pushcommkey menu', $properties['reason']);
+        $this->assertSame($this->gym->id, $properties['gym_id']);
+    }
+
+    public function test_removing_a_comm_key_is_refused_while_another_writer_holds_the_provider_config_lock(): void
+    {
+        $device = BiometricDevice::factory()
+            ->admsEnabled('SN-REMOVE-KEY-LOCKED-001')
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'provider_config' => ['pushcommkey' => '123456'],
+            ]);
+
+        $lock = Cache::lock(
+            WebhookSecretRotationService::providerConfigLockKey($device->getKey()),
+            300
+        );
+        $this->assertTrue($lock->get());
+
+        try {
+            Livewire::test(ListBiometricDevices::class)
+                ->callTableAction('removeCommKey', $device)
+                ->assertNotified('Communication key was not removed');
+        } finally {
+            $lock->release();
+        }
+
+        $device->refresh();
+
+        $this->assertNotNull($device->adms_comm_key_hash);
+        $this->assertSame('123456', $device->provider_config['pushcommkey'] ?? null);
+    }
+
+    public function test_removing_a_comm_key_fails_closed_when_the_provider_config_lock_cannot_be_created(): void
+    {
+        $device = BiometricDevice::factory()
+            ->admsEnabled('SN-REMOVE-KEY-CACHE-DOWN-001')
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'provider_config' => ['pushcommkey' => '123456'],
+            ]);
+
+        Cache::shouldReceive('lock')->once()->andThrow(new RuntimeException('cache unavailable'));
+        Cache::shouldReceive('flush')->andReturnTrue();
+
+        Livewire::test(ListBiometricDevices::class)
+            ->callTableAction('removeCommKey', $device)
+            ->assertNotified('Communication key was not removed');
+
+        $device->refresh();
+
+        $this->assertNotNull($device->adms_comm_key_hash);
+        $this->assertSame('123456', $device->provider_config['pushcommkey'] ?? null);
+    }
+
+    public function test_remove_comm_key_action_is_hidden_when_adms_is_disabled(): void
+    {
+        $device = BiometricDevice::factory()
+            ->admsEnabled('SN-REMOVE-KEY-ADMS-OFF-001')
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'adms_enabled' => false,
+                'provider_config' => ['pushcommkey' => '123456'],
+            ]);
+
+        Livewire::test(ListBiometricDevices::class)
+            ->assertTableActionHidden('removeCommKey', $device);
+    }
+
+    public function test_rotating_a_comm_key_drops_a_stale_provenance_marker(): void
+    {
+        $device = BiometricDevice::factory()
+            ->admsEnabled('SN-ROTATE-STALE-MARKER-001')
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'provider_config' => ['pushcommkey' => '123456', 'comm_key_source' => 'cloud'],
+            ]);
+
+        Livewire::test(ListBiometricDevices::class)
+            ->callTableAction('rotateCommKey', $device);
+
+        $device->refresh();
+
+        $this->assertArrayNotHasKey('pushcommkey', $device->provider_config);
+        $this->assertArrayNotHasKey('comm_key_source', $device->provider_config);
+    }
+
+    public function test_rotating_a_comm_key_keeps_a_cloud_provenance_marker_while_the_credential_survives(): void
+    {
+        $device = BiometricDevice::factory()
+            ->withCommKey('123456')
+            ->create([
+                'gym_id' => $this->gym->id,
+                'device_serial' => 'SN-ROTATE-CLOUD-MARKER-001',
+                'provider_type' => BiometricProvidersEnum::Rekognition,
+                'adms_enabled' => true,
+                'provider_config' => ['pushcommkey' => '123456', 'comm_key' => 'cloud-provider-key'],
+            ]);
+
+        // Only the saving hook may mark a retained comm_key as cloud-sourced.
+        $device->provider_type = null;
+        $device->save();
+
+        $this->assertSame('cloud', $device->refresh()->provider_config['comm_key_source'] ?? null);
+
+        Livewire::test(ListBiometricDevices::class)
+            ->callTableAction('rotateCommKey', $device);
+
+        $device->refresh();
+
+        $this->assertArrayNotHasKey('pushcommkey', $device->provider_config);
+        $this->assertSame('cloud-provider-key', $device->provider_config['comm_key'] ?? null);
+        $this->assertSame('cloud', $device->provider_config['comm_key_source'] ?? null);
     }
 
     public function test_a_twenty_character_key_is_rejected(): void

@@ -121,7 +121,7 @@ Stores biometric hardware devices deployed at gym locations. Each device has a p
 ## Notes
 
 - `device_token` stored as hashed (like passwords) for security
-- `adms_comm_key_hash` and `adms_comm_key_salt` are hidden from model serialization and are **not** mass-assignable; writers must use `forceFill()` or a dedicated model method
+- `adms_comm_key_hash` and `adms_comm_key_salt` are hidden from model serialization and are **not** mass-assignable; writers must use `forceFill()` or a dedicated model method. Per [ADR-0008](../../adr/adr-0008-biometric-adms-per-device-comm-key-negotiation.md), they are nullable and can remain null for terminals that authenticate purely via hardware Serial Number (e.g. eSSL MB20) without sending a `pushcommkey`. Keyed terminals (`hasCommKeyConfigured() === true`) strictly require a matching key on every ADMS request. The verifier can be removed again from the device table (Remove Comm Key), which also clears the ADMS aliases and returns the terminal to serial-only authentication.
 - `provider_config` is encrypted, hidden from model serialization, and contains API keys/secrets (including legacy `pushcommkey`/`comm_key` aliases as well as the optional `adms_user_table` schema override per [ADR-0007](../../adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md)); leaving `adms_user_table` unset inherits the global `ADMS_USER_TABLE` default
 - `door_controller_token` encrypted separately
 - `purpose` drives ALL business logic in CheckInService

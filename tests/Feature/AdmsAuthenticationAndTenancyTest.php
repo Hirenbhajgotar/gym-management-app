@@ -67,6 +67,138 @@ class AdmsAuthenticationAndTenancyTest extends TestCase
         $this->assertStringContainsString('ERR: Unauthorized', (string) $response->getContent());
     }
 
+    public function test_unkeyed_device_authenticates_with_serial_number_when_no_comm_key_is_configured(): void
+    {
+        $unkeyedDevice = BiometricDevice::factory()->admsEnabled('SN-MB20-TEST-001')->create([
+            'gym_id' => $this->gym->id,
+            'device_name' => 'Unkeyed MB20 Terminal',
+            'purpose' => BiometricDevicePurpose::AttendanceOnly,
+        ]);
+
+        $response = $this->call(
+            'GET',
+            '/api/iclock/cdata?SN=SN-MB20-TEST-001'
+        );
+
+        $response->assertOk();
+        $this->assertSame('OK', $response->getContent());
+    }
+
+    public function test_active_unkeyed_device_is_rejected_when_global_key_enforcement_is_enabled(): void
+    {
+        config(['biometrics.adms.require_comm_key' => true]);
+
+        $device = BiometricDevice::factory()->admsEnabled('SN-UNKEYED-STRICT')->create([
+            'gym_id' => $this->gym->id,
+            'device_name' => 'Unkeyed Active Device Strict',
+            'purpose' => BiometricDevicePurpose::AttendanceOnly,
+        ]);
+
+        $response = $this->call('GET', '/api/iclock/cdata?SN=SN-UNKEYED-STRICT');
+        $response->assertUnauthorized();
+        $this->assertStringContainsString('ERR: Unauthorized', (string) $response->getContent());
+    }
+
+    public function test_unkeyed_device_supplied_comm_key_is_accepted_and_logged_as_ignored(): void
+    {
+        Log::spy();
+
+        $device = BiometricDevice::factory()->admsEnabled('SN-UNKEYED-EXTRA-KEY')->create([
+            'gym_id' => $this->gym->id,
+        ]);
+
+        $response = $this->call('GET', '/api/iclock/cdata?SN=SN-UNKEYED-EXTRA-KEY&pushcommkey=unexpected123');
+        $response->assertOk();
+        $this->assertSame('OK', $response->getContent());
+
+        Log::shouldHaveReceived('warning')
+            ->withArgs(function (string $message, array $context) use ($device): bool {
+                return str_contains($message, 'unkeyed device supplied a pushcommkey')
+                    && ($context['device_id'] ?? null) === $device->id;
+            });
+    }
+
+    public function test_unkeyed_device_under_global_enforcement_never_accumulates_a_lockout(): void
+    {
+        Log::spy();
+
+        config(['biometrics.adms.require_comm_key' => true]);
+
+        $device = BiometricDevice::factory()->admsEnabled('SN-UNKEYED-NO-LOCKOUT')->create([
+            'gym_id' => $this->gym->id,
+        ]);
+
+        for ($attempt = 1; $attempt <= 6; $attempt++) {
+            $this->call('GET', '/api/iclock/cdata?SN=SN-UNKEYED-NO-LOCKOUT')
+                ->assertUnauthorized();
+        }
+
+        $authenticator = resolve(AdmsDeviceAuthenticator::class);
+
+        $this->assertFalse($authenticator->isLockedOut($device));
+
+        Log::shouldHaveReceived('warning')
+            ->withArgs(function (string $message, array $context) use ($device): bool {
+                return str_contains($message, 'unkeyed device refused while global key enforcement is enabled')
+                    && ($context['device_id'] ?? null) === $device->id;
+            });
+    }
+
+    public function test_keyed_device_locks_out_after_five_requests_that_omit_the_comm_key(): void
+    {
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $this->call('GET', '/api/iclock/cdata?SN=SN-AUTH-TEST-001')
+                ->assertUnauthorized();
+        }
+
+        $authenticator = resolve(AdmsDeviceAuthenticator::class);
+
+        $this->assertTrue($authenticator->isLockedOut($this->device));
+
+        $this->call('GET', '/api/iclock/cdata?SN=SN-AUTH-TEST-001&pushcommkey=secret-comm-key-123')
+            ->assertUnauthorized();
+    }
+
+    public function test_unkeyed_device_in_maintenance_is_rejected(): void
+    {
+        BiometricDevice::factory()->admsEnabled('SN-UNKEYED-MAINTENANCE')->maintenance()->create([
+            'gym_id' => $this->gym->id,
+        ]);
+
+        $this->call('GET', '/api/iclock/cdata?SN=SN-UNKEYED-MAINTENANCE')
+            ->assertUnauthorized();
+    }
+
+    public function test_unkeyed_device_that_was_deleted_is_rejected(): void
+    {
+        $device = BiometricDevice::factory()->admsEnabled('SN-UNKEYED-DELETED')->create([
+            'gym_id' => $this->gym->id,
+        ]);
+
+        $device->delete();
+
+        $this->call('GET', '/api/iclock/cdata?SN=SN-UNKEYED-DELETED')
+            ->assertUnauthorized();
+    }
+
+    public function test_unkeyed_success_clears_a_leftover_failure_counter_and_lockout(): void
+    {
+        $device = BiometricDevice::factory()->admsEnabled('SN-UNKEYED-RESET')->create([
+            'gym_id' => $this->gym->id,
+        ]);
+
+        Cache::put(AdmsDeviceAuthenticator::FAILURE_COUNTER_PREFIX . $device->id, 3, now()->addSeconds(900));
+        Cache::put(AdmsDeviceAuthenticator::LOCKOUT_PREFIX . $device->id, true, now()->addSeconds(900));
+
+        $this->call('GET', '/api/iclock/cdata?SN=SN-UNKEYED-RESET')
+            ->assertOk();
+
+        $authenticator = resolve(AdmsDeviceAuthenticator::class);
+
+        $this->assertFalse($authenticator->isLockedOut($device));
+        $this->assertNull(Cache::get(AdmsDeviceAuthenticator::FAILURE_COUNTER_PREFIX . $device->id));
+    }
+
     public function test_adms_request_with_invalid_comm_key_fails(): void
     {
         $response = $this->call(
@@ -518,6 +650,11 @@ class AdmsAuthenticationAndTenancyTest extends TestCase
 
         $response->assertUnauthorized();
         $this->assertSame('ERR: Unauthorized', $response->getContent());
+
+        // An unreadable provider_config may still hold a key, so it must never
+        // degrade to serial-only authentication: omitting the key is refused too.
+        $this->call('GET', '/api/iclock/cdata?SN=SN-CORRUPT-CONFIG')
+            ->assertUnauthorized();
     }
 
     public function test_inactive_unkeyed_device_still_cannot_recover_when_key_enforcement_is_enabled(): void

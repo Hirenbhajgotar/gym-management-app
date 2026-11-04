@@ -14,6 +14,8 @@ superseded_by: ""
 
 **Accepted**
 
+Amended by [ADR-0008](adr-0008-biometric-adms-per-device-comm-key-negotiation.md) for the premise that every terminal must authenticate with a communication key. The key generation, sanitisation and PBKDF2 verification lifecycle below otherwise stands.
+
 ## Context
 
 In multi-tenant commercial gym operations, access control and attendance recording rely heavily on standalone biometric terminals (predominantly manufactured by eSSL, ZKTeco, and compatible OEM firmware, such as eSSL MB-20, KM-20, K90, and SilkBio). Communication between the physical devices and the central server occurs via the **ADMS (Automatic Data Master Server)** push protocol over HTTP.

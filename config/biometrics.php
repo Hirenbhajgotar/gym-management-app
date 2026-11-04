@@ -73,7 +73,7 @@ return [
     // ADMS (Automatic Device Management System) push protocol configuration
     'adms' => [
         'enabled' => filter_var(env('ADMS_ENABLED', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
-        'require_comm_key' => filter_var(env('ADMS_REQUIRE_COMM_KEY', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+        'require_comm_key' => filter_var(env('ADMS_REQUIRE_COMM_KEY', false), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
         'user_table' => AdmsUserTableEnum::resolve($admsUserTableEnv)->value,
 
         /*

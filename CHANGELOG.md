@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Breaking Changes
+- **ADMS Communication Key Enforcement Is Now Opt-In (`ADMS_REQUIRE_COMM_KEY=false`)**:
+  - `config('biometrics.adms.require_comm_key')` now defaults to `false` (previously `true`). Terminals without a provisioned communication key authenticate by hardware Serial Number (`SN`) instead of being rejected.
+  - Set `ADMS_REQUIRE_COMM_KEY=true` in `.env` to retain server-wide enforcement; every unkeyed terminal is then refused with `ERR: Unauthorized`.
+  - Device registration no longer requires an ADMS communication key. Leave the field blank for terminals that do not send `pushcommkey` (e.g. eSSL MB20, K90).
+  - See [ADR-0008](docs/adr/adr-0008-biometric-adms-per-device-comm-key-negotiation.md).
+
 ### Added
 - **Member Archival & Physical Access Revocation Lifecycle**:
   - Introduced dedicated Spatie permissions `archive_gym_member` and `unarchive_gym_member` gated to gym owners and managers (migration `2026_10_13_000000_create_gym_member_archive_permissions.php`).
@@ -55,6 +62,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Updated `EditBiometricDevice` form lifecycle to safely hydrate and preserve `adms_user_table` within `provider_config` across edits.
   - Updated `AdmsProtocolSanitizerTest` to assert wire formatting, per-device snapshotting and the schema-independent commands under both schemas.
   - Published [ADR-0007: Biometric ADMS Multi-Device Table Schema Negotiation and Wire Protocol Standardization](docs/adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md).
+- **Biometric ADMS Per-Device Communication Key Negotiation & Unkeyed Legacy Hardware Support**:
+  - Removed mandatory comm key requirement from `BiometricDeviceResource` form creation and edition, allowing operators to register budget/legacy devices that do not support ADMS `pushcommkey` (e.g., eSSL MB20, K90) without entering dummy credentials.
+  - Implemented strict per-device authentication in `AdmsDeviceAuthenticator`: devices with a configured key (`hasCommKeyConfigured() === true`) strictly require a matching `pushcommkey` and enforce brute-force lockout on mismatch/omission; devices without a configured key (`hasCommKeyConfigured() === false`) authenticate seamlessly via hardware Serial Number (`device_serial`) and active device status.
+  - Updated auto-recovery in `AuthenticateAdmsDevice` middleware so inactive unkeyed devices automatically recover to `Active` status upon receiving verified serial communication.
+  - Published [ADR-0008: Biometric ADMS Per-Device Communication Key Negotiation and Unkeyed Legacy Hardware Support](docs/adr/adr-0008-biometric-adms-per-device-comm-key-negotiation.md).
+  - Added a **Remove Comm Key** row action so an existing keyed terminal can be converted to serial-only authentication in place: it clears the PBKDF2 verifier and the ADMS aliases, drops a stale cloud provenance marker (keeping it while a cloud-sourced `comm_key` survives), forgets any pending one-time reveal and resets the failure counter. It is refused while `ADMS_REQUIRE_COMM_KEY=true` and hidden when the device has no key, its ADMS protocol is disabled, or its `provider_config` is unreadable.
+  - Moved the ADMS alias policy onto `BiometricDevice` (`removableCommKeyAliases()`, `stripCommKeyAliases()`) so the backfill, Rotate Comm Key and Remove Comm Key share one rule, and rotation now also drops a stale `comm_key_source` marker.
+  - Unkeyed devices remain refused under global enforcement without accruing a lockout (the refusal is unconditional, so a counter would cap nothing), and each refusal is logged with the device id and a hashed serial. Dummy PBKDF2 work is still performed so response timing cannot reveal whether a serial is keyed.
+  - An unreadable `provider_config` now fails closed: a device with no stored verifier but rotted ciphertext is treated as keyed and never degrades to serial-only authentication.
+  - Hardened the communication key field to reject non-string Livewire state instead of normalising it to blank, and restored the inline explanation that a new key is mandatory when switching from device-native to a cloud provider.
 - **Biometric Device Deletion with Enrolled Templates**:
   - Terminals can finally be deleted while member templates are enrolled. Deleting the device row cannot erase credentials held in the terminal's flash, so enrolled templates are parked at `DeletionUnresolvable` and flagged as erasure obligations instead of being reported as `Deleted`.
   - A null `enrolled_by_device_id` is no longer treated as proof of erasure: `BiometricDeProvisioner` distinguishes a row that provably never reached hardware from one whose terminal was removed, and only the former converges to `Deleted`.

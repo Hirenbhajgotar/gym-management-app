@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Biometrics\ValueObjects\AdmsCommandKey;
+use App\Biometrics\ValueObjects\CommKeyAliasStripping;
 use App\Casts\ProviderConfigCast;
 use App\Enums\AdmsCommandStatusEnum;
 use App\Enums\AdmsUserTableEnum;
@@ -1099,6 +1100,55 @@ class BiometricDevice extends Model
     {
         return self::providerTypeIsDeviceNative($this->provider_type)
             && ! $this->commKeySourceIsCloudProvider();
+    }
+
+    /**
+     * Alias names that cleanup may delete from the given provider_config.
+     *
+     * `pushcommkey` is an ADMS alias for every provider, while `comm_key` is an
+     * ADMS alias only on device-native rows where it is not a preserved cloud
+     * credential. Rotation, removal and the backfill share this rule.
+     *
+     * @param  array<array-key, mixed>  $config
+     * @return list<string>
+     */
+    public function removableCommKeyAliases(array $config): array
+    {
+        $removable = [];
+
+        if (array_key_exists('pushcommkey', $config)) {
+            $removable[] = 'pushcommkey';
+        }
+
+        if (array_key_exists('comm_key', $config) && $this->mayDeleteCommKeyAlias()) {
+            $removable[] = 'comm_key';
+        }
+
+        return $removable;
+    }
+
+    /**
+     * Strip the removable ADMS comm key aliases from a provider_config array.
+     *
+     * `comm_key_source` only describes a preserved cloud `comm_key`. Once no
+     * `comm_key` remains the marker is stale, and leaving it behind would let a
+     * later credential be mistaken for a cloud-protected secret.
+     *
+     * @param  array<array-key, mixed>  $config
+     */
+    public function stripCommKeyAliases(array $config): CommKeyAliasStripping
+    {
+        $removedAliases = $this->removableCommKeyAliases($config);
+
+        foreach ($removedAliases as $alias) {
+            unset($config[$alias]);
+        }
+
+        if (! array_key_exists('comm_key', $config)) {
+            unset($config['comm_key_source']);
+        }
+
+        return new CommKeyAliasStripping($config, $removedAliases);
     }
 
     public function hasAmbiguousCommKeyAliases(): bool

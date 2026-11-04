@@ -42,7 +42,7 @@ class AuthenticateAdmsDevice
         if ($device->status === BiometricDeviceStatusEnum::Inactive) {
             $unkeyedRecovery = ! $result->keyVerified
                 && ! $device->hasCommKeyConfigured()
-                && ! config()->boolean('biometrics.adms.require_comm_key', true);
+                && ! config()->boolean('biometrics.adms.require_comm_key', false);
 
             if (! $result->keyVerified && ! $unkeyedRecovery) {
                 Log::warning('ADMS: Device auto-recovery rejected without verified credential', [

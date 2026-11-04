@@ -19,11 +19,16 @@ use Throwable;
  * The middleware is the production entry point; the controller consumes the
  * device this resolver binds instead of re-implementing key verification.
  *
- * The per-device lockout is enforced before the key is verified. That is the
- * only ordering that caps guesses: a locked-out terminal cannot evaluate even a
- * correct key, so an attacker who knows the serial can deny service until the
- * cooldown expires or an operator runs `biometrics:reset-adms-lockout`. The
- * tradeoff is deliberate and documented in ADR-0005 (NEG-002).
+ * The per-device lockout is enforced before the key is verified on every keyed
+ * device. That is the only ordering that caps guesses: a locked-out terminal
+ * cannot evaluate even a correct key, so an attacker who knows the serial can
+ * deny service until the cooldown expires or an operator runs
+ * `biometrics:reset-adms-lockout`. The tradeoff is deliberate and documented in
+ * ADR-0005 (NEG-002).
+ *
+ * Unkeyed devices never reach the lockout: they authenticate by hardware serial
+ * number (ADR-0008), and when `require_comm_key` is enabled they are refused
+ * unconditionally, so no failure counter is written for them.
  */
 class AdmsDeviceAuthenticator
 {
@@ -54,22 +59,52 @@ class AdmsDeviceAuthenticator
             return AdmsAuthenticationResult::failure(AdmsAuthenticationFailureReason::Maintenance, $device);
         }
 
-        $requireKey = config()->boolean('biometrics.adms.require_comm_key', true);
-        $hasKeyConfigured = $device->hasCommKeyConfigured();
+        $requireKey = config()->boolean('biometrics.adms.require_comm_key', false);
 
-        if (! $requireKey && ! $hasKeyConfigured) {
+        // An unreadable provider_config may still hold a key, so it must never
+        // fall through to serial-only authentication: treat it as keyed and let
+        // verification refuse the request. `hasCommKeyConfigured()` cannot
+        // report this itself — it swallows the decrypt error and answers false.
+        $hasKeyConfigured = $device->hasCommKeyConfigured() || $device->providerConfigIsUnreadable();
+        $providedKey = $this->providedKey($request);
+
+        if (! $hasKeyConfigured) {
+            if ($requireKey) {
+                // Rejection is unconditional here, so a failure counter would
+                // cap nothing. Keep the PBKDF2 work anyway: response timing must
+                // not reveal whether a serial is keyed or unkeyed.
+                $this->performDummyVerification($request);
+
+                Log::warning('ADMS: unkeyed device refused while global key enforcement is enabled', [
+                    'device_id' => $device->id,
+                    'serial_hash' => hash('sha256', (string) $device->device_serial),
+                    'ip' => $request->ip(),
+                ]);
+
+                return AdmsAuthenticationResult::failure(AdmsAuthenticationFailureReason::InvalidOrMissingCommKey, $device);
+            }
+
+            // A terminal with no provisioned key authenticates by serial number
+            // alone. A key it still sends is not a credential for this device;
+            // log it so a half-finished rotation is visible instead of silent.
+            if ($providedKey !== null) {
+                Log::warning('ADMS: unkeyed device supplied a pushcommkey; authenticating by serial number', [
+                    'device_id' => $device->id,
+                    'serial_hash' => hash('sha256', (string) $device->device_serial),
+                    'ip' => $request->ip(),
+                ]);
+            }
+
             $this->resetFailures($device);
 
             return AdmsAuthenticationResult::success($device, false);
         }
 
-        $providedKey = $this->providedKey($request);
-
         // Lockout first: every request that reaches PBKDF2 is a guess. A
         // correct key is deliberately not exempt while the lockout is active;
         // otherwise an attacker with unlimited guesses always gets a free
         // verification and the lockout caps nothing.
-        if ($hasKeyConfigured && $this->isLockedOut($device)) {
+        if ($this->isLockedOut($device)) {
             Log::warning('ADMS: device authentication rejected — temporary lockout active', [
                 'device_id' => $device->id,
                 'serial_hash' => hash('sha256', $serial),
@@ -82,12 +117,11 @@ class AdmsDeviceAuthenticator
         // Spend PBKDF2 work even when a keyed device receives no key, otherwise
         // response timing still distinguishes "serial exists and is keyed" from
         // an invalid key.
-        if ($hasKeyConfigured && (! is_string($providedKey) || blank($providedKey))) {
+        if (! is_string($providedKey) || blank($providedKey)) {
             $this->performDummyVerification($request);
         }
 
-        $keyVerified = $hasKeyConfigured
-            && is_string($providedKey)
+        $keyVerified = is_string($providedKey)
             && filled($providedKey)
             && $device->verifyCommKey($providedKey);
 
@@ -97,9 +131,7 @@ class AdmsDeviceAuthenticator
             return AdmsAuthenticationResult::success($device, true);
         }
 
-        if ($hasKeyConfigured) {
-            $this->recordFailure($device, $request);
-        }
+        $this->recordFailure($device, $request);
 
         return AdmsAuthenticationResult::failure(AdmsAuthenticationFailureReason::InvalidOrMissingCommKey, $device);
     }
