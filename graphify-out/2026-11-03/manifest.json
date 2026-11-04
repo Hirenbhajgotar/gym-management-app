@@ -972,9 +972,9 @@
     "semantic_hash": ""
   },
   "app/Console/Commands/BackfillAdmsCommKeyHashesCommand.php": {
-    "mtime": 1793264576.8441231,
-    "seen": 1793284536.9417112,
-    "ast_hash": "b656b0f91aa726fb11eb40ed98e2bfca",
+    "mtime": 1793721820.7373798,
+    "seen": 1793727645.2369463,
+    "ast_hash": "2fc0ba2fddd603d7b5bd4f09fbbf4bca",
     "semantic_hash": ""
   },
   "app/Console/Commands/BirthdayNotificationCommand.php": {
@@ -2160,9 +2160,9 @@
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/BiometricDeviceResource.php": {
-    "mtime": 1793610347.921378,
-    "seen": 1793624257.5954216,
-    "ast_hash": "0997ecbcac9eb4c6ab8e52e4c8137504",
+    "mtime": 1793721986.0191798,
+    "seen": 1793727645.2437954,
+    "ast_hash": "f9bf0029b52712a8165f71f075fe869f",
     "semantic_hash": ""
   },
   "app/Filament/Admin/Resources/ExpenseBudgetResource.php": {
@@ -3708,9 +3708,9 @@
     "semantic_hash": ""
   },
   "app/Http/Middleware/AuthenticateAdmsDevice.php": {
-    "mtime": 1792679193.2820756,
-    "seen": 1792850343.676401,
-    "ast_hash": "a2b77cdb2acfda6434a782cfb0a308b3",
+    "mtime": 1793642388.5271232,
+    "seen": 1793727645.252025,
+    "ast_hash": "5c7a4aaf621216600133bd36ee904f89",
     "semantic_hash": ""
   },
   "app/Http/Middleware/AuthenticateBiometricDevice.php": {
@@ -4146,9 +4146,9 @@
     "semantic_hash": ""
   },
   "app/Models/BiometricDevice.php": {
-    "mtime": 1793608812.653362,
-    "seen": 1793624257.608623,
-    "ast_hash": "626548cd58c401745e0c6201465e2aa3",
+    "mtime": 1793723893.3027987,
+    "seen": 1793727645.2547069,
+    "ast_hash": "f05c34e632d0b6e37212166d9dea18cc",
     "semantic_hash": ""
   },
   "app/Models/BiometricEventReceipt.php": {
@@ -5094,9 +5094,9 @@
     "semantic_hash": ""
   },
   "app/Providers/AppServiceProvider.php": {
-    "mtime": 1793438726.6454406,
-    "seen": 1793444381.595526,
-    "ast_hash": "47e154bc6855b23c829860567bfcb53a",
+    "mtime": 1793686847.6412835,
+    "seen": 1793727645.260966,
+    "ast_hash": "68ff0ad3de1e404ea719c1e10638bec5",
     "semantic_hash": ""
   },
   "app/Providers/AuthServiceProvider.php": {
@@ -5694,9 +5694,9 @@
     "semantic_hash": ""
   },
   "config/biometrics.php": {
-    "mtime": 1793457849.8040652,
-    "seen": 1793464920.733977,
-    "ast_hash": "c8ca17f22dd80d87654dd6aaffe70b74",
+    "mtime": 1793642392.1005306,
+    "seen": 1793727645.2647364,
+    "ast_hash": "291c4f85be776278b021ca13dc3c30d8",
     "semantic_hash": ""
   },
   "config/blade-heroicons.php": {
@@ -8316,9 +8316,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/AdmsAuthenticationAndTenancyTest.php": {
-    "mtime": 1793371125.537394,
-    "seen": 1793375720.4611151,
-    "ast_hash": "47221a627847d710ade95555b609006a",
+    "mtime": 1793723986.026234,
+    "seen": 1793727645.2844682,
+    "ast_hash": "d5441cae1733d883dd3d313545f195eb",
     "semantic_hash": ""
   },
   "tests/Feature/AdmsCommandAckCasTest.php": {
@@ -9354,9 +9354,9 @@
     "semantic_hash": ""
   },
   "CHANGELOG.md": {
-    "mtime": 1793522053.126331,
-    "seen": 1793624257.679685,
-    "ast_hash": "a9273756447d95d2a4fa8545a846bdd8",
+    "mtime": 1793722371.761237,
+    "seen": 1793727645.336219,
+    "ast_hash": "261dce967e747ae627d6bb0e71325d74",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
@@ -13884,9 +13884,9 @@
     "semantic_hash": ""
   },
   "docs/biometric/database/biometric-devices-fields.md": {
-    "mtime": 1793457413.7493925,
-    "seen": 1793464920.7378378,
-    "ast_hash": "0a4d3388f46a51e21cec17c869414932",
+    "mtime": 1793707563.5591722,
+    "seen": 1793727645.3370955,
+    "ast_hash": "0f5b742aa2188e50b4a5ad2fb2df5035",
     "semantic_hash": ""
   },
   "docs/biometric/database/door-events-fields.md": {
@@ -13902,9 +13902,9 @@
     "semantic_hash": ""
   },
   "docs/biometric/feature/biometric-adms-push-protocol.md": {
-    "mtime": 1793464484.031816,
-    "seen": 1793464920.7378454,
-    "ast_hash": "8aaa6255550f3adc80a555bd5997fd71",
+    "mtime": 1793722464.6328218,
+    "seen": 1793727645.3372157,
+    "ast_hash": "43d8b6464ded98e346c0c136ab5d5d9a",
     "semantic_hash": ""
   },
   "docs/biometric/feature/biometric-checkin-flow.md": {
@@ -13944,9 +13944,9 @@
     "semantic_hash": ""
   },
   "docs/codebase/CONCERNS.md": {
-    "mtime": 1792499225.338087,
-    "seen": 1792504370.6089065,
-    "ast_hash": "4f22b1fe45015def7370538c38d60198",
+    "mtime": 1793722395.282615,
+    "seen": 1793727645.3374972,
+    "ast_hash": "a5ba94d7a352af0ed426784fe561a418",
     "semantic_hash": ""
   },
   "docs/codebase/CONVENTIONS.md": {
@@ -13956,15 +13956,15 @@
     "semantic_hash": ""
   },
   "docs/codebase/INTEGRATIONS.md": {
-    "mtime": 1792499225.126732,
-    "seen": 1792504370.6089594,
-    "ast_hash": "a5e5e82f750f673e14b905b6e57eff3f",
+    "mtime": 1793722395.4567723,
+    "seen": 1793727645.3379643,
+    "ast_hash": "e7a6930ae27196968142c36515174d91",
     "semantic_hash": ""
   },
   "docs/codebase/STACK.md": {
-    "mtime": 1793345205.1571558,
-    "seen": 1793345606.3734741,
-    "ast_hash": "80b28ac69283e171b0e64a3f6145f0a7",
+    "mtime": 1793722395.2789972,
+    "seen": 1793727645.3380303,
+    "ast_hash": "52c741be4ddec2ae55ecdab993458f63",
     "semantic_hash": ""
   },
   "docs/codebase/STRUCTURE.md": {
@@ -15666,9 +15666,9 @@
     "semantic_hash": ""
   },
   "app/Biometrics/Services/AdmsDeviceAuthenticator.php": {
-    "mtime": 1793264477.1651187,
-    "seen": 1793284536.9416358,
-    "ast_hash": "9af021a861a98a962d45227a43285ebe",
+    "mtime": 1793722004.5815532,
+    "seen": 1793727645.2357643,
+    "ast_hash": "059a6b5c08df2b7ccb224478f5eedae3",
     "semantic_hash": ""
   },
   "app/Biometrics/ValueObjects/AdmsAuthenticationResult.php": {
@@ -15678,9 +15678,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Filament/BiometricDeviceCommKeyFormTest.php": {
-    "mtime": 1793439077.46953,
-    "seen": 1793444381.597058,
-    "ast_hash": "63c5d5469b82c37ccde68fdfa709e54a",
+    "mtime": 1793724641.855441,
+    "seen": 1793727645.2870197,
+    "ast_hash": "add64262d9ac6066181506730193d555",
     "semantic_hash": ""
   },
   "tests/Unit/Biometric/BiometricCommKeyHelpersTest.php": {
@@ -15702,9 +15702,9 @@
     "semantic_hash": ""
   },
   "docs/adr/adr-0005-biometric-adms-communication-key-hardware-standardization.md": {
-    "mtime": 1793186123.2340343,
-    "seen": 1793198147.3120825,
-    "ast_hash": "7d0f7b26e723cf4d1c7c5774abbf79a1",
+    "mtime": 1793707514.713353,
+    "seen": 1793727645.3366926,
+    "ast_hash": "260b6fc51fec5717279d2ccd71041f8e",
     "semantic_hash": ""
   },
   "app/Biometrics/Services/CommKeyReveal.php": {
@@ -16167,6 +16167,18 @@
     "mtime": 1793634172.957407,
     "seen": 1793635333.340118,
     "ast_hash": "9918a4051db590bde5644c39db5194f4",
+    "semantic_hash": ""
+  },
+  "app/Biometrics/ValueObjects/CommKeyAliasStripping.php": {
+    "mtime": 1793721725.283345,
+    "seen": 1793727645.2367365,
+    "ast_hash": "133d21bfddee97bf4155b8b514455b2a",
+    "semantic_hash": ""
+  },
+  "docs/adr/adr-0008-biometric-adms-per-device-comm-key-negotiation.md": {
+    "mtime": 1793722464.6321268,
+    "seen": 1793727645.3367796,
+    "ast_hash": "2c4fa758e33d269eeac00ed61bae28b1",
     "semantic_hash": ""
   }
 }

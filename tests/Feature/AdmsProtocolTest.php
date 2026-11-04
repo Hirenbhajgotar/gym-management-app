@@ -909,7 +909,7 @@ XML;
 
         $response = $this->call(
             'POST',
-            $uri . '?SN=TEST-SN-001&table=OPERLOG',
+            $uri . '?SN=TEST-SN-001&table=UNKNOWN_TABLE',
             [],
             [],
             [],
@@ -923,6 +923,24 @@ XML;
             'device_id' => $this->device->id,
             'attendanceable_id' => $this->member->id,
         ]);
+    }
+
+    #[DataProvider('aspxCdataUriProvider')]
+    public function test_adms_cdata_handles_operlog(string $uri): void
+    {
+        $response = $this->call(
+            'POST',
+            $uri . '?SN=TEST-SN-001&table=OPERLOG',
+            [],
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            "Op=1\tPIN=369\tName=Hiren Sarla"
+        );
+
+        $response->assertOk();
+        $this->assertSame('OK', $response->getContent());
     }
 
     /**

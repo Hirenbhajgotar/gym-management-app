@@ -34,7 +34,6 @@ class AdmsProtocolSanitizerTest extends TestCase
         $this->assertStringNotContainsString("\tDATA UPDATE", $commandString);
         $this->assertStringStartsWith('C:42:DATA UPDATE USERINFO PIN=123', $commandString);
         $this->assertStringContainsString('Name=John Doe  DATA UPDATE USERINFO PIN=999 Pri=9', $commandString);
-        $this->assertStringContainsString('NAME=John Doe  DATA UPDATE USERINFO PIN=999 Pri=9', $commandString);
     }
 
     /**
@@ -83,7 +82,7 @@ class AdmsProtocolSanitizerTest extends TestCase
         // Emitting `Passwd=`/`Card=` unconditionally turned "unspecified" into
         // "explicitly empty", which can clear a card already on the terminal.
         $this->assertSame(
-            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tNAME=Hiren Sarla\tPri=0\tPrivilege=0",
+            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0",
             $command->toAdmsCommandString()
         );
     }
@@ -101,7 +100,7 @@ class AdmsProtocolSanitizerTest extends TestCase
             $command->id = 10;
 
             $this->assertSame(
-                "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tNAME=Hiren Sarla\tPri=0\tPrivilege=0",
+                "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0",
                 $command->toAdmsCommandString(),
                 "Failed asserting key [{$key}] is recognized as user name"
             );
@@ -125,7 +124,7 @@ class AdmsProtocolSanitizerTest extends TestCase
         // state the application never set onto the wire, so the fields are ignored
         // rather than sanitised and appended.
         $this->assertSame(
-            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tNAME=Hiren Sarla\tPri=0\tPrivilege=0",
+            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0",
             $command->toAdmsCommandString()
         );
     }

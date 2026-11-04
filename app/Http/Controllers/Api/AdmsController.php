@@ -57,10 +57,14 @@ class AdmsController extends Controller
             return $this->handleHandshake($device);
         }
 
-        // POST = attendance data push
-        $table = $request->query('table', '');
+        // POST = attendance or device operational data push
+        $table = strtoupper((string) $request->query('table', ''));
 
-        if (strtoupper((string) $table) !== 'ATTLOG') {
+        if ($table === 'OPERLOG') {
+            return $this->handleOperlog($device, $request);
+        }
+
+        if ($table !== 'ATTLOG') {
             Log::warning('ADMS: Unsupported table requested', [
                 'device_id' => $device->id,
                 'table' => $table,
@@ -216,6 +220,28 @@ class AdmsController extends Controller
 
         Log::info('ADMS: Device handshake', [
             'device_id' => $device->id,
+        ]);
+
+        return $this->plainResponse('OK');
+    }
+
+    /**
+     * Parse and process OPERLOG device operational/audit records.
+     *
+     * ZKTeco / eSSL devices push OPERLOG whenever user records or device
+     * configurations are modified locally on the terminal. Returning 'OK'
+     * acknowledges the log batch and prevents infinite retry loops on hardware.
+     */
+    private function handleOperlog(BiometricDevice $device, Request $request): Response
+    {
+        $device->update(['last_heartbeat_at' => now()]);
+        BiometricDevice::clearMissCounter($device->id);
+
+        $body = $request->getContent();
+
+        Log::info('ADMS: OPERLOG received from device', [
+            'device_id' => $device->id,
+            'body' => $body,
         ]);
 
         return $this->plainResponse('OK');
