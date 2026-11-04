@@ -125,7 +125,7 @@ class AdmsController extends Controller
             'user_table' => $command->user_table?->value,
         ]);
 
-        return $this->plainResponse($commandString);
+        return $this->plainResponse(rtrim($commandString) . "\n");
     }
 
     /**

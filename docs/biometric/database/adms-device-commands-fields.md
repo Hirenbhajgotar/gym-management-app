@@ -1,6 +1,6 @@
 ---
 table: adms_device_commands
-last_updated: 2026-09-23
+last_updated: 2026-11-04
 author: docs-agent
 related_features:
   - ../feature/biometric-adms-push-protocol.md
@@ -69,12 +69,12 @@ Stores server-to-device commands queued for biometric hardware terminals operati
 
 ## Command String Formats
 
-The ADMS push protocol uses colon-delimited string commands returned in response to `getrequest`. In accordance with [ADR-0007](../../adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md), commands support both the default `USERINFO` and the legacy/modern `user` schema. The schema is snapshotted on the row when the command is queued (`user_table`), not resolved from the device at delivery. The terminal serial is snapshotted alongside it (`device_serial`) so the row still names its hardware after the device is deleted.
+The ADMS push protocol uses colon-delimited string commands returned in response to `getrequest`. In accordance with [ADR-0007](../../adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md) and [ADR-0009](../../adr/adr-0009-biometric-adms-userinfo-dual-token-name-standardization.md), commands support both the default `USERINFO` and the legacy/modern `user` schema. The schema is snapshotted on the row when the command is queued (`user_table`), not resolved from the device at delivery. The terminal serial is snapshotted alongside it (`device_serial`) so the row still names its hardware after the device is deleted.
 
 No user field other than the identifying `Pin`/`PIN` and `Name` is serialized. `Passwd`/`Card` were removed because no producer ever wrote them.
 
-- **Update / Add user (Default `USERINFO`)**:
-  `C:{id}:DATA UPDATE USERINFO PIN={memberId}\tName={name}\tPri=0`
+- **Update / Add user (Default `USERINFO` per ADR-0009)**:
+  `C:{id}:DATA UPDATE USERINFO PIN={memberId}\tName={name}\tNAME={name}\tPri=0\tPrivilege=0`
 - **Delete user from hardware memory (Default `USERINFO`)**:
   `C:{id}:DATA DELETE USERINFO PIN={memberId}`
 - **Update / Add user (Alternative `user`)**:
