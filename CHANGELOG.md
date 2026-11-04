@@ -15,10 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - See [ADR-0010](docs/adr/adr-0010-biometric-adms-operlog-handling-and-clean-wire-token-standardization.md).
 
 ### Fixed
-- **Clean Standardized Wire Protocol Tokens on ADMS User Commands**:
-  - Removed duplicate, non-standard tokens (`NAME=` and `Privilege=0`) from `AdmsDeviceCommand::userCommandString()`.
-  - Standardized `USERINFO` and `user` wire formats to strict vendor-compliant single-token representations (`Name={name}\tPri=0`).
-  - Added name trim sanitization and strict 24-character bounds clamping (`mb_substr(trim($sanitized), 0, 24)`) matching embedded flash memory structs in ZKTeco/eSSL hardware.
+- **Biometric ADMS USERINFO Dual-Token Casing & Name Synchronization**:
+  - Enhanced `AdmsDeviceCommand::userCommandString()` to emit dual attribute tokens under the `USERINFO` wire schema: `C:{id}:DATA UPDATE USERINFO PIN={pin}\tName={name}\tNAME={name}\tPri=0\tPrivilege=0`.
+  - Fixes blank LCD display names on eSSL MB20 and Linux/ZEM terminals that require uppercase `NAME=` and `Privilege=0`, while preserving mixed-case `Name=` and `Pri=0` for standard ZKTeco firmware.
+  - Confirmed via hardware telemetry that eSSL MB20 strictly rejects lowercase `user` table schema (`return_code: -1004`), mandating `USERINFO` schema format.
+  - See [ADR-0010](docs/adr/adr-0010-biometric-adms-operlog-handling-and-clean-wire-token-standardization.md).
 
 
 ---
