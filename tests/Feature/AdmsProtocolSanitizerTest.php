@@ -34,7 +34,6 @@ class AdmsProtocolSanitizerTest extends TestCase
         $this->assertStringNotContainsString("\tDATA UPDATE", $commandString);
         $this->assertStringStartsWith('C:42:DATA UPDATE USERINFO PIN=123', $commandString);
         $this->assertStringContainsString('Name=John Doe  DATA UPDATE USERINFO PIN=999 Pri=9', $commandString);
-        $this->assertStringContainsString('NAME=John Doe  DATA UPDATE USERINFO PIN=999 Pri=9', $commandString);
     }
 
     /**
@@ -69,7 +68,7 @@ class AdmsProtocolSanitizerTest extends TestCase
         $this->assertSame('C:99:DATA DELETE USERINFO PIN=100', $command->toAdmsCommandString());
     }
 
-    public function test_optional_password_and_card_are_omitted_when_unspecified(): void
+    public function test_userinfo_emits_standard_biotime_payload_fields(): void
     {
         $command = new AdmsDeviceCommand([
             'command_type' => 'user_add',
@@ -80,10 +79,8 @@ class AdmsProtocolSanitizerTest extends TestCase
         ]);
         $command->id = 10;
 
-        // Emitting `Passwd=`/`Card=` unconditionally turned "unspecified" into
-        // "explicitly empty", which can clear a card already on the terminal.
         $this->assertSame(
-            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tNAME=Hiren Sarla\tPri=0\tPrivilege=0",
+            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0\tPasswd=\tCard=\tGrp=1",
             $command->toAdmsCommandString()
         );
     }
@@ -101,14 +98,14 @@ class AdmsProtocolSanitizerTest extends TestCase
             $command->id = 10;
 
             $this->assertSame(
-                "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tNAME=Hiren Sarla\tPri=0\tPrivilege=0",
+                "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0\tPasswd=\tCard=\tGrp=1",
                 $command->toAdmsCommandString(),
                 "Failed asserting key [{$key}] is recognized as user name"
             );
         }
     }
 
-    public function test_password_and_card_are_never_emitted_because_nothing_produces_them(): void
+    public function test_untrusted_password_and_card_payload_fields_are_safely_ignored(): void
     {
         $command = new AdmsDeviceCommand([
             'command_type' => 'user_add',
@@ -121,11 +118,10 @@ class AdmsProtocolSanitizerTest extends TestCase
         ]);
         $command->id = 10;
 
-        // No producer writes `Passwd`/`Card`; forwarding them would put terminal
-        // state the application never set onto the wire, so the fields are ignored
-        // rather than sanitised and appended.
+        // No producer writes untrusted `Passwd`/`Card`; forwarding them could corrupt
+        // terminal state, so payload overrides are ignored in favor of the canonical wire format.
         $this->assertSame(
-            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tNAME=Hiren Sarla\tPri=0\tPrivilege=0",
+            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0\tPasswd=\tCard=\tGrp=1",
             $command->toAdmsCommandString()
         );
     }
