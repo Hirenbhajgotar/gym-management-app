@@ -829,6 +829,33 @@ XML;
         $this->assertNotNull($this->device->last_heartbeat_at);
     }
 
+    public function test_adms_handshake_returns_configuration_options_when_options_queried(): void
+    {
+        $response = $this->get('/api/iclock/cdata?SN=TEST-SN-001&options=all&pushver=2.4.1');
+
+        $response->assertOk();
+        $content = (string) $response->getContent();
+        $this->assertStringStartsWith('GET OPTION FROM: TEST-SN-001', $content);
+        $this->assertStringContainsString('TransFlag=', $content);
+        $this->assertStringContainsString('EnrollUser', $content);
+        $this->assertStringContainsString('ChgUser', $content);
+        $this->assertStringContainsString('PushProtVer=2.4.1', $content);
+    }
+
+    public function test_adms_cdata_accepts_auxiliary_device_tables_without_rejection(): void
+    {
+        foreach (['USERINFO', 'BIODATA', 'FINGERTMP', 'OPTIONS'] as $table) {
+            $response = $this->post(
+                "/api/iclock/cdata?SN=TEST-SN-001&table={$table}",
+                ['dummy' => 'payload'],
+                ['Content-Type' => 'text/plain']
+            );
+
+            $response->assertOk();
+            $this->assertSame('OK', $response->getContent());
+        }
+    }
+
     #[DataProvider('getRequestUriProvider')]
     public function test_adms_getrequest_returns_the_pending_command_on_every_surface_and_alias(string $uri): void
     {

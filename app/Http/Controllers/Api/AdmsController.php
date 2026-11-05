@@ -54,7 +54,7 @@ class AdmsController extends Controller
 
         // GET = initial handshake from device
         if ($request->isMethod('GET')) {
-            return $this->handleHandshake($device);
+            return $this->handleHandshake($device, $request);
         }
 
         // POST = attendance or device operational data push
@@ -62,6 +62,10 @@ class AdmsController extends Controller
 
         if ($table === 'OPERLOG') {
             return $this->handleOperlog($device, $request);
+        }
+
+        if (in_array($table, ['USERINFO', 'BIODATA', 'FINGERTMP', 'OPTIONS'], true)) {
+            return $this->handleDeviceDataPush($device, $request, $table);
         }
 
         if ($table !== 'ATTLOG') {
@@ -212,8 +216,13 @@ class AdmsController extends Controller
 
     /**
      * Handle initial GET handshake from device.
+     *
+     * When the terminal queries options (options=all or pushver present), the server responds
+     * with the official ZKTeco Push SDK configuration payload containing TransFlag directives
+     * (including EnrollUser and ChgUser) to enable remote user profile and biometric synchronization.
+     * When requested without options parameters (e.g. legacy heartbeat check), returns 'OK'.
      */
-    private function handleHandshake(BiometricDevice $device): Response
+    private function handleHandshake(BiometricDevice $device, Request $request): Response
     {
         // Update last heartbeat and clear missed heartbeats counter
         $device->update(['last_heartbeat_at' => now()]);
@@ -221,6 +230,51 @@ class AdmsController extends Controller
 
         Log::info('ADMS: Device handshake', [
             'device_id' => $device->id,
+            'query' => $request->query(),
+        ]);
+
+        if ($request->query('options') !== null || $request->has('pushver')) {
+            $serial = $device->device_serial_number ?? (string) $request->query('SN', '');
+            $options = implode("\n", [
+                "GET OPTION FROM: {$serial}",
+                'Stamp=9999',
+                'OpStamp=9999',
+                'ErrorDelay=60',
+                'Delay=30',
+                'TransTimes=00:00;14:05',
+                'TransInterval=1',
+                "TransFlag=TransData AttLog\tOpLog\tAttPhoto\tEnrollUser\tChgUser\tEnrollFP\tChgFP\tFPImag\tFACE\tUserPic",
+                'Realtime=1',
+                'Encrypt=None',
+                'ServerVer=2.4.1',
+                'PushProtVer=2.4.1',
+                'PushOptionsFlag=1',
+                'PushOptions=UserExtFmt,SupportUserPic',
+            ]);
+
+            return $this->plainResponse($options . "\n");
+        }
+
+        return $this->plainResponse('OK');
+    }
+
+    /**
+     * Handle auxiliary biometric and roster data pushed by devices (USERINFO, BIODATA, FINGERTMP, OPTIONS).
+     *
+     * Acknowledges the payload with 'OK' and logs content to prevent infinite hardware retry loops
+     * and capture device user roster dumps triggered by DATA QUERY commands.
+     */
+    private function handleDeviceDataPush(BiometricDevice $device, Request $request, string $table): Response
+    {
+        $device->update(['last_heartbeat_at' => now()]);
+        BiometricDevice::clearMissCounter($device->id);
+
+        $body = $request->getContent();
+
+        Log::info("ADMS: {$table} received from device", [
+            'device_id' => $device->id,
+            'table' => $table,
+            'body' => $body,
         ]);
 
         return $this->plainResponse('OK');

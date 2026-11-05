@@ -42,19 +42,45 @@ During production terminal verification on an eSSL MB20 biometric device (`Main 
    ```
    Omitting trailing struct tokens (`Passwd=`, `Card=`, `Grp=1`) or adding redundant duplicate casing tokens causes the embedded parser to allocate the numeric index (`PIN`) into SQLite/flash memory while aborting the text name buffer.
 
-4. **Missing Explicit UTF-8 Content-Type**:
+4. **Missing Handshake Options (`GET OPTION FROM:`) and TransFlag Directives**:
+   When connecting or booting, the terminal requests its configuration options via `GET /iclock/cdata?SN=...&options=all`. Returning only a bare `'OK'` caused the device to operate in a degraded, attendance-only reporting mode where the server version, push protocol version, and transaction flags (`EnrollUser`, `ChgUser`) were never set. In official ZKTeco Push SDK specification, the server must respond with `GET OPTION FROM: {SN}` accompanied by `TransFlag` specifying permitted real-time upload and synchronization capabilities.
+
+5. **Missing Explicit UTF-8 Content-Type**:
    Controller responses previously emitted `Content-Type: text/plain` without `charset=utf-8`. Embedded microcontrollers without explicit charset definitions fall back to ISO-8859-1 or drop multibyte/text string assignments during payload parsing.
+
+6. **Auxiliary Table Rejections (`USERINFO`, `BIODATA`, `FINGERTMP`, `OPTIONS`)**:
+   When terminals push user roster dumps, template updates, or device options in response to server queries, returning HTTP 400 caused hardware error loops. Full acceptance and logging of auxiliary tables was required.
 
 ## Decision
 
 We enacted a complete resolution across the ADMS ingestion and command serialization layers:
 
-### 1. Native `OPERLOG` Ingestion & Heartbeat Renewal in `AdmsController`
+### 1. Native `OPERLOG` & Auxiliary Table Ingestion in `AdmsController`
 - Added explicit handling for HTTP `POST /iclock/cdata?table=OPERLOG`.
-- In `AdmsController::handleOperlog()`, incoming operational audit payloads are logged at `info` level for diagnostic observability, the device heartbeat and miss counters are refreshed, and a standard plain text `OK` response is returned.
+- Added auxiliary table ingestion for `USERINFO`, `BIODATA`, `FINGERTMP`, and `OPTIONS`, returning `200 OK` and refreshing device heartbeats.
 - This satisfies the terminal's delivery requirement and immediately halts infinite 5-second retry loops.
 
-### 2. Complete BioTime Standard USERINFO Struct Serialization in `AdmsDeviceCommand`
+### 2. Full ZKTeco ADMS Handshake Options Negotiation
+- In `AdmsController::handleHandshake()`, when the terminal queries options (`options=all` or `pushver`), the server emits the official ZKTeco configuration block:
+  ```text
+  GET OPTION FROM: {SN}
+  Stamp=9999
+  OpStamp=9999
+  ErrorDelay=60
+  Delay=30
+  TransTimes=00:00;14:05
+  TransInterval=1
+  TransFlag=TransData AttLog\tOpLog\tAttPhoto\tEnrollUser\tChgUser\tEnrollFP\tChgFP\tFPImag\tFACE\tUserPic
+  Realtime=1
+  Encrypt=None
+  ServerVer=2.4.1
+  PushProtVer=2.4.1
+  PushOptionsFlag=1
+  PushOptions=UserExtFmt,SupportUserPic
+  ```
+- This activates the terminal's full remote user management and bidirectional sync capabilities.
+
+### 3. Complete BioTime Standard USERINFO Struct Serialization in `AdmsDeviceCommand`
 - When `USERINFO` wire schema is active (default for eSSL MB20 and ZKTeco fleets), `AdmsDeviceCommand::userCommandString()` emits the complete vendor-standard struct:
   ```text
   C:{id}:DATA UPDATE USERINFO PIN={pin}\tName={name}\tPri=0\tPasswd=\tCard=\tGrp=1
@@ -65,7 +91,7 @@ We enacted a complete resolution across the ADMS ingestion and command serializa
   C:{id}:DATA UPDATE user Pin={pin}\tName={name}\tPri=0
   ```
 
-### 3. Enforced UTF-8 Charset Header in `AdmsController`
+### 4. Enforced UTF-8 Charset Header in `AdmsController`
 - Updated `AdmsController::plainResponse()` to explicitly set `Content-Type: text/plain; charset=utf-8` on all outgoing ADMS responses, ensuring character encoding integrity across all firmware builds.
 
 ## Consequences
