@@ -9,10 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
-- **Native `OPERLOG` Ingestion & Hardware Audit Observability**:
+- **Native `OPERLOG` Ingestion & Auxiliary Tables Support**:
   - Implemented `AdmsController::handleOperlog()` to handle device-native operational/audit events pushed to `/iclock/cdata?table=OPERLOG`.
+  - Added support for auxiliary push tables (`USERINFO`, `BIODATA`, `FINGERTMP`, `OPTIONS`) in `AdmsController::cdata()`, acknowledging records with `200 OK` and logging payloads.
   - Acknowledges `OPERLOG` with `200 OK` and updates device heartbeat, eliminating the 5-second infinite HTTP 400 retry loop on physical terminals.
   - See [ADR-0010](docs/adr/adr-0010-biometric-adms-operlog-handling-and-clean-wire-token-standardization.md).
+- **ZKTeco Push Protocol Handshake Options Negotiation**:
+  - Enhanced `AdmsController::handleHandshake()` to respond to `options=all` queries with the official ZKTeco configuration block (`GET OPTION FROM: {SN}`) containing `TransFlag` with `EnrollUser` and `ChgUser` directives, `ServerVer`, and `PushOptionsFlag`.
+  - Enables bidirectional terminal synchronization and remote user display name storage.
 
 ### Fixed
 - **Biometric ADMS USERINFO BioTime Standard Struct Serialization & UTF-8 Charset**:
