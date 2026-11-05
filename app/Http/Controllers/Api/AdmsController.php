@@ -127,6 +127,7 @@ class AdmsController extends Controller
             'command_id' => $command->id,
             'command_type' => $command->command_type,
             'user_table' => $command->user_table?->value,
+            'command_string' => $commandString,
         ]);
 
         return $this->plainResponse(rtrim($commandString) . "\n");
@@ -378,6 +379,6 @@ class AdmsController extends Controller
     private function plainResponse(string $content, int $status = 200): Response
     {
         return response($content, $status)
-            ->header('Content-Type', 'text/plain');
+            ->header('Content-Type', 'text/plain; charset=utf-8');
     }
 }
