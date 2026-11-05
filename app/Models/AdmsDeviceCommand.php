@@ -452,12 +452,14 @@ class AdmsDeviceCommand extends Model
         }
 
         if ($wireTable === 'USERINFO') {
+            $combination = config()->integer('biometrics.adms.combination_test', 1);
+
             /**
-             * This is not working on device
-             * Name not saved on terminal
-             * combination: 1
+             * Combination 1 (Dual-token: Name & NAME, Pri & Privilege)
              */
-            if (config('biometrics.adms.combination_test') === 1) {
+            if ($combination === 1) {
+                Log::info('Conbination: 1 run');
+
                 return sprintf(
                     "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tNAME=%s\tPri=%d\tPrivilege=%d",
                     $this->id,
@@ -470,13 +472,13 @@ class AdmsDeviceCommand extends Model
             }
 
             /**
-             * This code is also not working
-             * Name not saved on terminal
-             * combination: 2
+             * Combination 2 (Strict Uppercase NAME= with short Pri=0)
              */
-            if (config('biometrics.adms.combination_test') === 2) {
+            if ($combination === 2) {
+                Log::info('Conbination: 2 run');
+
                 return sprintf(
-                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=%d\tCard=",
+                    "C:%d:DATA UPDATE USERINFO PIN=%s\tNAME=%s\tPri=%d",
                     $this->id,
                     $pin,
                     $name,
@@ -485,11 +487,13 @@ class AdmsDeviceCommand extends Model
             }
 
             /**
-             * combination: 3
+             * Combination 3 (Strict Uppercase NAME= with long Privilege=0)
              */
-            if (config('biometrics.adms.combination_test') === 3) {
+            if ($combination === 3) {
+                Log::info('Conbination: 3 run');
+
                 return sprintf(
-                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=%d\tCard=''",
+                    "C:%d:DATA UPDATE USERINFO PIN=%s\tNAME=%s\tPrivilege=%d",
                     $this->id,
                     $pin,
                     $name,
@@ -498,9 +502,11 @@ class AdmsDeviceCommand extends Model
             }
 
             /**
-             * combination: 4
+             * Combination 4 (Mixed-case Name= with long Privilege=0)
              */
-            if (config('biometrics.adms.combination_test') === 4) {
+            if ($combination === 4) {
+                Log::info('Conbination: 4 run');
+
                 return sprintf(
                     "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=%d",
                     $this->id,
@@ -511,21 +517,25 @@ class AdmsDeviceCommand extends Model
             }
 
             /**
-             * combination: 5
+             * Combination 5 (BioTime full struct with trailing tokens)
              */
-            if (config('biometrics.adms.combination_test') === 5) {
+            if ($combination === 5) {
+                Log::info('Conbination: 5 run');
+
                 return sprintf(
-                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=hiren\tPrivilege=%d",
+                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPri=0\tPasswd=\tCard=\tGrp=1",
                     $this->id,
                     $pin,
-                    $privilege
+                    $name
                 );
             }
 
             /**
-             * combination: 6
+             * Combination 6 (Minimal single-token Name= and Pri=0)
              */
-            if (config('biometrics.adms.combination_test') === 6) {
+            if ($combination === 6) {
+                Log::info('Conbination: 6 run');
+
                 return sprintf(
                     "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPri=0",
                     $this->id,
@@ -533,6 +543,19 @@ class AdmsDeviceCommand extends Model
                     $name
                 );
             }
+
+            Log::info('Conbination: Default run');
+
+            // Default fallback for USERINFO
+            return sprintf(
+                "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tNAME=%s\tPri=%d\tPrivilege=%d",
+                $this->id,
+                $pin,
+                $name,
+                $name,
+                $privilege,
+                $privilege
+            );
         }
 
         return sprintf(
