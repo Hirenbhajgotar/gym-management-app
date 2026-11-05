@@ -15,9 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - See [ADR-0010](docs/adr/adr-0010-biometric-adms-operlog-handling-and-clean-wire-token-standardization.md).
 
 ### Fixed
-- **Biometric ADMS USERINFO Dual-Token Casing & Name Synchronization**:
-  - Enhanced `AdmsDeviceCommand::userCommandString()` to emit dual attribute tokens under the `USERINFO` wire schema: `C:{id}:DATA UPDATE USERINFO PIN={pin}\tName={name}\tNAME={name}\tPri=0\tPrivilege=0`.
-  - Fixes blank LCD display names on eSSL MB20 and Linux/ZEM terminals that require uppercase `NAME=` and `Privilege=0`, while preserving mixed-case `Name=` and `Pri=0` for standard ZKTeco firmware.
+- **Biometric ADMS USERINFO BioTime Standard Struct Serialization & UTF-8 Charset**:
+  - Enhanced `AdmsDeviceCommand::userCommandString()` to serialize the full BioTime 8.0/8.5 vendor-standard struct under `USERINFO` wire schema: `C:{id}:DATA UPDATE USERINFO PIN={pin}\tName={name}\tPri=0\tPasswd=\tCard=\tGrp=1`.
+  - Fixes blank LCD display names on eSSL MB20 and ZKTeco terminals where omission of trailing struct members caused the firmware parser to abort text name buffer writes.
+  - Updated `AdmsController::plainResponse()` to explicitly set `Content-Type: text/plain; charset=utf-8` on all outgoing ADMS responses, ensuring character encoding integrity.
   - Confirmed via hardware telemetry that eSSL MB20 strictly rejects lowercase `user` table schema (`return_code: -1004`), mandating `USERINFO` schema format.
   - See [ADR-0010](docs/adr/adr-0010-biometric-adms-operlog-handling-and-clean-wire-token-standardization.md).
 

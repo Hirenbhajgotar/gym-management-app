@@ -822,6 +822,7 @@ XML;
 
         $response->assertOk();
         $this->assertStringStartsWith('text/plain', (string) $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('charset=utf-8', (string) $response->headers->get('Content-Type'));
         $this->assertSame('OK', $response->getContent());
 
         $this->device->refresh();
