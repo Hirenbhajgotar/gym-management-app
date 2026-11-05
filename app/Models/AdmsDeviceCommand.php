@@ -445,26 +445,94 @@ class AdmsDeviceCommand extends Model
     private function userCommandString(string $pin, string $name, array $schema): string
     {
         [$wireTable, $pinKey] = $schema;
+        $privilege = 0;
 
         if ($this->command_type === 'user_delete') {
             return sprintf('C:%d:DATA DELETE %s %s=%s', $this->id, $wireTable, $pinKey, $pin);
         }
 
         if ($wireTable === 'USERINFO') {
-            /** This is not working on device */
-            // return sprintf(
-            //     "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tNAME=%s\tPri=0\tPrivilege=0",
-            //     $this->id,
-            //     $pin,
-            //     $name,
-            //     $name
-            // );
-            return sprintf(
-                "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=0\tCard=",
-                $this->id,
-                $pin,
-                $name
-            );
+            /**
+             * This is not working on device
+             * Name not saved on terminal
+             * combination: 1
+             */
+            if (config('biometrics.adms.combination_test') === 1) {
+                return sprintf(
+                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tNAME=%s\tPri=%d\tPrivilege=%d",
+                    $this->id,
+                    $pin,
+                    $name,
+                    $name,
+                    $privilege,
+                    $privilege
+                );
+            }
+
+            /**
+             * This code is also not working
+             * Name not saved on terminal
+             * combination: 2
+             */
+            if (config('biometrics.adms.combination_test') === 2) {
+                return sprintf(
+                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=%d\tCard=",
+                    $this->id,
+                    $pin,
+                    $name,
+                    $privilege
+                );
+            }
+
+            /**
+             * combination: 3
+             */
+            if (config('biometrics.adms.combination_test') === 3) {
+                return sprintf(
+                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=%d\tCard=''",
+                    $this->id,
+                    $pin,
+                    $name,
+                    $privilege
+                );
+            }
+
+            /**
+             * combination: 4
+             */
+            if (config('biometrics.adms.combination_test') === 4) {
+                return sprintf(
+                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=%d",
+                    $this->id,
+                    $pin,
+                    $name,
+                    $privilege
+                );
+            }
+
+            /**
+             * combination: 5
+             */
+            if (config('biometrics.adms.combination_test') === 5) {
+                return sprintf(
+                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=hiren\tPrivilege=%d",
+                    $this->id,
+                    $pin,
+                    $privilege
+                );
+            }
+
+            /**
+             * combination: 6
+             */
+            if (config('biometrics.adms.combination_test') === 6) {
+                return sprintf(
+                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPri=0",
+                    $this->id,
+                    $pin,
+                    $name
+                );
+            }
         }
 
         return sprintf(
