@@ -451,11 +451,18 @@ class AdmsDeviceCommand extends Model
         }
 
         if ($wireTable === 'USERINFO') {
+            /** This is not working on device */
+            // return sprintf(
+            //     "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tNAME=%s\tPri=0\tPrivilege=0",
+            //     $this->id,
+            //     $pin,
+            //     $name,
+            //     $name
+            // );
             return sprintf(
-                "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tNAME=%s\tPri=0\tPrivilege=0",
+                "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=0\tCard=",
                 $this->id,
                 $pin,
-                $name,
                 $name
             );
         }
