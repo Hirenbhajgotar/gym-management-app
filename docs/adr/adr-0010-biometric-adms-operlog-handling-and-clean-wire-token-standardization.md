@@ -80,12 +80,13 @@ We enacted a complete resolution across the ADMS ingestion and command serializa
   ```
 - This activates the terminal's full remote user management and bidirectional sync capabilities.
 
-### 3. Complete BioTime Standard USERINFO Struct Serialization in `AdmsDeviceCommand`
-- When `USERINFO` wire schema is active (default for eSSL MB20 and ZKTeco fleets), `AdmsDeviceCommand::userCommandString()` emits the complete vendor-standard struct:
+### 3. Dual-Token USERINFO Struct Serialization in `AdmsDeviceCommand`
+- When `USERINFO` wire schema is active (default for eSSL MB20 and ZKTeco fleets), `AdmsDeviceCommand::userCommandString()` emits dual tokens:
   ```text
-  C:{id}:DATA UPDATE USERINFO PIN={pin}\tName={name}\tPri=0\tPasswd=\tCard=\tGrp=1
+  C:{id}:DATA UPDATE USERINFO PIN={pin}\tName={name}\tNAME={name}\tPri=0\tPrivilege=0
   ```
-- This satisfies the embedded C struct parser sequentially, guaranteeing that both `PIN` and `Name` are committed to device flash memory.
+- **Empirical Hardware Evidence**: Live testing on eSSL MB20 (`ZLM60_TFT`) demonstrated that once a biometric credential (fingerprint) is enrolled, manual name entry succeeds and persists. However, sending single-token `Name=` caused the firmware tokenizer to silently discard the attribute and update the user with a blank name, wiping out the saved name. Emitting both uppercase `NAME=` and mixed-case `Name=` guarantees that eSSL MB20 receives its required `NAME=` token while modern firmware parses `Name=`.
+- Trailing credentials (`Passwd=`, `Card=`) are safely omitted to prevent wiping existing passwords or cards on the physical device.
 - The lowercase `user` table schema is preserved for modern visible-light devices that require it:
   ```text
   C:{id}:DATA UPDATE user Pin={pin}\tName={name}\tPri=0
