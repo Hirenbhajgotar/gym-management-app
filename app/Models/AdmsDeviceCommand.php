@@ -131,6 +131,7 @@ class AdmsDeviceCommand extends Model
     protected $fillable = [
         'gym_id',
         'device_id',
+        'device_serial',
         'command_type',
         'command_payload',
         'status',
@@ -358,6 +359,9 @@ class AdmsDeviceCommand extends Model
             return match ($this->command_type) {
                 'reboot' => sprintf('C:%d:REBOOT', $this->id),
                 'clear_log' => sprintf('C:%d:CLEAR LOG', $this->id),
+                'query_all_users' => ($this->user_table ?? AdmsUserTableEnum::resolve(config('biometrics.adms.user_table'))) === AdmsUserTableEnum::UserInfo
+                    ? sprintf('C:%d:DATA QUERY USERINFO', $this->id)
+                    : sprintf('C:%d:DATA QUERY user', $this->id),
                 default => sprintf('C:%d:INFO', $this->id),
             };
         }
@@ -430,15 +434,12 @@ class AdmsDeviceCommand extends Model
     /**
      * Build a PIN-addressed command under the given wire schema.
      *
-     * The two schemas differ in the master-table token and key casing:
-     * - `USERINFO` emits standard uppercase table and PIN key (`USERINFO`, `PIN={pin}`).
-     * - `user` emits lowercase table and mixed-case PIN key (`user`, `Pin={pin}`).
-     * Both schemas adhere strictly to standard ZKTeco/eSSL protocol field naming:
-     * `Name={name}\tPri=0`.
-     *
-     * `Passwd` and `Card` are deliberately omitted when unconfigured: nothing in the
-     * application produces them, and emitting an empty value could clear a credential
-     * already enrolled on the physical terminal.
+     * The schemas differ in wire table, PIN key, and parameter tokens:
+     * - `USERINFO` adheres to the Athwari & ZKTeco Push SDK v2.4.1 standard:
+     *   `PIN={pin}\tName={name}\tPrivilege=0\tCard=`. `Card=` is safely appended
+     *   empty to align embedded C-struct token offsets without syntax errors.
+     * - `user` emits legacy lowercase tokens: `Pin={pin}\tName={name}\tPri=0`.
+     * Both schemas omit `Passwd` when unconfigured to avoid clearing locally enrolled credentials.
      *
      * @param  array{0: string, 1: string}  $schema  Wire table and PIN key.
      */
@@ -451,110 +452,19 @@ class AdmsDeviceCommand extends Model
             return sprintf('C:%d:DATA DELETE %s %s=%s', $this->id, $wireTable, $pinKey, $pin);
         }
 
+        if ($this->command_type === 'user_query') {
+            return sprintf('C:%d:DATA QUERY %s %s=%s', $this->id, $wireTable, $pinKey, $pin);
+        }
+
         if ($wireTable === 'USERINFO') {
-            $combination = config()->integer('biometrics.adms.combination_test', 1);
-
-            /**
-             * Combination 1 (Dual-token: Name & NAME, Pri & Privilege)
-             */
-            if ($combination === 1) {
-                Log::info('Conbination: 1 run');
-
-                return sprintf(
-                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tNAME=%s\tPri=%d\tPrivilege=%d",
-                    $this->id,
-                    $pin,
-                    $name,
-                    $name,
-                    $privilege,
-                    $privilege
-                );
-            }
-
-            /**
-             * Combination 2 (Strict Uppercase NAME= with short Pri=0)
-             */
-            if ($combination === 2) {
-                Log::info('Conbination: 2 run');
-
-                return sprintf(
-                    "C:%d:DATA UPDATE USERINFO PIN=%s\tNAME=%s\tPri=%d",
-                    $this->id,
-                    $pin,
-                    $name,
-                    $privilege
-                );
-            }
-
-            /**
-             * Combination 3 (Strict Uppercase NAME= with long Privilege=0)
-             */
-            if ($combination === 3) {
-                Log::info('Conbination: 3 run');
-
-                return sprintf(
-                    "C:%d:DATA UPDATE USERINFO PIN=%s\tNAME=%s\tPrivilege=%d",
-                    $this->id,
-                    $pin,
-                    $name,
-                    $privilege
-                );
-            }
-
-            /**
-             * Combination 4 (Mixed-case Name= with long Privilege=0)
-             */
-            if ($combination === 4) {
-                Log::info('Conbination: 4 run');
-
-                return sprintf(
-                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=%d",
-                    $this->id,
-                    $pin,
-                    $name,
-                    $privilege
-                );
-            }
-
-            /**
-             * Combination 5 (BioTime full struct with trailing tokens)
-             */
-            if ($combination === 5) {
-                Log::info('Conbination: 5 run');
-
-                return sprintf(
-                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPri=0\tPasswd=\tCard=\tGrp=1",
-                    $this->id,
-                    $pin,
-                    $name
-                );
-            }
-
-            /**
-             * Combination 6 (Minimal single-token Name= and Pri=0)
-             */
-            if ($combination === 6) {
-                Log::info('Conbination: 6 run');
-
-                return sprintf(
-                    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPri=0",
-                    $this->id,
-                    $pin,
-                    $name
-                );
-            }
-
-            Log::info('Conbination: Default run');
-
-            // Default fallback for USERINFO
+            // Athwari & ZKTeco Push SDK v2.4.1 Standard: PascalCase Name=, Privilege=0, and Card=
             return sprintf(
-                "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tNAME=%s\tPri=%d\tPrivilege=%d",
+                "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=%d\tCard=%s",
                 $this->id,
                 $pin,
                 $name,
-                $name,
                 $privilege,
-                $privilege
+                ''
             );
         }
 
@@ -569,7 +479,7 @@ class AdmsDeviceCommand extends Model
     }
 
     /** @var array<int, string> */
-    public const PIN_ADDRESSED_COMMAND_TYPES = ['user_add', 'user_update', 'user_delete'];
+    public const PIN_ADDRESSED_COMMAND_TYPES = ['user_add', 'user_update', 'user_delete', 'user_query'];
 
     /**
      * True when this command targets a specific user record and therefore cannot be expressed
