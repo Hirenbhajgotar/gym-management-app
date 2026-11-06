@@ -70,7 +70,7 @@ class AdmsUserTableCastTest extends TestCase
 
         $response->assertOk();
         $this->assertSame(
-            "C:{$command->id}:DATA DELETE USERINFO PIN=369",
+            "C:{$command->id}:DATA DELETE USERINFO PIN=369\r\n",
             (string) $response->getContent(),
             'An unrecognised stored schema must serialise with the configured default.'
         );

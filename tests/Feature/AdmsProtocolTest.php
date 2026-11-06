@@ -279,8 +279,8 @@ class AdmsProtocolTest extends TestCase
 
         $response->assertOk();
         $content = (string) $response->getContent();
-        $this->assertStringEndsWith("\n", $content);
-        $this->assertFalse(str_ends_with($content, "\n\n"));
+        $this->assertStringEndsWith("\r\n", $content);
+        $this->assertFalse(str_ends_with($content, "\r\n\r\n"));
         $this->assertStringContainsString('DATA DELETE USERINFO', $content);
         $this->assertStringContainsString("PIN={$this->member->id}", $content);
 
