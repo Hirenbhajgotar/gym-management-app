@@ -64,7 +64,7 @@ class AdmsController extends Controller
             return $this->handleOperlog($device, $request);
         }
 
-        if (in_array($table, ['USERINFO', 'BIODATA', 'FINGERTMP', 'OPTIONS'], true)) {
+        if (in_array($table, ['USERINFO', 'USER', 'BIODATA', 'FINGERTMP', 'OPTIONS'], true)) {
             return $this->handleDeviceDataPush($device, $request, $table);
         }
 
@@ -134,7 +134,7 @@ class AdmsController extends Controller
             'command_string' => $commandString,
         ]);
 
-        return $this->plainResponse(rtrim($commandString) . "\n");
+        return $this->plainResponse(rtrim($commandString) . "\r\n");
     }
 
     /**

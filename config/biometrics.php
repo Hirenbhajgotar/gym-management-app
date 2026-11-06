@@ -75,7 +75,6 @@ return [
         'enabled' => filter_var(env('ADMS_ENABLED', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
         'require_comm_key' => filter_var(env('ADMS_REQUIRE_COMM_KEY', false), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
         'user_table' => AdmsUserTableEnum::resolve($admsUserTableEnv)->value,
-        'combination_test' => (int) env('ADMS_COMBINATION_TEST', 1),
 
         /*
          * Whether ADMS_USER_TABLE is unset or one of the recognised schemas.
