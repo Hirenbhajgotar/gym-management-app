@@ -339,21 +339,34 @@ C:{id}:DATA QUERY USERINFO PIN=369\r\n
 
 ---
 
-### Phase 2: Standardized Athwari-Compliant Command Serialization
+### Phase 2: Live Hardware Introspection Evidence & Exact Native Wire Format
 
-Align `AdmsDeviceCommand::userCommandString()` with the official `athwari/laravel-zkteco-adms` reference implementation:
+On November 7, 2026, executing `php artisan biometrics:query-user --device-id=3 --pin=369` dispatched `C:30:DATA QUERY USERINFO PIN=369` to the live physical terminal (`EUF7262500413`).
+The device returned `Return=0` and immediately dumped its exact internal SQLite user record via `OPERLOG`:
+```text
+USER PIN=369	Name=Hiren	Pri=0	Passwd=	Card=	Grp=1	TZ=0000000100000000	Expires=0	StartDatetime=0	EndDatetime=0	ValidCount=0
+```
+And its biometric template:
+```text
+FP PIN=369	FID=4	Size=1208	Valid=1	TMP=...
+```
 
+#### Key Technical Discoveries:
+1. **Name Token:** Strictly PascalCase `Name=Hiren` (no duplicate `NAME=`).
+2. **Privilege Token:** Strictly abbreviated `Pri=0` (`Privilege=0` is not recognized by the MB20 internal tokenizer and caused the name to be dropped!).
+3. **Access Control Tokens:** The terminal mandates standalone access group and timezone tokens: `Grp=1\tTZ=0000000100000000` alongside empty delimiters `Passwd=\tCard=`.
+
+#### Final Native Hardware Wire Format:
 ```php
 /**
- * Athwari & ZKTeco Push SDK v2.4.1 Standard USERINFO Wire Format
+ * eSSL MB20 / ZLM60 Native Hardware Wire Format
  */
 return sprintf(
-    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=%d\tCard=%s",
+    "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPri=%d\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000",
     $this->id,
     $pin,
     $name,
-    $privilege,
-    '' // Card parameter safely empty per Athwari standard
+    $privilege
 );
 ```
 
@@ -367,13 +380,13 @@ return $this->plainResponse(rtrim($commandString) . "\r\n");
 
 ## 6. Comparison Matrix
 
-| Feature | Legacy / Attempted | Athwari Standard | Proposed Final Standard |
+| Feature | Legacy / Attempted | Athwari Standard | Verified Native Hardware Standard (MB20) |
 |---|---|---|---|
 | **Target Table** | `USERINFO` | `USERINFO` | `USERINFO` (MB20 rejects `user` with `-1004`) |
 | **PIN Token** | `PIN=%s` | `PIN=%s` | `PIN=%s` |
 | **Name Token** | Dual `Name=` + `NAME=` | Single `Name=%s` | Single `Name=%s` (Clean PascalCase) |
-| **Privilege Token** | `Pri=0` or duplicate | `Privilege=%d` | `Privilege=0` (Standard ZKTeco token) |
-| **Card Token** | Omitted or `Card=\t` | `Card=%s` | `Card=` (Appended at end per Athwari) |
+| **Privilege Token** | `Pri=0` or duplicate | `Privilege=%d` | `Pri=%d` (Empirically dumped from MB20 SQLite record) |
+| **Access Control Tokens** | Omitted or `Card=\t` | `Card=%s` | `Passwd=\tCard=\tGrp=1\tTZ=0000000100000000` (Native MB20 struct) |
 | **Line Ending** | `\n` (Unix LF) | `\n` | `\r\n` (Embedded RFC CRLF) |
 | **Query Diagnostic** | Unsupported | Supported (`DATA QUERY USERINFO`) | Supported (`DATA QUERY USERINFO PIN={pin}`) |
 

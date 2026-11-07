@@ -435,11 +435,10 @@ class AdmsDeviceCommand extends Model
      * Build a PIN-addressed command under the given wire schema.
      *
      * The schemas differ in wire table, PIN key, and parameter tokens:
-     * - `USERINFO` adheres to the Athwari & ZKTeco Push SDK v2.4.1 standard:
-     *   `PIN={pin}\tName={name}\tPrivilege=0\tCard=`. `Card=` is safely appended
-     *   empty to align embedded C-struct token offsets without syntax errors.
+     * - `USERINFO` adheres to the eSSL / ZKTeco MB20 native hardware wire format:
+     *   `PIN={pin}\tName={name}\tPri={pri}\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000`.
+     *   Empirically confirmed via DATA QUERY USERINFO telemetry from live hardware.
      * - `user` emits legacy lowercase tokens: `Pin={pin}\tName={name}\tPri=0`.
-     * Both schemas omit `Passwd` when unconfigured to avoid clearing locally enrolled credentials.
      *
      * @param  array{0: string, 1: string}  $schema  Wire table and PIN key.
      */
@@ -457,14 +456,14 @@ class AdmsDeviceCommand extends Model
         }
 
         if ($wireTable === 'USERINFO') {
-            // Athwari & ZKTeco Push SDK v2.4.1 Standard: PascalCase Name=, Privilege=0, and Card=
+            // ZKTeco / eSSL MB20 Native Hardware Wire Format (empirically confirmed via DATA QUERY USERINFO):
+            // USER PIN={pin}\tName={name}\tPri={pri}\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000
             return sprintf(
-                "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=%d\tCard=%s",
+                "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPri=%d\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000",
                 $this->id,
                 $pin,
                 $name,
-                $privilege,
-                ''
+                $privilege
             );
         }
 
