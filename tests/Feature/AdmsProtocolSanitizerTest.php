@@ -68,7 +68,7 @@ class AdmsProtocolSanitizerTest extends TestCase
         $this->assertSame('C:99:DATA DELETE USERINFO PIN=100', $command->toAdmsCommandString());
     }
 
-    public function test_userinfo_emits_standard_biotime_payload_fields(): void
+    public function test_userinfo_emits_native_hardware_payload_fields(): void
     {
         $command = new AdmsDeviceCommand([
             'command_type' => 'user_add',
@@ -80,7 +80,7 @@ class AdmsProtocolSanitizerTest extends TestCase
         $command->id = 10;
 
         $this->assertSame(
-            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPrivilege=0\tCard=",
+            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000",
             $command->toAdmsCommandString()
         );
     }
@@ -98,7 +98,7 @@ class AdmsProtocolSanitizerTest extends TestCase
             $command->id = 10;
 
             $this->assertSame(
-                "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPrivilege=0\tCard=",
+                "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000",
                 $command->toAdmsCommandString(),
                 "Failed asserting key [{$key}] is recognized as user name"
             );
@@ -121,7 +121,7 @@ class AdmsProtocolSanitizerTest extends TestCase
         // No producer writes untrusted `Passwd`/`Card`; forwarding them could corrupt
         // terminal state, so payload overrides are ignored in favor of the canonical wire format.
         $this->assertSame(
-            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPrivilege=0\tCard=",
+            "C:10:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000",
             $command->toAdmsCommandString()
         );
     }
