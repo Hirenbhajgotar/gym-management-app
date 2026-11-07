@@ -12,16 +12,16 @@ use Tests\TestCase;
 /**
  * Wire-format specification tests for ADMS terminal commands.
  *
- * Enforces ZKTeco / eSSL Push SDK v2.4.1 / Athwari standard compliance:
+ * Enforces ZKTeco / eSSL MB20 native hardware wire format compliance:
  * - Single PascalCase `Name=` attribute (no duplicate or all-caps `NAME=`).
- * - Privilege attribute `Privilege=0` under `USERINFO`.
- * - Trailing `Card=` attribute safely present without empty syntax faults.
+ * - Privilege attribute `Pri=0` under `USERINFO` (native hardware wire format).
+ * - Full access control struct `Passwd=\tCard=\tGrp=1\tTZ=0000000100000000`.
  * - Hardware introspection `DATA QUERY USERINFO PIN={pin}` support.
  */
 class AdmsDeviceCommandWireFormatTest extends TestCase
 {
     #[Test]
-    public function user_add_with_userinfo_schema_produces_athwari_standard_wire_format(): void
+    public function user_add_with_userinfo_schema_produces_device_native_wire_format(): void
     {
         $command = new AdmsDeviceCommand([
             'id' => 11,
@@ -36,14 +36,32 @@ class AdmsDeviceCommandWireFormatTest extends TestCase
 
         $commandString = $command->toAdmsCommandString();
 
-        $expected = "C:11:DATA UPDATE USERINFO PIN=369\tName=Hiren\tPrivilege=0\tCard=";
+        $expected = "C:11:DATA UPDATE USERINFO PIN=369\tName=Hiren\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000";
         $this->assertSame($expected, $commandString);
 
         // Explicit negative assertions against experimental / defective tokens
         $this->assertStringNotContainsString('NAME=', $commandString, 'Must not carry duplicate all-caps NAME=');
-        $this->assertStringNotContainsString('Pri=', $commandString, 'USERINFO must not carry short Pri= token');
-        $this->assertStringNotContainsString('Passwd=', $commandString, 'Must not carry bare Passwd= token');
-        $this->assertStringNotContainsString('Grp=', $commandString, 'Must not carry bare Grp= token');
+        $this->assertStringNotContainsString('Privilege=', $commandString, 'Must not carry long Privilege= token');
+    }
+
+    #[Test]
+    public function user_update_with_userinfo_schema_produces_device_native_wire_format(): void
+    {
+        $command = new AdmsDeviceCommand([
+            'id' => 19,
+            'command_type' => 'user_update',
+            'command_payload' => [
+                'Pin' => '369',
+                'Name' => 'Hiren Sarla',
+            ],
+        ]);
+        $command->id = 19;
+        $command->user_table = AdmsUserTableEnum::UserInfo;
+
+        $commandString = $command->toAdmsCommandString();
+
+        $expected = "C:19:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000";
+        $this->assertSame($expected, $commandString);
     }
 
     #[Test]
