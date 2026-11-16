@@ -12,7 +12,9 @@ use App\Enums\AdmsCommandStatusEnum;
 use App\Http\Controllers\Controller;
 use App\Models\AdmsDeviceCommand;
 use App\Models\BiometricDevice;
+use App\Models\User;
 use App\Services\ErrorReporting\ExceptionTraceFormatter;
+use Filament\Notifications\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -232,6 +234,10 @@ class AdmsController extends Controller
                     'return_code' => $returnCode,
                     'status' => $command->fresh()?->status?->value,
                 ]);
+
+                if ($command->command_type === 'reboot' && $command->fresh()?->status === AdmsCommandStatusEnum::ACKNOWLEDGED) {
+                    $this->notifyRebootInitiator($command, $device);
+                }
             } else {
                 Log::warning('ADMS: Command acknowledgement failed', [
                     'device_id' => $device->id,
@@ -290,6 +296,16 @@ class AdmsController extends Controller
         // Update last heartbeat and clear missed heartbeats counter
         $device->update(['last_heartbeat_at' => now()]);
         BiometricDevice::clearMissCounter($device->id);
+
+        $sentReboot = AdmsDeviceCommand::query()
+            ->where('device_id', $device->id)
+            ->where('command_type', 'reboot')
+            ->where('status', AdmsCommandStatusEnum::SENT)
+            ->first();
+
+        if ($sentReboot && $sentReboot->markAcknowledged('0')) {
+            $this->notifyRebootInitiator($sentReboot, $device);
+        }
 
         Log::info('ADMS: Device handshake', [
             'device_id' => $device->id,
@@ -502,6 +518,53 @@ class AdmsController extends Controller
         }
 
         return $this->plainResponse('OK');
+    }
+
+    /**
+     * Notify the staff member who initiated the device reboot once the terminal acknowledges or rejoins.
+     */
+    protected function notifyRebootInitiator(AdmsDeviceCommand $command, BiometricDevice $device): void
+    {
+        $payload = is_array($command->command_payload) ? $command->command_payload : [];
+
+        if (! empty($payload['reboot_notified_at'])) {
+            return;
+        }
+
+        $userId = $payload['initiated_by_user_id'] ?? null;
+
+        if (! is_int($userId) && ! is_numeric($userId)) {
+            return;
+        }
+
+        $user = User::query()->find((int) $userId);
+
+        if (! $user) {
+            return;
+        }
+
+        $payload['reboot_notified_at'] = now()->toIso8601String();
+        $command->update(['command_payload' => $payload]);
+
+        $deviceName = filled($device->device_name)
+            ? $device->device_name
+            : (filled($device->name) ? $device->name : $device->device_serial);
+
+        try {
+            Notification::make()
+                ->title('Terminal Rebooted Successfully')
+                ->body("Biometric terminal {$deviceName} ({$device->device_serial}) has rebooted.")
+                ->success()
+                ->sendToDatabase($user);
+        } catch (Throwable $exception) {
+            Log::warning('ADMS: Failed to send reboot database notification', [
+                'command_id' => $command->id,
+                'device_id' => $device->id,
+                'user_id' => $userId,
+                'exception' => $exception::class,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     /**

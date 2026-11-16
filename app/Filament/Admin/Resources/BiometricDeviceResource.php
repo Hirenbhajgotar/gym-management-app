@@ -15,6 +15,7 @@ use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricProvidersEnum;
 use App\Enums\BiometricTypeEnum;
 use App\Enums\DefaultRole;
+use App\Filament\Admin\Actions\RebootBiometricDeviceAction;
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\CreateBiometricDevice;
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\EditBiometricDevice;
 use App\Filament\Admin\Resources\BiometricDeviceResource\Pages\ListBiometricDevices;
@@ -868,6 +869,8 @@ class BiometricDeviceResource extends BaseResource
                                 'device_id' => ['value' => $record->id],
                             ],
                         ])),
+
+                    RebootBiometricDeviceAction::make(),
 
                     Action::make('revealCommKey')
                         ->label('Reveal Comm Key')

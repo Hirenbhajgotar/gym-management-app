@@ -241,6 +241,11 @@ In dual-channel mode, biometric devices dispatch instant door-unlock requests to
   - `device_serial` column (toggleable).
   - `adms_enabled` icon column.
   - **"View Commands"** action: Quick-jumps directly to the filtered command queue for that device.
+  - **"Reboot Terminal"** action (`RebootBiometricDeviceAction`):
+    - Prompts with a confirmation modal and dispatches an asynchronous `C:{id}:REBOOT` command into the device queue.
+    - Includes in-flight deduplication to prevent hardware reboot loops if a command is already `PENDING` or `SENT`.
+    - Enforces tenant boundary isolation via `BiometricDevicePolicy::reboot()`.
+    - Delivers a targeted Filament database notification directly to the initiating operator's notification bell upon successful reboot acknowledgement (handling both `devicecmd` pre-reboot ACK and `cdata` post-reboot handshake).
 
 ### 2. Device Commands (`AdmsDeviceCommandResource`)
 - Tenant-scoped read-only audit log of all device commands.

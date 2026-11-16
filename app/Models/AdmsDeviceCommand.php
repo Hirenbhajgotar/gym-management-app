@@ -357,7 +357,7 @@ class AdmsDeviceCommand extends Model
 
         if (! $this->isPinAddressed()) {
             return match ($this->command_type) {
-                'reboot' => sprintf('C:%d:REBOOT', $this->id),
+                'reboot' => sprintf('C:%d:Restart', $this->id),
                 'clear_log' => sprintf('C:%d:CLEAR LOG', $this->id),
                 'query_all_users' => ($this->user_table ?? AdmsUserTableEnum::resolve(config('biometrics.adms.user_table'))) === AdmsUserTableEnum::UserInfo
                     ? sprintf('C:%d:DATA QUERY USERINFO', $this->id)
