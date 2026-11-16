@@ -16,6 +16,15 @@ class BiometricDevicePolicy extends BasePolicy
         return $user->can(static::getPermissionName('update'));
     }
 
+    public function reboot(User $user, ?BiometricDevice $device = null): bool
+    {
+        if ($device instanceof BiometricDevice && ! $this->userCanActOnGym($user, $device->gym_id)) {
+            return false;
+        }
+
+        return $user->can(static::getPermissionName('update'));
+    }
+
     /**
      * Deleting a terminal can strand credentials in its flash, so the
      * permission is necessary but not sufficient: the record must also belong to

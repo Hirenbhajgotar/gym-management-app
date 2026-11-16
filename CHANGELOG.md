@@ -9,6 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- **Filament Biometric Terminal Remote Reboot Action & Database Notification**:
+  - Implemented `RebootBiometricDeviceAction` (`app/Filament/Admin/Actions/RebootBiometricDeviceAction.php`) providing an interactive table and page action in `BiometricDeviceResource` to remotely reboot ADMS terminals.
+  - Features confirmation modal with operational guidance and warning styling.
+  - Queues an `AdmsDeviceCommand` of type `reboot` with status `PENDING`, attaches initiating user ID (`initiated_by_user_id`), and logs audit trail via activity log.
+  - Includes in-flight deduplication to prevent queueing redundant restart cycles if a reboot is already `PENDING` or `SENT`.
+  - Added policy authorization in `BiometricDevicePolicy::reboot()` enforcing strict multi-tenant isolation (`userCanActOnGym`) and update permissions.
+  - Added dual-path acknowledgment in `AdmsController`: automatically tracks terminal reboot completion whether reported pre-reboot via `POST /iclock/devicecmd` (`Return=0`) or post-reboot via `GET /iclock/cdata` handshake.
+  - Dispatches persistent Filament database notification (`Notification::make()->...->sendToDatabase($user)`) straight to the initiating user's notification bell upon reboot success, with `reboot_notified_at` payload guard preventing duplicate alerts.
+  - See [ADR-0012](docs/adr/adr-0012-biometric-terminal-remote-reboot-action-and-database-notification.md).
 - **Remote Device Reboot Command (`biometrics:reboot-device`)**:
   - Implemented `AdmsRebootDeviceCommand` CLI command (`php artisan biometrics:reboot-device {--device-id=} {--serial=}`) to queue an RFC CRLF-terminated `C:{id}:REBOOT` command to restart ADMS devices remotely.
   - Resolves the embedded LCD screen display paradox on eSSL MB20 / Linux ZEM hardware (`ZLM60_TFT`), forcing the foreground GUI process (`ssr_tft`) to reload SQLite records into display RAM cache.
