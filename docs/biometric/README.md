@@ -22,6 +22,13 @@ Comprehensive technical documentation for the biometric hardware integration, ac
 - **[ADR-0002: Biometric Enrollment & Device Reconciliation](../adr/adr-0002-biometric-enrollment-and-device-reconciliation.md)**
 - **[ADR-0003: Multi-Channel Biometric Consent Distribution & Dual-Gate Architecture](../adr/adr-0003-biometric-consent-distribution-and-dual-gate-architecture.md)**
 - **[ADR-0004: Member Archival Lifecycle, Cryptographic Biometric Credential Erasure, and Access Revocation Architecture](../adr/adr-0004-member-archival-and-biometric-erasure-lifecycle.md)**
+- **[ADR-0005: Biometric ADMS Communication Key Hardware Standardization](../adr/adr-0005-biometric-adms-communication-key-hardware-standardization.md)**
+- **[ADR-0006: Biometric ADMS Legacy Hardware Endpoint and Transport Compatibility](../adr/adr-0006-biometric-adms-legacy-hardware-endpoint-and-transport-compatibility.md)**
+- **[ADR-0007: Biometric ADMS Multi-Device Table Schema Negotiation](../adr/adr-0007-biometric-adms-multi-device-table-schema-negotiation.md)**
+- **[ADR-0008: Biometric ADMS Per-Device Comm Key Negotiation](../adr/adr-0008-biometric-adms-per-device-comm-key-negotiation.md)**
+- **[ADR-0009: Biometric ADMS USERINFO Dual-Token Name Standardization](../adr/adr-0009-biometric-adms-userinfo-dual-token-name-standardization.md)**
+- **[ADR-0010: Biometric ADMS OPERLOG Handling, BioTime Standard USERINFO Struct Wire Serialization, and UTF-8 Charset](../adr/adr-0010-biometric-adms-operlog-handling-and-clean-wire-token-standardization.md)**
+- **[ADR-0011: Biometric ADMS Remote Reboot, Embedded GUI Cache Synchronization, and In-Flight Safeguards](../adr/adr-0011-biometric-adms-remote-reboot-gui-cache-synchronization-and-telemetry.md)**
 
 ### 3. Database Schema & Field References (`docs/biometric/database/`)
 - **[`biometric_devices`](database/biometric-devices-fields.md)**: Hardware devices, provider configurations, serial numbers, door zones, and ADMS toggle.
