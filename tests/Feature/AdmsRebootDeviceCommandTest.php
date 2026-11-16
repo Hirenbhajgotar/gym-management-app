@@ -96,7 +96,7 @@ class AdmsRebootDeviceCommandTest extends TestCase
             ->first();
 
         $this->assertNotNull($command);
-        $this->assertSame("C:{$command->id}:Restart", $command->toAdmsCommandString());
+        $this->assertSame("C:{$command->id}:CONTROL DEVICE 03000000", $command->toAdmsCommandString());
     }
 
     #[Test]
@@ -160,6 +160,34 @@ class AdmsRebootDeviceCommandTest extends TestCase
         $response->assertOk();
         $content = (string) $response->getContent();
         $this->assertStringEndsWith("\r\n", $content);
-        $this->assertStringContainsString(':Restart', $content);
+        $this->assertStringContainsString(':CONTROL DEVICE 03000000', $content);
+    }
+
+    #[Test]
+    public function it_acknowledges_control_device_reboot_command_from_devicecmd(): void
+    {
+        $command = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'device_serial' => $this->device->device_serial,
+            'command_type' => 'reboot',
+            'status' => AdmsCommandStatusEnum::SENT,
+            'idempotency_key' => 'reboot:ack:test:1',
+        ]);
+
+        config(['biometrics.adms.require_comm_key' => false]);
+        $response = $this->call(
+            'POST',
+            "/api/iclock/devicecmd?SN={$this->device->device_serial}",
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            "ID={$command->id}&Return=0&CMD=CONTROL DEVICE"
+        );
+
+        $response->assertOk();
+        $this->assertSame('OK', $response->getContent());
+        $this->assertSame(AdmsCommandStatusEnum::ACKNOWLEDGED, $command->fresh()->status);
     }
 }
