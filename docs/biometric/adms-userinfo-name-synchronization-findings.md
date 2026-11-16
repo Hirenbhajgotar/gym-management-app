@@ -378,6 +378,33 @@ return $this->plainResponse(rtrim($commandString) . "\r\n");
 
 ---
 
+### Phase 3: Root Cause Analysis: The LCD Screen Display Paradox
+
+Despite the terminal acknowledging Command 33 (`C:33:DATA UPDATE USERINFO PIN=369\tName=Hiren\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000`) and the SQLite database returning `USER PIN=369\tName=Hiren` in query telemetry, the physical LCD screen (`User Mgt -> All Users -> 369`) may continue displaying `Name: [blank]`.
+
+#### The 3 Core Architectural Causes:
+
+1. **Embedded Process Separation (ADMS Daemon vs. TFT GUI Process):**
+   - On ZKTeco/eSSL Linux devices (`ZLM60_TFT`), the background ADMS push daemon writes records directly to the local SQLite database (`device.db`).
+   - The LCD user interface runs as an independent foreground graphical process (`main` / `ssr_tft`) that reads from an in-memory struct cache (`user.dat`).
+   - On standard MB20 firmware, **background database updates do NOT asynchronously trigger a GUI memory redraw until the device is restarted or rebooted**.
+   - **Resolution:** Issue `php artisan biometrics:reboot-device --device-id=3` (or power cycle the terminal). Upon boot, the GUI process parses the persisted SQLite records into memory, rendering the name.
+
+2. **Keypad Re-Enrollment Blank-Name Overwrite:**
+   - In manual device enrollment workflows, operators navigate to `User Mgt -> New User` (or `All Users -> 369`), skip the alphanumeric name prompt on the 0-9 numeric keypad, scan fingerprints, and press `M/OK`.
+   - When the terminal saves the template, it writes an empty string (`Name=""`) directly to the hardware record and generates an `OPLOG 4` event.
+   - If an existing user with PIN 369 is already registered on the terminal with a blank name, many firmware versions ignore subsequent `DATA UPDATE` name updates (treating `DATA UPDATE` as "insert if absent" to protect local edits).
+   - **Resolution:** If rebooting does not populate the name, the existing un-named profile must be purged via `DATA DELETE USERINFO PIN=369` before pushing the clean `DATA UPDATE` payload.
+
+3. **Full System Telemetry & Logging:**
+   - Every transaction across `/iclock/cdata`, `/iclock/getrequest`, and `/iclock/devicecmd` is now logged with complete HTTP metadata, raw bodies, query parameters, device serial numbers, and return codes to ensure full observability during live diagnostic cycles.
+
+4. **Reboot Command Acknowledgement & In-Flight Protection:**
+   - On several ZKTeco/eSSL firmware variants, the device terminates the TCP socket immediately upon parsing `C:{id}:REBOOT` to begin hardware reset without issuing a `POST /iclock/devicecmd` return ACK.
+   - To prevent an in-flight command from remaining unacknowledged and accidentally queueing duplicate reboot commands (which could cause a reboot loop upon reconnection), `biometrics:reboot-device` checks for existing `PENDING` or `SENT` reboot commands before queueing, and pairs with unique high-resolution idempotency tokens.
+
+---
+
 ## 6. Comparison Matrix
 
 | Feature | Legacy / Attempted | Athwari Standard | Verified Native Hardware Standard (MB20) |

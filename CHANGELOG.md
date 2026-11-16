@@ -9,6 +9,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- **Remote Device Reboot Command (`biometrics:reboot-device`)**:
+  - Implemented `AdmsRebootDeviceCommand` CLI command (`php artisan biometrics:reboot-device {--device-id=} {--serial=}`) to queue an RFC CRLF-terminated `C:{id}:REBOOT` command to restart ADMS devices remotely.
+  - Resolves the embedded LCD screen display paradox on eSSL MB20 / Linux ZEM hardware (`ZLM60_TFT`), forcing the foreground GUI process (`ssr_tft`) to reload SQLite records into display RAM cache.
+  - Implemented in-flight protection to suppress duplicate `reboot` commands when one is already in `PENDING` or `SENT` status, preventing hardware reboot loops on firmware that drops the TCP connection without sending a return ACK.
+  - Added high-resolution collision-resistant idempotency keys (`reboot:{gym_id}:{device_id}:{timestamp}:{random}`).
+  - See [ADR-0011](docs/adr/adr-0011-biometric-adms-remote-reboot-gui-cache-synchronization-and-telemetry.md).
+- **On-Chip Hardware User Roster Query Diagnostic (`biometrics:query-user`)**:
+  - Implemented `AdmsQueryUserCommand` CLI command (`php artisan biometrics:query-user {--device-id=} {--serial=} {--pin=}`) to dispatch `DATA QUERY USERINFO PIN={pin}` (or all users) to inspect the terminal's internal SQLite database state and verify whether names, privileges, and access timezones are saved on flash memory.
+  - See [ADR-0011](docs/adr/adr-0011-biometric-adms-remote-reboot-gui-cache-synchronization-and-telemetry.md).
+- **Exhaustive ADMS Ingestion Structured Telemetry & Diagnostics**:
+  - Added deep structured logging across `/iclock/cdata`, `/iclock/getrequest`, `/iclock/devicecmd`, `/iclock/operlog`, and `/iclock/handshake` capturing client IP, payload byte counts, query parameters, parsed body attributes, and device serial numbers.
 - **Native `OPERLOG` Ingestion & Auxiliary Tables Support**:
   - Implemented `AdmsController::handleOperlog()` to handle device-native operational/audit events pushed to `/iclock/cdata?table=OPERLOG`.
   - Added support for auxiliary push tables (`USERINFO`, `BIODATA`, `FINGERTMP`, `OPTIONS`) in `AdmsController::cdata()`, acknowledging records with `200 OK` and logging payloads.
@@ -18,7 +29,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Enhanced `AdmsController::handleHandshake()` to respond to `options=all` queries with the official ZKTeco configuration block (`GET OPTION FROM: {SN}`) containing `TransFlag` with `EnrollUser` and `ChgUser` directives, `ServerVer`, and `PushOptionsFlag`.
   - Enables bidirectional terminal synchronization and remote user display name storage.
 
+### Changed
+- **Idle Polling Telemetry Demoted to Debug**:
+  - Demoted empty poll logging in `AdmsController::getRequest()` from `Log::info()` to `Log::debug()`, eliminating 10,000–30,000 lines/day of log noise per terminal in production.
+
 ### Fixed
+- **AdmsController Device Serial Property Reference**:
+  - Fixed property mismatch in `AdmsController::handleHandshake()` where `$device->device_serial_number` was queried instead of `$device->device_serial`.
+- **Command Acknowledgment Failure Handling**:
+  - Standardized command status logging to string scalar in `deviceCmd` and added explicit warning branch when atomic acknowledgement transition fails.
 - **Biometric ADMS USERINFO Dual-Token Casing & Name Synchronization**:
   - Enhanced `AdmsDeviceCommand::userCommandString()` to emit dual attribute tokens under the `USERINFO` wire schema: `C:{id}:DATA UPDATE USERINFO PIN={pin}\tName={name}\tNAME={name}\tPri=0\tPrivilege=0`.
   - Fixes blank LCD display names on eSSL MB20 and Linux/ZEM terminals (`ZLM60_TFT`) that strictly require uppercase `NAME=`, while preserving mixed-case `Name=` and `Pri=0` for standard ZKTeco firmware.
