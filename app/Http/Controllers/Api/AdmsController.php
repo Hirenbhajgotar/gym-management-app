@@ -59,6 +59,17 @@ class AdmsController extends Controller
 
         // POST = attendance or device operational data push
         $table = strtoupper((string) $request->query('table', ''));
+        $content = $request->getContent();
+        $byteCount = is_string($content) ? strlen($content) : 0;
+
+        Log::info('ADMS: cdata payload received', [
+            'device_id' => $device->id,
+            'serial' => $device->device_serial,
+            'table' => $table,
+            'query' => $request->query(),
+            'bytes' => $byteCount,
+            'ip' => $request->ip(),
+        ]);
 
         if ($table === 'OPERLOG') {
             return $this->handleOperlog($device, $request);
@@ -105,6 +116,13 @@ class AdmsController extends Controller
         $command = AdmsDeviceCommand::leaseNext($device->id, $leaseDuration);
 
         if (! $command) {
+            Log::debug('ADMS: getrequest polled - no pending commands', [
+                'device_id' => $device->id,
+                'serial' => $device->device_serial,
+                'ip' => $request->ip(),
+                'query' => $request->query(),
+            ]);
+
             return $this->plainResponse('OK');
         }
 
@@ -128,10 +146,12 @@ class AdmsController extends Controller
 
         Log::info('ADMS: Command sent to device', [
             'device_id' => $device->id,
+            'serial' => $device->device_serial,
             'command_id' => $command->id,
             'command_type' => $command->command_type,
             'user_table' => $command->user_table?->value,
             'command_string' => $commandString,
+            'ip' => $request->ip(),
         ]);
 
         return $this->plainResponse(rtrim($commandString) . "\r\n");
@@ -161,12 +181,25 @@ class AdmsController extends Controller
         $params = [];
         parse_str($body, $params);
 
+        Log::info('ADMS: devicecmd received from device', [
+            'device_id' => $device->id,
+            'serial' => $device->device_serial,
+            'raw_body' => $body,
+            'parsed_params' => $params,
+            'ip' => $request->ip(),
+        ]);
+
         $rawCommandId = $params['ID'] ?? null;
         $commandId = is_string($rawCommandId) ? $rawCommandId : null;
         $rawReturn = $params['Return'] ?? null;
         $returnCode = is_string($rawReturn) ? $rawReturn : null;
 
         if ($commandId === null) {
+            Log::warning('ADMS: devicecmd missing command ID in body', [
+                'device_id' => $device->id,
+                'raw_body' => $body,
+            ]);
+
             return $this->plainResponse('OK');
         }
 
@@ -176,17 +209,47 @@ class AdmsController extends Controller
             ->where('device_id', $device->id)
             ->first();
 
-        if ($command && $command->status === AdmsCommandStatusEnum::SENT) {
+        if (! $command) {
+            Log::warning('ADMS: devicecmd command not found', [
+                'device_id' => $device->id,
+                'command_id' => $commandId,
+                'return_code' => $returnCode,
+                'raw_body' => $body,
+            ]);
+
+            return $this->plainResponse('OK');
+        }
+
+        if ($command->status === AdmsCommandStatusEnum::SENT) {
             $acknowledged = $command->markAcknowledged($returnCode);
 
             if ($acknowledged) {
                 Log::info('ADMS: Command acknowledged', [
                     'device_id' => $device->id,
+                    'serial' => $device->device_serial,
                     'command_id' => $command->id,
+                    'command_type' => $command->command_type,
                     'return_code' => $returnCode,
-                    'status' => $command->fresh()?->status,
+                    'status' => $command->fresh()?->status?->value,
+                ]);
+            } else {
+                Log::warning('ADMS: Command acknowledgement failed', [
+                    'device_id' => $device->id,
+                    'serial' => $device->device_serial,
+                    'command_id' => $command->id,
+                    'command_type' => $command->command_type,
+                    'return_code' => $returnCode,
+                    'status' => $command->fresh()?->status?->value,
                 ]);
             }
+        } else {
+            Log::warning('ADMS: devicecmd received for non-SENT command', [
+                'device_id' => $device->id,
+                'command_id' => $command->id,
+                'current_status' => $command->status->value,
+                'return_code' => $returnCode,
+                'raw_body' => $body,
+            ]);
         }
 
         return $this->plainResponse('OK');
@@ -230,11 +293,13 @@ class AdmsController extends Controller
 
         Log::info('ADMS: Device handshake', [
             'device_id' => $device->id,
+            'serial' => $device->device_serial,
             'query' => $request->query(),
+            'ip' => $request->ip(),
         ]);
 
         if ($request->query('options') !== null || $request->has('pushver')) {
-            $serial = $device->device_serial_number ?? (string) $request->query('SN', '');
+            $serial = $device->device_serial ?? (string) $request->query('SN', '');
             $options = implode("\n", [
                 "GET OPTION FROM: {$serial}",
                 'Stamp=9999',
@@ -250,6 +315,12 @@ class AdmsController extends Controller
                 'PushProtVer=2.4.1',
                 'PushOptionsFlag=1',
                 'PushOptions=UserExtFmt,SupportUserPic',
+            ]);
+
+            Log::info('ADMS: Device handshake options sent', [
+                'device_id' => $device->id,
+                'serial' => $serial,
+                'options_length' => strlen($options),
             ]);
 
             return $this->plainResponse($options . "\n");
@@ -273,8 +344,11 @@ class AdmsController extends Controller
 
         Log::info("ADMS: {$table} received from device", [
             'device_id' => $device->id,
+            'serial' => $device->device_serial,
             'table' => $table,
+            'query' => $request->query(),
             'body' => $body,
+            'ip' => $request->ip(),
         ]);
 
         return $this->plainResponse('OK');
@@ -296,7 +370,10 @@ class AdmsController extends Controller
 
         Log::info('ADMS: OPERLOG received from device', [
             'device_id' => $device->id,
+            'serial' => $device->device_serial,
+            'query' => $request->query(),
             'body' => $body,
+            'ip' => $request->ip(),
         ]);
 
         return $this->plainResponse('OK');

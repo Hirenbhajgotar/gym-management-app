@@ -12,6 +12,7 @@ related_docs:
   - ../../adr/adr-0008-biometric-adms-per-device-comm-key-negotiation.md
   - ../../adr/adr-0009-biometric-adms-userinfo-dual-token-name-standardization.md
   - ../../adr/adr-0010-biometric-adms-operlog-handling-and-clean-wire-token-standardization.md
+  - ../../adr/adr-0011-biometric-adms-remote-reboot-gui-cache-synchronization-and-telemetry.md
   - ../architecture/ADR-002-door-access-attendance-integrity.md
   - ../database/adms-device-commands-fields.md
   - ../database/biometric-templates-fields.md
@@ -246,6 +247,30 @@ In dual-channel mode, biometric devices dispatch instant door-unlock requests to
 - Visual status badges powered directly by `AdmsCommandStatusEnum`.
 - Interactive JSON payload modal inspector and device return code display.
 - **Resend Action**: Single and bulk action to re-queue stuck or failed commands back to `PENDING`.
+
+### 3. Hardware Diagnostics & Remote Operation CLI Commands
+
+#### Remote Device Reboot (`biometrics:reboot-device`)
+Dispatches an RFC CRLF-terminated `C:{id}:REBOOT` command to restart the terminal and force the foreground graphical interface (TFT LCD) to re-read internal SQLite tables (`device.db`) into memory:
+```bash
+# Reboot by device ID or serial
+php artisan biometrics:reboot-device --device-id=3
+php artisan biometrics:reboot-device --serial=EUF7262500413
+```
+- **In-Flight Protection**: Checks for existing `PENDING` or `SENT` reboot commands for the device to prevent hardware reboot loops.
+- **High-Resolution Idempotency**: Prevents unique key collisions on rapid executions.
+
+#### Hardware User Roster Query (`biometrics:query-user`)
+Directly polls the physical terminal's on-chip SQLite database to verify stored user attributes:
+```bash
+# Query a specific PIN
+php artisan biometrics:query-user --device-id=3 --pin=369
+
+# Query all users registered on the hardware terminal
+php artisan biometrics:query-user --device-id=3
+```
+- Dispatches `DATA QUERY USERINFO PIN={pin}` (or `DATA QUERY USERINFO` for all).
+- Terminal responds via `POST /iclock/cdata?table=USERINFO` with the exact on-chip record, confirming whether names, privileges, and access timezones are saved to hardware flash memory.
 
 ---
 
