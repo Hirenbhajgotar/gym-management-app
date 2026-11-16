@@ -19,8 +19,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Dispatches persistent Filament database notification (`Notification::make()->...->sendToDatabase($user)`) straight to the initiating user's notification bell upon reboot success, with `reboot_notified_at` payload guard preventing duplicate alerts.
   - See [ADR-0012](docs/adr/adr-0012-biometric-terminal-remote-reboot-action-and-database-notification.md).
 - **Remote Device Reboot Command (`biometrics:reboot-device`)**:
-  - Implemented `AdmsRebootDeviceCommand` CLI command (`php artisan biometrics:reboot-device {--device-id=} {--serial=}`) to queue an RFC CRLF-terminated `C:{id}:REBOOT` command to restart ADMS devices remotely.
-  - Resolves the embedded LCD screen display paradox on eSSL MB20 / Linux ZEM hardware (`ZLM60_TFT`), forcing the foreground GUI process (`ssr_tft`) to reload SQLite records into display RAM cache.
+  - Implemented `AdmsRebootDeviceCommand` CLI command (`php artisan biometrics:reboot-device {--device-id=} {--serial=}`) to queue an RFC CRLF-terminated `C:{id}:CONTROL DEVICE 03000000` command to restart ADMS devices remotely.
+  - Switches wire format from application-layer strings (`REBOOT`/`Restart`) to the ZKTeco Push SDK hardware-level control instruction `CONTROL DEVICE 03000000` (opcode `03`), executing a genuine hardware reboot cycle on eSSL MB20 / Linux ZEM hardware (`ZLM60_TFT`).
+  - Resolves the embedded LCD screen display paradox, forcing the foreground GUI process (`ssr_tft`) to reload SQLite records from flash into display RAM cache.
   - Implemented in-flight protection to suppress duplicate `reboot` commands when one is already in `PENDING` or `SENT` status, preventing hardware reboot loops on firmware that drops the TCP connection without sending a return ACK.
   - Added high-resolution collision-resistant idempotency keys (`reboot:{gym_id}:{device_id}:{timestamp}:{random}`).
   - See [ADR-0011](docs/adr/adr-0011-biometric-adms-remote-reboot-gui-cache-synchronization-and-telemetry.md).
