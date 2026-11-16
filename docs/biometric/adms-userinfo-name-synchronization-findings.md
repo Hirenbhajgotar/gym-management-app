@@ -399,8 +399,9 @@ Despite the terminal acknowledging Command 33 (`C:33:DATA UPDATE USERINFO PIN=36
 3. **Full System Telemetry & Logging:**
    - Every transaction across `/iclock/cdata`, `/iclock/getrequest`, and `/iclock/devicecmd` is now logged with complete HTTP metadata, raw bodies, query parameters, device serial numbers, and return codes to ensure full observability during live diagnostic cycles.
 
-4. **Reboot Command Acknowledgement & In-Flight Protection:**
-   - On several ZKTeco/eSSL firmware variants, the device terminates the TCP socket immediately upon parsing `C:{id}:REBOOT` to begin hardware reset without issuing a `POST /iclock/devicecmd` return ACK.
+4. **Reboot Command Evolution & In-Flight Protection:**
+   - On ZKTeco/eSSL MB20 Linux firmware (`ZLM60-NF28VA-Ver2.0.12`), legacy application-layer commands like `REBOOT` and `Restart` are acknowledged with `Return=0` but swallowed without performing an actual hardware reset (telemetry shows polling continuing 1s later).
+   - In accordance with the ZKTeco Push SDK specification, the hardware-level control instruction `CONTROL DEVICE 03000000` (where opcode `03` = hardware reboot) is required to execute a true Linux reboot cycle (25-45s duration).
    - To prevent an in-flight command from remaining unacknowledged and accidentally queueing duplicate reboot commands (which could cause a reboot loop upon reconnection), `biometrics:reboot-device` checks for existing `PENDING` or `SENT` reboot commands before queueing, and pairs with unique high-resolution idempotency tokens.
 
 ---

@@ -47,7 +47,7 @@ We enacted the following architectural decisions to ensure reliable display pers
 
 ### 1. Remote Reboot Command Dispatch via ADMS Queue
 - Implemented Artisan command `php artisan biometrics:reboot-device` (`--device-id=` or `--serial=`).
-- Enqueues a standardized ADMS command with wire serialization `C:{id}:REBOOT` terminated with RFC CRLF (`\r\n`).
+- Enqueues a standardized ADMS command with wire serialization `C:{id}:CONTROL DEVICE 03000000` terminated with RFC CRLF (`\r\n`). Application-level strings like `REBOOT` and `Restart` are acknowledged by ZLM60 firmware with `Return=0` but swallowed without resetting hardware; `CONTROL DEVICE 03000000` executes the low-level hardware restart cycle (opcode `03`).
 - When received by the terminal during `/iclock/getrequest`, the device restarts, forcing the foreground GUI process (`ssr_tft`) to re-read `/mnt/mtd/device.db` and display the synchronized name.
 
 ### 2. In-Flight Command Guards & High-Resolution Idempotency
@@ -91,7 +91,7 @@ We enacted the following architectural decisions to ensure reliable display pers
 ## Implementation Notes
 
 - **IMP-001**: Command registered as `php artisan biometrics:reboot-device {--device-id=} {--serial=}`.
-- **IMP-002**: Serializer `AdmsDeviceCommand::toAdmsCommandString()` formats `command_type = 'reboot'` as `C:{id}:REBOOT`.
+- **IMP-002**: Serializer `AdmsDeviceCommand::toAdmsCommandString()` formats `command_type = 'reboot'` as `C:{id}:CONTROL DEVICE 03000000`.
 - **IMP-003**: Unit and feature testing verified in `tests/Feature/AdmsRebootDeviceCommandTest.php` covering input validation, mutual exclusivity, in-flight suppression, database assertions, and CRLF wire formatting over `/api/iclock/getrequest`.
 
 ## References

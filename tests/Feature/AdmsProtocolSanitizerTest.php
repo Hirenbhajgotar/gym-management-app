@@ -259,7 +259,7 @@ class AdmsProtocolSanitizerTest extends TestCase
             $reboot = new AdmsDeviceCommand(['command_type' => 'reboot', 'command_payload' => []]);
             $reboot->id = 3;
             $reboot->user_table = $schema;
-            $this->assertSame('C:3:Restart', $reboot->toAdmsCommandString());
+            $this->assertSame('C:3:CONTROL DEVICE 03000000', $reboot->toAdmsCommandString());
 
             $clearLog = new AdmsDeviceCommand(['command_type' => 'clear_log', 'command_payload' => []]);
             $clearLog->id = 4;
@@ -306,7 +306,7 @@ class AdmsProtocolSanitizerTest extends TestCase
         $reboot = new AdmsDeviceCommand(['command_type' => 'reboot', 'command_payload' => []]);
         $reboot->id = 3;
 
-        $this->assertSame('C:3:Restart', $reboot->toAdmsCommandString());
+        $this->assertSame('C:3:CONTROL DEVICE 03000000', $reboot->toAdmsCommandString());
 
         $clearLog = new AdmsDeviceCommand(['command_type' => 'clear_log', 'command_payload' => []]);
         $clearLog->id = 4;
