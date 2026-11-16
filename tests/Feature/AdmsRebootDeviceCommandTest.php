@@ -96,7 +96,7 @@ class AdmsRebootDeviceCommandTest extends TestCase
             ->first();
 
         $this->assertNotNull($command);
-        $this->assertSame("C:{$command->id}:REBOOT", $command->toAdmsCommandString());
+        $this->assertSame("C:{$command->id}:Restart", $command->toAdmsCommandString());
     }
 
     #[Test]
@@ -160,6 +160,6 @@ class AdmsRebootDeviceCommandTest extends TestCase
         $response->assertOk();
         $content = (string) $response->getContent();
         $this->assertStringEndsWith("\r\n", $content);
-        $this->assertStringContainsString(':REBOOT', $content);
+        $this->assertStringContainsString(':Restart', $content);
     }
 }
