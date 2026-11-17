@@ -605,7 +605,16 @@ class BiometricTemplatesRelationManager extends RelationManager
                             ->send();
                     }),
             ])
-            ->headerActions([]);
+            ->headerActions([
+                Action::make('refresh')
+                    ->label('Refresh')
+                    ->icon('heroicon-m-arrow-path')
+                    ->color('gray')
+                    // The action round-trip re-renders this Livewire component, and Filament
+                    // re-queries its table on every render; the dispatch documents the intent.
+                    ->action(fn () => $this->dispatch('$refresh')),
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 
     /**

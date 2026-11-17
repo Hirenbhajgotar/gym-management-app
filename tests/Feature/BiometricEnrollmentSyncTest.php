@@ -597,6 +597,78 @@ class BiometricEnrollmentSyncTest extends TestCase
             ->assertActionExists('enroll_biometric');
     }
 
+    public function test_relation_manager_default_sorts_templates_by_created_at_descending(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($this->owner);
+        Filament::setTenant($this->gym);
+
+        $oldest = BiometricTemplate::factory()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $this->member->id,
+            'created_at' => now()->subDays(3),
+        ]);
+        $middle = BiometricTemplate::factory()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $this->member->id,
+            'created_at' => now()->subDay(),
+        ]);
+        // Pending placeholders carry enrolled_at = null; they must still sort by created_at.
+        $newest = BiometricTemplate::factory()->pending()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $this->member->id,
+            'created_at' => now(),
+        ]);
+
+        Livewire::test(
+            BiometricTemplatesRelationManager::class,
+            ['ownerRecord' => $this->member, 'pageClass' => EditGymMember::class]
+        )->assertCanSeeTableRecords([$newest, $middle, $oldest], inOrder: true);
+    }
+
+    public function test_relation_manager_refresh_header_action_reloads_only_its_table_records(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($this->owner);
+        Filament::setTenant($this->gym);
+
+        // Reads stay open for an archived owner; Refresh is inert and must remain available.
+        $this->member->forceFill(['is_archived' => true, 'archived_at' => now()])->save();
+        $this->member->refresh();
+
+        $initial = BiometricTemplate::factory()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $this->member->id,
+            'created_at' => now()->subDay(),
+        ]);
+        $inactive = BiometricTemplate::factory()->inactive()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $this->member->id,
+            'created_at' => now(),
+        ]);
+
+        $component = Livewire::test(
+            BiometricTemplatesRelationManager::class,
+            ['ownerRecord' => $this->member, 'pageClass' => EditGymMember::class]
+        )
+            ->assertTableActionExists('refresh')
+            ->assertTableActionVisible('refresh')
+            ->filterTable('active_only')
+            ->assertCanNotSeeTableRecords([$inactive]);
+
+        // Written after mount: it is visible only if the action re-queries the table.
+        $later = BiometricTemplate::factory()->create([
+            'gym_id' => $this->gym->id,
+            'gym_member_id' => $this->member->id,
+            'created_at' => now(),
+        ]);
+
+        $component->callTableAction('refresh')
+            ->assertCanSeeTableRecords([$later, $initial], inOrder: true)
+            // The filter must survive the refresh; a resetTable() shortcut would drop it.
+            ->assertCanNotSeeTableRecords([$inactive]);
+    }
+
     public function test_relation_manager_has_no_create_or_edit_action(): void
     {
         $relationManager = new BiometricTemplatesRelationManager();
@@ -606,7 +678,12 @@ class BiometricEnrollmentSyncTest extends TestCase
             Table::make($relationManager)
         );
 
-        $this->assertEmpty($table->getHeaderActions());
+        $this->assertSame(
+            ['refresh'],
+            collect($table->getHeaderActions())
+                ->map(fn ($action): ?string => $action->getName())
+                ->all()
+        );
         $this->assertNull($table->getAction('edit'));
     }
 
