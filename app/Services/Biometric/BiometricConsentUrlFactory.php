@@ -24,9 +24,9 @@ use Illuminate\Support\Facades\URL;
  */
 final class BiometricConsentUrlFactory
 {
-    private const MIN_EXPIRY_DAYS = 1;
+    public const MIN_EXPIRY_DAYS = 1;
 
-    private const MAX_EXPIRY_DAYS = 30;
+    public const MAX_EXPIRY_DAYS = 30;
 
     public static function expiryDays(): int
     {
@@ -66,6 +66,7 @@ final class BiometricConsentUrlFactory
             [
                 'gym_member_id' => $member->id,
                 'gym_id' => $member->gym_id,
+                'minted_at' => now()->timestamp,
             ]
         );
     }

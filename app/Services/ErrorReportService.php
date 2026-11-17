@@ -486,6 +486,10 @@ class ErrorReportService
             return true;
         }
 
+        if ($exception instanceof HttpException && $exception->getStatusCode() < 500) {
+            return true;
+        }
+
         return false;
     }
 
