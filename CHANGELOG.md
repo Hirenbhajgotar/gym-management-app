@@ -44,6 +44,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Demoted empty poll logging in `AdmsController::getRequest()` from `Log::info()` to `Log::debug()`, eliminating 10,000–30,000 lines/day of log noise per terminal in production.
 
 ### Fixed
+- **Biometric ADMS USERINFO Clean Wire Format & Name Persistence**:
+  - Corrected `AdmsDeviceCommand::userCommandString()` to emit the canonical ZKTeco Push SDK / BioTime standard wire format: `C:{id}:DATA UPDATE USERINFO PIN={pin}\tName={name}\tPrivilege={privilege}`.
+  - Eliminated corrupting empty assignment tokens (`Passwd=\tCard=`) and access control bitmasks (`Grp=1\tTZ=0000000100000000`) that were erroneously copied from `OPERLOG` read dumps in commit `9730a982` and caused embedded C tokenizers on physical eSSL MB20 terminals to wipe member names to blank upon enrollment.
+  - Replaced legacy read-only token `Pri=0` with the standard `Privilege=0` for server-to-device `USERINFO` write commands.
+  - See [ADR-0013](docs/adr/adr-0013-biometric-adms-userinfo-clean-wire-format-and-name-persistence.md).
 - **AdmsController Device Serial Property Reference**:
   - Fixed property mismatch in `AdmsController::handleHandshake()` where `$device->device_serial_number` was queried instead of `$device->device_serial`.
 - **Command Acknowledgment Failure Handling**:
