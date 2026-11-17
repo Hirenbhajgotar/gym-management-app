@@ -9,11 +9,12 @@ use App\Http\Requests\BiometricConsentStoreRequest;
 use App\Models\BiometricConsent;
 use App\Models\GymMember;
 use App\Services\Biometric\BiometricConsentEligibility;
+use App\Services\Biometric\BiometricConsentUrlFactory;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-
-// use Illuminate\Http\View;
 
 class BiometricConsentController extends Controller
 {
@@ -23,7 +24,7 @@ class BiometricConsentController extends Controller
             ->findOrFail($request->gym_member_id);
         assert($gymMember instanceof GymMember);
 
-        $this->guard($gymMember);
+        $this->guard($gymMember, $request);
 
         // Already consented — show already-consented view
         if ($gymMember->hasActiveBiometricConsent()) {
@@ -48,7 +49,7 @@ class BiometricConsentController extends Controller
 
         // Same guard as show(): the POST carries the same bearer link, so a lapsed
         // membership must not be able to write the row either.
-        $this->guard($gymMember);
+        $this->guard($gymMember, $request);
 
         // Idempotent — if already consented return success
         if ($gymMember->hasActiveBiometricConsent()) {
@@ -71,15 +72,49 @@ class BiometricConsentController extends Controller
             // Only fire event when create actually succeeds
             event(new BiometricConsentGiven($gymMember, $consent));
         } catch (QueryException $e) {
-            // Check for duplicate key error (MySQL error code 1062 or SQLSTATE 23000)
-            if ($e->getCode() === '23000' || ($e->errorInfo[1] ?? null) === 1062) {
+            // Check specifically for duplicate key error (MySQL error code 1062)
+            $isDuplicate = ($e->errorInfo[1] ?? null) === 1062
+                || (int) $e->getCode() === 1062
+                || str_contains($e->getMessage(), 'Duplicate entry');
+
+            if ($isDuplicate) {
                 // Another request created the consent first - reload and return success
                 $gymMember->refresh();
 
-                return view('consent.biometric.success', [
-                    'gymMember' => $gymMember,
-                    'gym' => $gymMember->gym,
-                ]);
+                if ($gymMember->hasActiveBiometricConsent()) {
+                    return view('consent.biometric.success', [
+                        'gymMember' => $gymMember,
+                        'gym' => $gymMember->gym,
+                    ]);
+                }
+
+                // If a legacy table index collided with a previous revoked row, update the existing row to active
+                $revokedConsent = $gymMember->biometricConsents()
+                    ->where('gym_id', $gymMember->gym_id)
+                    ->whereNotNull('revoked_at')
+                    ->latest('revoked_at')
+                    ->first();
+
+                if ($revokedConsent !== null) {
+                    Log::warning(sprintf(
+                        'BiometricConsentController: Legacy unique constraint encountered for gym_member_id=%d. Updated existing revoked consent row. Please run migration 2026_11_17_000000_update_biometric_consents_active_unique_index.',
+                        $gymMember->id
+                    ));
+
+                    $revokedConsent->update([
+                        'revoked_at' => null,
+                        'consented_at' => now(),
+                        'ip_address' => $request->ip(),
+                        'version' => config('biometrics.consent_version', '1.0'),
+                    ]);
+
+                    event(new BiometricConsentGiven($gymMember, $revokedConsent));
+
+                    return view('consent.biometric.success', [
+                        'gymMember' => $gymMember,
+                        'gym' => $gymMember->gym,
+                    ]);
+                }
             }
 
             // Re-throw non-duplicate errors
@@ -111,10 +146,43 @@ class BiometricConsentController extends Controller
      * re-consent has to be re-requested through the gym, which mints a fresh link
      * down the audited path rather than reusing one that is already in an inbox.
      */
-    private function guard(GymMember $gymMember): void
+    private function guard(GymMember $gymMember, Request $request): void
     {
-        abort_unless(BiometricConsentEligibility::honoursExistingRequest($gymMember), 410);
+        abort_unless(
+            BiometricConsentEligibility::honoursExistingRequest($gymMember),
+            410,
+            'This consent request is no longer valid for this membership.'
+        );
 
-        abort_if($gymMember->hasRevokedBiometricConsent(), 410);
+        if ($gymMember->hasRevokedBiometricConsent()) {
+            $latestRevokedAt = $gymMember->biometricConsents()
+                ->where('gym_id', $gymMember->gym_id)
+                ->whereNotNull('revoked_at')
+                ->latest('revoked_at')
+                ->value('revoked_at');
+
+            if ($latestRevokedAt !== null) {
+                $latestRevokedAtCarbon = Carbon::parse($latestRevokedAt);
+                $mintedAt = $request->query('minted_at');
+
+                if ($mintedAt !== null && is_numeric($mintedAt)) {
+                    abort_if(
+                        Carbon::createFromTimestamp((int) $mintedAt)->lte($latestRevokedAtCarbon),
+                        410,
+                        'This biometric consent request was revoked. Please request a new link from gym reception.'
+                    );
+                } else {
+                    $expires = $request->query('expires');
+                    $maxLifetimeAfterRevocation = (clone $latestRevokedAtCarbon)->addDays(BiometricConsentUrlFactory::MAX_EXPIRY_DAYS);
+
+                    if ($expires === null || ! is_numeric($expires) || Carbon::createFromTimestamp((int) $expires)->lte($maxLifetimeAfterRevocation)) {
+                        abort(
+                            410,
+                            'This biometric consent request was revoked. Please request a new link from gym reception.'
+                        );
+                    }
+                }
+            }
+        }
     }
 }

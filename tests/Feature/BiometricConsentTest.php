@@ -485,4 +485,45 @@ class BiometricConsentTest extends TestCase
             'revoked_at' => null,
         ]);
     }
+
+    public function test_a_member_with_revoked_consent_can_consent_via_freshly_minted_link(): void
+    {
+        $gym = Gym::factory()->create();
+        $member = GymMember::factory()->create([
+            'gym_id' => $gym->id,
+            'email' => 'reconsent@example.com',
+            'membership_end' => now()->addMonth(),
+            'is_archived' => false,
+        ]);
+
+        BiometricConsent::factory()->create([
+            'gym_id' => $gym->id,
+            'gym_member_id' => $member->id,
+            'revoked_at' => now()->subDay(),
+        ]);
+
+        $this->assertTrue($member->hasRevokedBiometricConsent());
+        $this->assertFalse($member->hasActiveBiometricConsent());
+
+        // Mint fresh URL down the audited path
+        $showUrl = \App\Services\Biometric\BiometricConsentUrlFactory::make($member);
+        $this->get($showUrl)->assertOk();
+
+        // Submit consent with fresh signed URL (form posts directly to same signed path)
+        $this->post($showUrl, [
+            'gym_member_id' => $member->id,
+            'gym_id' => $gym->id,
+            'consented' => 1,
+        ])->assertOk();
+
+        $member->refresh();
+        $this->assertTrue($member->hasActiveBiometricConsent());
+        $this->assertDatabaseCount('biometric_consents', 2);
+        $this->assertDatabaseHas('biometric_consents', [
+            'gym_member_id' => $member->id,
+            'gym_id' => $gym->id,
+            'revoked_at' => null,
+        ]);
+        $this->assertEquals(1, $member->biometricConsents()->whereNotNull('revoked_at')->count());
+    }
 }
