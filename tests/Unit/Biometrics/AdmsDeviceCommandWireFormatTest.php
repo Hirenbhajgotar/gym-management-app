@@ -12,10 +12,10 @@ use Tests\TestCase;
 /**
  * Wire-format specification tests for ADMS terminal commands.
  *
- * Enforces ZKTeco / eSSL MB20 native hardware wire format compliance:
+ * Enforces ZKTeco Push SDK / BioTime standard wire format compliance:
  * - Single PascalCase `Name=` attribute (no duplicate or all-caps `NAME=`).
- * - Privilege attribute `Pri=0` under `USERINFO` (native hardware wire format).
- * - Full access control struct `Passwd=\tCard=\tGrp=1\tTZ=0000000100000000`.
+ * - Privilege attribute `Privilege=0` under `USERINFO`.
+ * - Clean token structure without empty tokens (`Passwd=`, `Card=`) or speculative access control (`Grp=1`, `TZ=...`).
  * - Hardware introspection `DATA QUERY USERINFO PIN={pin}` support.
  */
 class AdmsDeviceCommandWireFormatTest extends TestCase
@@ -36,12 +36,16 @@ class AdmsDeviceCommandWireFormatTest extends TestCase
 
         $commandString = $command->toAdmsCommandString();
 
-        $expected = "C:11:DATA UPDATE USERINFO PIN=369\tName=Hiren\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000";
+        $expected = "C:11:DATA UPDATE USERINFO PIN=369\tName=Hiren\tPrivilege=0";
         $this->assertSame($expected, $commandString);
 
         // Explicit negative assertions against experimental / defective tokens
         $this->assertStringNotContainsString('NAME=', $commandString, 'Must not carry duplicate all-caps NAME=');
-        $this->assertStringNotContainsString('Privilege=', $commandString, 'Must not carry long Privilege= token');
+        $this->assertStringNotContainsString('Pri=', $commandString, 'Must not carry short Pri= token under USERINFO');
+        $this->assertStringNotContainsString('Passwd=', $commandString, 'Must not carry empty Passwd= token');
+        $this->assertStringNotContainsString('Card=', $commandString, 'Must not carry empty Card= token');
+        $this->assertStringNotContainsString('Grp=', $commandString, 'Must not carry speculative Grp= token');
+        $this->assertStringNotContainsString('TZ=', $commandString, 'Must not carry speculative TZ= token');
     }
 
     #[Test]
@@ -60,7 +64,7 @@ class AdmsDeviceCommandWireFormatTest extends TestCase
 
         $commandString = $command->toAdmsCommandString();
 
-        $expected = "C:19:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000";
+        $expected = "C:19:DATA UPDATE USERINFO PIN=369\tName=Hiren Sarla\tPrivilege=0";
         $this->assertSame($expected, $commandString);
     }
 

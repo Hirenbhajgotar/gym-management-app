@@ -404,19 +404,46 @@ Despite the terminal acknowledging Command 33 (`C:33:DATA UPDATE USERINFO PIN=36
    - In accordance with the ZKTeco Push SDK specification, the hardware-level control instruction `CONTROL DEVICE 03000000` (where opcode `03` = hardware reboot) is required to execute a true Linux reboot cycle (25-45s duration).
    - To prevent an in-flight command from remaining unacknowledged and accidentally queueing duplicate reboot commands (which could cause a reboot loop upon reconnection), `biometrics:reboot-device` checks for existing `PENDING` or `SENT` reboot commands before queueing, and pairs with unique high-resolution idempotency tokens.
 
+### Phase 4: Resolution of the Blank Name Regression (November 17, 2026)
+
+Live hardware testing on device `EUF7262500413` with real hardware reboot (`CONTROL DEVICE 03000000`) revealed the true root cause of why member names were wiped:
+
+1. **The Diagnostic Test:**
+   - The operator manually saved `Name: Hiren` on the physical MB20 terminal keypad. The LCD screen confirmed `Name: Hiren`.
+   - The operator initiated biometric enrollment from `fluxfitness.in`.
+   - The server delivered command 48:
+     ```text
+     C:48:DATA UPDATE USERINFO PIN=369\tName=Hiren\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000
+     ```
+   - The device executed the command and returned `Return=0`.
+   - Immediately upon execution, the manually saved name was **wiped to completely blank**.
+
+2. **The Root Cause:**
+   - The `OPERLOG` dump (`Pri=0\tPasswd=\tCard=\tGrp=1\tTZ=...`) is an internal memory state representation for reading, NOT the wire format for writing.
+   - In embedded C tokenizers (`strtok` / `sscanf`), empty tokens like `Passwd=` and `Card=` cause parsing errors or signal "clear/blank this field".
+   - `Pri` is a read-only abbreviation; `USERINFO` write commands require the full `Privilege=0` keyword.
+   - Trailing access control tokens (`Grp=1\tTZ=...`) corrupt basic user profile registration.
+
+3. **The Canonical Wire Format (Adopted & Tested):**
+   ```text
+   C:{id}:DATA UPDATE USERINFO PIN={pin}\tName={name}\tPrivilege={privilege}
+   ```
+   - Verified with unit tests (`AdmsDeviceCommandWireFormatTest`) and feature tests (`AdmsProtocolSanitizerTest`).
+   - Completely eliminates `Passwd=`, `Card=`, `Grp=`, and `TZ=`.
+
 ---
 
 ## 6. Comparison Matrix
 
-| Feature | Legacy / Attempted | Athwari Standard | Verified Native Hardware Standard (MB20) |
+| Feature | Legacy / Attempted | OPERLOG Emulation (Buggy) | Canonical Push SDK Standard (Adopted) |
 |---|---|---|---|
-| **Target Table** | `USERINFO` | `USERINFO` | `USERINFO` (MB20 rejects `user` with `-1004`) |
-| **PIN Token** | `PIN=%s` | `PIN=%s` | `PIN=%s` |
+| **Target Table** | `user` (Rejected `-1004`) | `USERINFO` | `USERINFO` (Accepted `Return=0`) |
+| **PIN Token** | `Pin=%s` | `PIN=%s` | `PIN=%s` |
 | **Name Token** | Dual `Name=` + `NAME=` | Single `Name=%s` | Single `Name=%s` (Clean PascalCase) |
-| **Privilege Token** | `Pri=0` or duplicate | `Privilege=%d` | `Pri=%d` (Empirically dumped from MB20 SQLite record) |
-| **Access Control Tokens** | Omitted or `Card=\t` | `Card=%s` | `Passwd=\tCard=\tGrp=1\tTZ=0000000100000000` (Native MB20 struct) |
-| **Line Ending** | `\n` (Unix LF) | `\n` | `\r\n` (Embedded RFC CRLF) |
-| **Query Diagnostic** | Unsupported | Supported (`DATA QUERY USERINFO`) | Supported (`DATA QUERY USERINFO PIN={pin}`) |
+| **Privilege Token** | `Pri=0` or duplicate | `Pri=%d` (Read-only token) | `Privilege=%d` (Push SDK standard) |
+| **Access Control Tokens** | Omitted | `Passwd=\tCard=\tGrp=1\tTZ=...` (Wipes name!) | Omitted (Clean user profile) |
+| **Line Ending** | `\n` (Unix LF) | `\r\n` (RFC CRLF) | `\r\n` (RFC CRLF) |
+| **Query Diagnostic** | Unsupported | Supported (`DATA QUERY USERINFO PIN={pin}`) | Supported (`DATA QUERY USERINFO PIN={pin}`) |
 
 ---
 

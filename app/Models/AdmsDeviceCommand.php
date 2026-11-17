@@ -435,9 +435,9 @@ class AdmsDeviceCommand extends Model
      * Build a PIN-addressed command under the given wire schema.
      *
      * The schemas differ in wire table, PIN key, and parameter tokens:
-     * - `USERINFO` adheres to the eSSL / ZKTeco MB20 native hardware wire format:
-     *   `PIN={pin}\tName={name}\tPri={pri}\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000`.
-     *   Empirically confirmed via DATA QUERY USERINFO telemetry from live hardware.
+     * - `USERINFO` adheres to the ZKTeco Push SDK / BioTime standard wire format:
+     *   `PIN={pin}\tName={name}\tPrivilege={privilege}`. Clean format without empty
+     *   tokens (`Passwd=`, `Card=`) or speculative access control parameters (`Grp=1`, `TZ=...`).
      * - `user` emits legacy lowercase tokens: `Pin={pin}\tName={name}\tPri=0`.
      *
      * @param  array{0: string, 1: string}  $schema  Wire table and PIN key.
@@ -456,10 +456,10 @@ class AdmsDeviceCommand extends Model
         }
 
         if ($wireTable === 'USERINFO') {
-            // ZKTeco / eSSL MB20 Native Hardware Wire Format (empirically confirmed via DATA QUERY USERINFO):
-            // USER PIN={pin}\tName={name}\tPri={pri}\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000
+            // ZKTeco Push SDK / BioTime Standard Wire Format:
+            // C:{id}:DATA UPDATE USERINFO PIN={pin}\tName={name}\tPrivilege={privilege}
             return sprintf(
-                "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPri=%d\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000",
+                "C:%d:DATA UPDATE USERINFO PIN=%s\tName=%s\tPrivilege=%d",
                 $this->id,
                 $pin,
                 $name,
