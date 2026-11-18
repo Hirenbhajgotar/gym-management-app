@@ -187,6 +187,18 @@ docker-compose exec app php artisan app:seed-owner-data
 docker-compose exec app composer run dev
 ```
 
+> **PHP or Blade changes not showing up?** OPcache timestamp checks are disabled locally
+> for speed, so run this from the repo root after editing PHP/views:
+>
+> ```bash
+> ./scripts/opcache-reset.sh
+> ```
+>
+> Debugbar is off by default locally (`DEBUGBAR_ENABLED=false` in `.env`) to keep every
+> page and Livewire update fast. Set it to `true` temporarily when you need to debug.
+> Tests use `.env.testing` (loaded because `APP_ENV=testing`), so the `.env` value does
+> not apply there.
+
 ## Local Installation (Without Docker)
 
 ```bash

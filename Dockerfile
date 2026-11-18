@@ -33,6 +33,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
+# Local-dev OPcache settings (disabled timestamp checks across the Windows bind mount)
+COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/zz-opcache.ini
+
 # Copy composer files
 COPY composer.json composer.lock ./
 

@@ -3552,9 +3552,9 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/BiometricConsentController.php": {
-    "mtime": 1791714357.9852421,
-    "seen": 1791729272.796591,
-    "ast_hash": "e7099830be1528858e640b1a5598f329",
+    "mtime": 1794905019.326965,
+    "seen": 1794906208.3680048,
+    "ast_hash": "f9a83eab52cc1854269f80a8bf1116f8",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Controller.php": {
@@ -4260,8 +4260,8 @@
     "semantic_hash": ""
   },
   "app/Models/GymMember.php": {
-    "mtime": 1793611742.5427833,
-    "seen": 1793624257.6091855,
+    "mtime": 1794898151.7155764,
+    "seen": 1794906208.3683715,
     "ast_hash": "99ee9483a3a15c9869fb3a9222dea8e8",
     "semantic_hash": ""
   },
@@ -5208,9 +5208,9 @@
     "semantic_hash": ""
   },
   "app/Services/ErrorReportService.php": {
-    "mtime": 1793196416.0186357,
-    "seen": 1793198147.306628,
-    "ast_hash": "cef42231e60915eb050813dabe559200",
+    "mtime": 1794899929.6646087,
+    "seen": 1794906208.3689413,
+    "ast_hash": "10691a79540ed3a276f535c8e7df8932",
     "semantic_hash": ""
   },
   "app/Services/ExceptionStorageService.php": {
@@ -8364,9 +8364,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/BiometricConsentTest.php": {
-    "mtime": 1791633126.513952,
-    "seen": 1791641416.8845818,
-    "ast_hash": "4692ecaad7a7314ec44432ab834d6b6b",
+    "mtime": 1794905019.633312,
+    "seen": 1794906208.3713322,
+    "ast_hash": "7adfedbe15fcdab5a2646b6fc61effee",
     "semantic_hash": ""
   },
   "tests/Feature/BiometricDeprovisioningAndLeaseTest.php": {
@@ -15366,9 +15366,9 @@
     "semantic_hash": ""
   },
   "app/Services/Biometric/BiometricConsentUrlFactory.php": {
-    "mtime": 1791714585.760425,
-    "seen": 1791729272.7969885,
-    "ast_hash": "14ba38096a9e518af088e51b51230136",
+    "mtime": 1794900617.7160149,
+    "seen": 1794906208.3689241,
+    "ast_hash": "462221862e13427df184c31c49be930d",
     "semantic_hash": ""
   },
   "tests/Feature/Filament/BiometricConsentAuthorizationTest.php": {
@@ -15738,8 +15738,8 @@
     "semantic_hash": ""
   },
   "app/Console/Commands/ResetAdmsAuthLockoutCommand.php": {
-    "mtime": 1793264578.3194816,
-    "seen": 1793284536.9417646,
+    "mtime": 1794899027.5993462,
+    "seen": 1794906208.3664827,
     "ast_hash": "d4368fc87443d3114de3f796d0120284",
     "semantic_hash": ""
   },
@@ -16275,6 +16275,18 @@
     "mtime": 1794889415.9842398,
     "seen": 1794894734.3496227,
     "ast_hash": "c053af3011d1338c88e6644b6061fdff",
+    "semantic_hash": ""
+  },
+  "database/migrations/2026_11_17_000000_update_biometric_consents_active_unique_index.php": {
+    "mtime": 1794903793.0449345,
+    "seen": 1794906208.3702316,
+    "ast_hash": "9d679df62bcb1f1c10332935e5776df7",
+    "semantic_hash": ""
+  },
+  "resources/views/errors/410.blade.php": {
+    "mtime": 1794899897.0266707,
+    "seen": 1794906208.3705444,
+    "ast_hash": "68e6b867114ffe1bd91ccde901cd7e54",
     "semantic_hash": ""
   }
 }
