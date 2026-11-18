@@ -58,7 +58,7 @@ We enacted the following architectural decisions to ensure reliable display pers
 - CLI commands querying or modifying hardware (`biometrics:reboot-device`, `biometrics:query-user`) strictly validate integer device IDs and ensure passed `--device-id` and `--serial` arguments resolve to the same device without silent option overrides.
 
 ### 4. Telemetry Level Optimization & Structured Observability
-- Demoted idle polling logs in `AdmsController::getRequest()` from `Log::info()` to `Log::debug()`, eliminating tens of thousands of empty poll entries daily.
+- Idle polling in `AdmsController::getRequest()` is no longer logged at all. It was first demoted from `Log::info()` to `Log::debug()`, but the debug-level call still fired on every 3–10s poll (8,600–28,800 entries per device daily), so it was removed entirely in an amendment dated 2026-11-18.
 - Structured contextual logging was introduced across `cdata`, `getrequest`, `devicecmd`, `operlog`, and `handshake` (capturing client IP, byte counts, raw request bodies, parsed parameters, and device serials).
 - Fixed a property mismatch in `AdmsController::handleHandshake()` where `$device->device_serial_number` was queried instead of `$device->device_serial`.
 
@@ -68,7 +68,7 @@ We enacted the following architectural decisions to ensure reliable display pers
 
 - **POS-001**: **Guaranteed LCD Display Synchronization**: Operators can remotely trigger a warm restart via `biometrics:reboot-device` to reload SQLite records into foreground GUI RAM without physically visiting or power cycling the terminal.
 - **POS-002**: **Reboot Loop Elimination**: In-flight command checks guarantee that terminals dropping TCP connections before sending return ACKs cannot be trapped in infinite reboot cycles.
-- **POS-003**: **Clean Production Logging**: Shifting idle poll telemetry to `DEBUG` eliminates log noise while preserving full diagnostic data during active command delivery and acknowledgement.
+- **POS-003**: **Clean Production Logging**: Removing idle poll telemetry entirely eliminates log noise while preserving full diagnostic data during active command delivery and acknowledgement.
 - **POS-004**: **End-to-End Diagnostic Visibility**: Support for `DATA QUERY USERINFO` and structured payload logging allows instant verification of internal SQLite state vs. LCD display state.
 
 ### Negative

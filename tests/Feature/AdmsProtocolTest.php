@@ -30,6 +30,7 @@ use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use InvalidArgumentException;
@@ -292,12 +293,41 @@ class AdmsProtocolTest extends TestCase
         $this->assertSame(AdmsCommandStatusEnum::SENT, $command->fresh()?->status);
     }
 
+    public function test_adms_getrequest_does_not_log_the_outbound_command_payload(): void
+    {
+        AdmsDeviceCommand::factory()->userDelete((string) $this->member->id)->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+        ]);
+
+        Log::spy();
+        Log::shouldNotReceive('info')->withArgs(
+            fn (string $message): bool => $message === 'ADMS: Command sent to device'
+        );
+
+        $response = $this->get('/api/iclock/getrequest?SN=TEST-SN-001');
+
+        $response->assertOk();
+    }
+
     public function test_adms_getrequest_returns_ok_when_no_commands(): void
     {
         $response = $this->get('/api/iclock/getrequest?SN=TEST-SN-001');
 
         $response->assertOk();
         $this->assertEquals('OK', $response->getContent());
+    }
+
+    public function test_adms_getrequest_idle_poll_does_not_emit_a_debug_log(): void
+    {
+        Log::spy();
+        Log::shouldNotReceive('debug')->withArgs(
+            fn (string $message): bool => $message === 'ADMS: getrequest polled - no pending commands'
+        );
+
+        $response = $this->get('/api/iclock/getrequest?SN=TEST-SN-001');
+
+        $response->assertOk();
     }
 
     public function test_adms_getrequest_quarantines_an_unaddressable_pin_without_consuming_an_attempt(): void

@@ -118,13 +118,6 @@ class AdmsController extends Controller
         $command = AdmsDeviceCommand::leaseNext($device->id, $leaseDuration);
 
         if (! $command) {
-            Log::debug('ADMS: getrequest polled - no pending commands', [
-                'device_id' => $device->id,
-                'serial' => $device->device_serial,
-                'ip' => $request->ip(),
-                'query' => $request->query(),
-            ]);
-
             return $this->plainResponse('OK');
         }
 
@@ -145,16 +138,6 @@ class AdmsController extends Controller
 
             return $this->plainResponse('OK');
         }
-
-        Log::info('ADMS: Command sent to device', [
-            'device_id' => $device->id,
-            'serial' => $device->device_serial,
-            'command_id' => $command->id,
-            'command_type' => $command->command_type,
-            'user_table' => $command->user_table?->value,
-            'command_string' => $commandString,
-            'ip' => $request->ip(),
-        ]);
 
         return $this->plainResponse(rtrim($commandString) . "\r\n");
     }
