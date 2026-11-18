@@ -10,12 +10,12 @@ use App\Filament\Admin\Clusters\Reports\Pages\LeadReports;
 use App\Filament\Admin\Clusters\Reports\Pages\TrainerReports;
 use App\Models\Gym;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class ReportPdfChartDataTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     private User $user;
 

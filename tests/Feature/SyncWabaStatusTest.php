@@ -13,17 +13,17 @@ use App\Models\WhatsAppAccount;
 use App\Providers\MetaWhatsAppProvider;
 use App\Providers\WhatsAppProviderFactory;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\Expectation;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class SyncWabaStatusTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     #[Test]
     public function it_successfully_syncs_waba_status_and_triggers_phone_number_sync(): void

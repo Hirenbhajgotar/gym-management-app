@@ -7,15 +7,15 @@ namespace Tests\Feature\Filament\SuperAdmin;
 use App\Enums\DefaultRole;
 use App\Filament\SuperAdmin\Pages\Dashboard;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class SuperAdminDashboardTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected function setUp(): void
     {

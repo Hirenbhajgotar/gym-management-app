@@ -8,8 +8,8 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Services\AttendanceService;
 use App\Services\ChurnRiskService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -21,7 +21,7 @@ use Tests\TestCase;
  */
 class RosterArchiveExclusionTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

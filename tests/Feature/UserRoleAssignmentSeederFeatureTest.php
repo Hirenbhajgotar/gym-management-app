@@ -9,16 +9,16 @@ use App\Models\GymMember;
 use App\Models\Trainer;
 use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionClass;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class UserRoleAssignmentSeederFeatureTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     #[Test]
     public function it_can_be_called_via_artisan_command()

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 use Throwable;
 
@@ -19,7 +19,7 @@ use Throwable;
  */
 class DatabaseDiagnosticTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_refresh_database_creates_users_table(): void
     {

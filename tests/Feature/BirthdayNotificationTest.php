@@ -7,10 +7,10 @@ namespace Tests\Feature;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Notifications\BirthdayNotification;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use Mockery;
 use Mockery\Expectation;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -21,7 +21,7 @@ use Tests\TestCase;
  */
 class BirthdayNotificationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     private function createMemberWithGym(?Gym $gym = null): GymMember
     {

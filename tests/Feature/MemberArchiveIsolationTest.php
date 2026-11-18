@@ -18,12 +18,12 @@ use App\Models\MembershipPlan;
 use App\Services\MemberArchiveService;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use RuntimeException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -34,7 +34,7 @@ use Tests\TestCase;
  */
 class MemberArchiveIsolationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

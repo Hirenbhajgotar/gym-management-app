@@ -10,16 +10,16 @@ use App\Enums\WhatsAppProviderTypeEnum;
 use App\Jobs\ImportWhatsAppTemplatesJob;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\PendingCommand;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class ImportTenantWhatsAppTemplatesTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

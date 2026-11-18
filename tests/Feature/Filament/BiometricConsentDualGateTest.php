@@ -24,17 +24,17 @@ use App\Models\WhatsAppPhoneNumber;
 use App\Models\WhatsAppTemplate;
 use App\Services\NotificationChannelResolver;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BiometricConsentDualGateTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     private const HEADER_ACTION_FORM = 'mountedActionForm';
 

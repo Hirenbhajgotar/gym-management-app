@@ -7,13 +7,13 @@ namespace Tests\Feature;
 use App\Enums\AdmsUserTableEnum;
 use App\Models\AdmsDeviceCommand;
 use App\Models\BiometricDevice;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class AdmsProtocolSanitizerTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_name_delimiters_are_replaced_without_injecting_a_second_command(): void
     {

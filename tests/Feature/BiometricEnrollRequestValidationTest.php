@@ -8,9 +8,9 @@ use App\Enums\BiometricTypeEnum;
 use App\Http\Requests\BiometricEnrollRequest;
 use App\Models\Gym;
 use App\Models\GymMember;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -24,7 +24,7 @@ use Tests\TestCase;
  */
 class BiometricEnrollRequestValidationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_validated_coerces_the_biometric_type_for_both_call_shapes(): void
     {

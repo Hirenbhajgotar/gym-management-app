@@ -7,12 +7,12 @@ namespace Tests\Feature;
 use App\Enums\PaymentStatus;
 use App\Models\GymMember;
 use App\Services\QRAttendanceService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class QRAttendanceServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_find_member_by_id_with_integer_search_value(): void
     {

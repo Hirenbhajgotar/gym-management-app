@@ -9,13 +9,13 @@ use App\Models\Plan;
 use App\Models\User;
 use App\Services\RazorpayService;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery\Expectation;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class SubscriptionCheckoutTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     /**
      * @param  array<string, mixed>  $attributes

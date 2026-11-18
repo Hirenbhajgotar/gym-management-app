@@ -1422,7 +1422,6 @@
   "2332": ".withCasts",
   "2334": ".withExists",
   "2339": ".doesntExistOr",
-  "2343": ".withoutGlobalScopesExcept",
   "2345": "laravel-boost",
   "2349": "args",
   "2350": "command",

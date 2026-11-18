@@ -14,11 +14,11 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use Spatie\Activitylog\Models\Activity;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -32,7 +32,7 @@ use Tests\TestCase;
  */
 class BiometricErasureLifecycleRound4Test extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

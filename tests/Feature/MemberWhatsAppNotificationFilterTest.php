@@ -16,13 +16,13 @@ use App\Notifications\BirthdayNotification;
 use App\Notifications\WhatsAppChannel;
 use App\Services\GymContextResolver;
 use App\Services\NotificationChannelResolver;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class MemberWhatsAppNotificationFilterTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     private function createConfiguredWhatsAppAccount(Gym $gym): WhatsAppAccount
     {

@@ -14,20 +14,20 @@ use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppTemplate;
 use Illuminate\Bus\Batch;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\PendingCommand;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 use function assert;
 
 class ProcessScheduledBroadcastsCommandTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     private Gym $gym;
 

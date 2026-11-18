@@ -10,8 +10,8 @@ use App\Enums\BiometricDeviceStatusEnum;
 use App\Models\AdmsDeviceCommand;
 use App\Models\BiometricDevice;
 use App\Models\Gym;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -21,7 +21,7 @@ use Tests\TestCase;
  */
 class AdmsDeviceCommandRetentionAndLeaseTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

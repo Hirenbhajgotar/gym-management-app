@@ -11,18 +11,18 @@ use App\Models\WhatsAppTemplate;
 use App\Services\Meta\MetaApiClient;
 use App\Services\Meta\MetaContext;
 use App\Services\Meta\MetaTemplateService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\Expectation;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class MetaTemplateServiceTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     #[Test]
     public function invalidate_cache_clears_the_gym_waba_template_key(): void

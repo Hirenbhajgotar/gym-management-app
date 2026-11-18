@@ -18,13 +18,13 @@ use App\Models\BiometricTemplate;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BiometricRound2RemediationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected User $user;
 

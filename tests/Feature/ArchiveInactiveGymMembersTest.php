@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use Illuminate\Support\Facades\Date;
 use App\Actions\Member\ArchiveInactiveMembersAction;
 use App\Biometrics\Services\MembershipGuard;
 use App\Console\Commands\ArchiveInactiveGymMembersCommand;
@@ -14,13 +13,14 @@ use App\Models\GymMember;
 use App\Services\Biometric\BiometricConsentEligibility;
 use App\Services\MemberArchiveService;
 use Illuminate\Console\Command;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Log;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class ArchiveInactiveGymMembersTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

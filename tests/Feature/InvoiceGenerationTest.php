@@ -11,13 +11,13 @@ use App\Models\GymMember;
 use App\Models\MemberPayment;
 use App\Models\MembershipPlan;
 use App\Services\InvoiceService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class InvoiceGenerationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_invoice_service_generates_pdf_for_member_payment()
     {

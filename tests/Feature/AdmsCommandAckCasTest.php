@@ -12,12 +12,12 @@ use App\Models\AdmsDeviceCommand;
 use App\Models\BiometricDevice;
 use App\Models\Gym;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class AdmsCommandAckCasTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected User $user;
 

@@ -6,9 +6,9 @@ namespace Tests\Feature\Permissions;
 
 use App\Models\Permission;
 use App\Services\RolesAndPermissionsService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class SyncPermissionsCommandTest extends TestCase
@@ -19,7 +19,7 @@ class SyncPermissionsCommandTest extends TestCase
         $this->mockConsoleOutput = false;
     }
 
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     #[Test]
     public function it_discovers_permissions_via_dry_run(): void

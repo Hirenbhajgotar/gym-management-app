@@ -18,9 +18,9 @@ use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\Gym;
 use App\Models\GymMember;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -30,7 +30,7 @@ use Tests\TestCase;
  */
 class BiometricDeProvisionOutcomeTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

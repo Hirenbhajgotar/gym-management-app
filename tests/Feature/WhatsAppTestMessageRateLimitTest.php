@@ -16,10 +16,10 @@ use App\Models\WhatsAppPhoneNumber;
 use App\Services\TwilioWhatsAppService;
 use Exception;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Livewire;
 use Mockery;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -32,7 +32,7 @@ use Tests\TestCase;
  */
 class WhatsAppTestMessageRateLimitTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected User $user;
 

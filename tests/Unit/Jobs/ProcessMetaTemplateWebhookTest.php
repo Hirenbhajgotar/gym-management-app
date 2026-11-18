@@ -9,14 +9,14 @@ use App\Jobs\ProcessMetaTemplateWebhook;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppTemplate;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Sleep;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class ProcessMetaTemplateWebhookTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

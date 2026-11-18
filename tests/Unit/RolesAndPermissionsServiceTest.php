@@ -12,14 +12,14 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\RolesAndPermissionsService;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class RolesAndPermissionsServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected RolesAndPermissionsService $service;
 

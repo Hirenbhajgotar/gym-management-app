@@ -10,14 +10,14 @@ use App\Models\Gym;
 use App\Models\User;
 use App\Models\WhatsAppMessageCredit;
 use App\Services\WhatsAppBillingService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Queue;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class LowWhatsAppCreditNotificationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_check_low_credits_queues_job_when_balance_is_low()
     {

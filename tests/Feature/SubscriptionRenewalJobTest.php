@@ -9,13 +9,13 @@ use App\Models\Subscription;
 use App\Models\User;
 use App\Services\RazorpayService;
 use App\Services\SubscriptionService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class SubscriptionRenewalJobTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_subscription_renewal_job_can_be_dispatched()
     {

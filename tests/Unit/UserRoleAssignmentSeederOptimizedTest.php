@@ -10,17 +10,17 @@ use App\Models\User;
 use Database\Seeders\UserRoleAssignmentSeeder;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionClass;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class UserRoleAssignmentSeederOptimizedTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected UserRoleAssignmentSeeder $seeder;
 

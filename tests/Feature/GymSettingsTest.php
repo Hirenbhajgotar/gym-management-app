@@ -9,13 +9,13 @@ use App\Models\Gym;
 use App\Models\GymSetting;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class GymSettingsTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function when_whatsapp_notifications_is_enabled_all_specific_whatsapp_notification_types_are_enabled_based_on_database()
     {

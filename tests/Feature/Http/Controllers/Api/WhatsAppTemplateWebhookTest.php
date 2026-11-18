@@ -7,15 +7,15 @@ namespace Tests\Feature\Http\Controllers\Api;
 use App\Jobs\ProcessMetaTemplateWebhook;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class WhatsAppTemplateWebhookTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

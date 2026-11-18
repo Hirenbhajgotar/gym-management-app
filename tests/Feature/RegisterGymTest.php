@@ -12,15 +12,15 @@ use App\Models\Gym;
 use App\Models\State;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use ReflectionClass;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class RegisterGymTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     /** @var User */
     protected $superAdmin;

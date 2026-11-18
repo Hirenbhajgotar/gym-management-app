@@ -13,7 +13,6 @@ use App\Models\RequestContact;
 use App\Notifications\RequestDemoNotification;
 use App\Rules\ValidEmailDomain;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
@@ -26,6 +25,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\Attributes\UsesClass;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 #[CoversClass(RequestDemo::class)]
@@ -37,7 +37,7 @@ use Tests\TestCase;
 #[UsesClass(Number::class)]
 final class RequestDemoTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected function setUp(): void
     {

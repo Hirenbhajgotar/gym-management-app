@@ -7,14 +7,14 @@ namespace Tests\Feature\Permissions;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Models\GymMember;
 use App\Services\RolesAndPermissionsService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionClass;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class FilamentPermissionDiscoveryTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected RolesAndPermissionsService $service;
 

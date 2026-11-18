@@ -12,7 +12,7 @@ use App\Models\BiometricDevice;
 use App\Models\BiometricEventReceipt;
 use App\Models\DoorEvent;
 use App\Models\Gym;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -21,7 +21,7 @@ use Tests\TestCase;
  */
 class BiometricAuditRetentionMigrationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_deleting_a_device_retains_access_events_and_receipts(): void
     {

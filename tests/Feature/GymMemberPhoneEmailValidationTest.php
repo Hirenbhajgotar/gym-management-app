@@ -9,13 +9,13 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class GymMemberPhoneEmailValidationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_email_is_optional_on_create(): void
     {

@@ -12,18 +12,18 @@ use App\Models\GymSetting;
 use App\Models\Lead;
 use App\Models\User;
 use App\Notifications\PendingLeadNotification;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\PendingCommand;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 use function assert;
 
 class PendingLeadNotificationCommandTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected function setUp(): void
     {

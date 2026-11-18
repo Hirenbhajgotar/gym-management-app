@@ -25,13 +25,13 @@ use App\Models\BiometricTemplate;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class CheckInServiceProcessCheckInTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected User $user;
 

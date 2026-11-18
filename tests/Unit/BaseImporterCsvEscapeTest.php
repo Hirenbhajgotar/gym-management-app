@@ -7,14 +7,14 @@ namespace Tests\Unit;
 use App\Imports\GymMemberImport;
 use App\Models\Gym;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionMethod;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BaseImporterCsvEscapeTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected function setUp(): void
     {

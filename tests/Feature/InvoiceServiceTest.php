@@ -19,7 +19,6 @@ use App\Models\Role;
 use App\Models\State;
 use App\Models\User;
 use App\Services\InvoiceService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +30,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use Spatie\Permission\PermissionRegistrar;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 use Throwable;
 
@@ -46,7 +46,7 @@ use Throwable;
 #[UsesClass(GenerateInvoiceJob::class)]
 final class InvoiceServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected function setUp(): void
     {

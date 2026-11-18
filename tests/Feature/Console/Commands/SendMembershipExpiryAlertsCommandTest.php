@@ -8,7 +8,6 @@ use App\Console\Commands\SendMembershipExpiryAlerts;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Notifications\MembershipExpiryNotification;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -17,6 +16,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\UsesClass;
 use RuntimeException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 use function assert;
@@ -27,7 +27,7 @@ use function assert;
 #[UsesClass(MembershipExpiryNotification::class)]
 final class SendMembershipExpiryAlertsCommandTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected function setUp(): void
     {

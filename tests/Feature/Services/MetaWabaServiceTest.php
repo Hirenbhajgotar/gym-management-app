@@ -15,7 +15,6 @@ use App\Models\WhatsAppPhoneNumber;
 use App\Services\Meta\MetaApiClient;
 use App\Services\Meta\MetaContext;
 use App\Services\Meta\MetaWabaService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Mockery;
@@ -23,12 +22,13 @@ use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\Expectation;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class MetaWabaServiceTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     #[Test]
     public function it_connects_manual_waba_successfully_and_saves_phone_number_without_phone_number_sid(): void

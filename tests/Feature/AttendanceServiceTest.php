@@ -11,8 +11,8 @@ use App\Models\Trainer;
 use App\Models\User;
 use App\Services\AttendanceService;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use ReflectionClass;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -32,7 +32,7 @@ use Tests\TestCase;
  */
 class AttendanceServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

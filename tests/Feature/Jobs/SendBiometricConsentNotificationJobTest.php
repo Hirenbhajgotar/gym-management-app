@@ -28,7 +28,6 @@ use App\Providers\WhatsAppProviderFactory;
 use App\Services\Biometric\BiometricConsentTemplateResolver;
 use App\Services\NotificationChannelResolver;
 use App\Services\WhatsAppVariableResolver;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -39,11 +38,12 @@ use Mockery;
 use Mockery\Expectation;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class SendBiometricConsentNotificationJobTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     /**
      * Twilio resolves a content template on its name alone, so the job must hand

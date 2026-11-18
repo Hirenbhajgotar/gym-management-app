@@ -4,29 +4,29 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Console\Commands\BackfillAdmsCommKeyHashesCommand;
-use Spatie\Activitylog\ActivityLogger;
-use Spatie\Activitylog\PendingActivityLog;
 use App\Biometrics\Services\CommKeyReveal;
+use App\Console\Commands\BackfillAdmsCommKeyHashesCommand;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Enums\BiometricProvidersEnum;
 use App\Enums\DefaultRole;
 use App\Models\BiometricDevice;
 use App\Models\Gym;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Mockery;
 use ReflectionMethod;
 use RuntimeException;
+use Spatie\Activitylog\ActivityLogger;
+use Spatie\Activitylog\PendingActivityLog;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BackfillAdmsCommKeyHashesCommandTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

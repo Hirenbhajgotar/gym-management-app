@@ -7,16 +7,16 @@ namespace Tests\Unit;
 use App\Imports\BaseExcelImport;
 use App\Imports\ReceptionistsImport;
 use App\Models\Gym;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 // use PHPUnit\Framework\TestCase;
 
 class ReceptionistImportTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     private $tenant;
 

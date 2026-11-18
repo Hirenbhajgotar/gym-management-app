@@ -13,10 +13,10 @@ use App\Models\WhatsAppTemplate;
 use App\Services\Twilio\TwilioContext;
 use App\Services\Twilio\TwilioMessagingService;
 use App\Services\WhatsApp\WhatsAppCreditService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Api\V2010\Account\MessageList;
@@ -24,7 +24,7 @@ use Twilio\Rest\Client;
 
 class TwilioMessagingServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

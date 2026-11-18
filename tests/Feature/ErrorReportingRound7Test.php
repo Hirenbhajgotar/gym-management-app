@@ -15,18 +15,18 @@ use App\Models\ErrorReport;
 use App\Services\ErrorReportService;
 use App\Services\ExceptionStorageService;
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use PDOException;
 use ReflectionMethod;
 use RuntimeException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class ErrorReportingRound7Test extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_global_reporter_handles_a_throwing_route_without_a_class_error(): void
     {

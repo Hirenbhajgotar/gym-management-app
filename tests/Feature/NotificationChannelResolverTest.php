@@ -14,7 +14,7 @@ use App\Models\WhatsAppPhoneNumber;
 use App\Notifications\WhatsAppChannel;
 use App\Services\NotificationChannelResolver;
 use Illuminate\Database\LazyLoadingViolationException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -25,7 +25,7 @@ use Tests\TestCase;
  */
 class NotificationChannelResolverTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     private function createConfiguredWhatsAppAccount(Gym $gym): WhatsAppAccount
     {

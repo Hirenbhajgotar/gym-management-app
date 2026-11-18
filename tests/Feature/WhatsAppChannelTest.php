@@ -6,12 +6,12 @@ namespace Tests\Feature;
 
 use App\Notifications\WhatsAppChannel;
 use App\Services\GymContextResolver;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Mockery\MockInterface;
 use stdClass;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -24,7 +24,7 @@ use Tests\TestCase;
  */
 class WhatsAppChannelTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected function setUp(): void
     {

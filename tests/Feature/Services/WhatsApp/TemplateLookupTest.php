@@ -10,8 +10,8 @@ use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\TemplateLookup;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -25,7 +25,7 @@ use Tests\TestCase;
  */
 class TemplateLookupTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     #[Test]
     public function it_refuses_a_system_default_template_for_a_gym_that_has_none_of_its_own(): void

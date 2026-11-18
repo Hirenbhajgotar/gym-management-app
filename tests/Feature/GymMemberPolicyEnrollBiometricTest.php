@@ -9,14 +9,14 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\User;
 use App\Policies\GymMemberPolicy;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class GymMemberPolicyEnrollBiometricTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gymA;
 

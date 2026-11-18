@@ -10,9 +10,9 @@ use App\Models\WhatsAppAccount;
 use App\Providers\MetaWhatsAppProvider;
 use App\Providers\TwilioWhatsAppProvider;
 use App\Providers\WhatsAppProviderFactory;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -22,7 +22,7 @@ use Tests\TestCase;
  */
 class WhatsAppProviderFactoryTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected function setUp(): void
     {

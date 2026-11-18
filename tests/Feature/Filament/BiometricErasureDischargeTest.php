@@ -16,12 +16,12 @@ use App\Models\GymMember;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -34,7 +34,7 @@ use Tests\TestCase;
  */
 class BiometricErasureDischargeTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

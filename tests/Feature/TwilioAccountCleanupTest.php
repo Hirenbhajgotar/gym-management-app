@@ -10,16 +10,16 @@ use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppPhoneNumber;
 use App\Services\TwilioAccountManager;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 use Twilio\Exceptions\RestException;
 use Twilio\Rest\Client;
 
 class TwilioAccountCleanupTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

@@ -18,13 +18,13 @@ use App\Providers\WhatsAppProviderFactory;
 use App\Services\Biometric\BiometricConsentTemplateResolver;
 use App\Services\NotificationChannelResolver;
 use App\Services\WhatsApp\TemplateLookup;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class NotificationChannelResolverDualGateTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

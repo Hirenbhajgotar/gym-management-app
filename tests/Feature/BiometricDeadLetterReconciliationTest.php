@@ -15,13 +15,13 @@ use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\Gym;
 use App\Models\GymMember;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BiometricDeadLetterReconciliationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

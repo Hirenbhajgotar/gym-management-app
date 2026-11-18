@@ -12,13 +12,13 @@ use App\Models\User;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\BroadcastRateLimiter;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class WhatsAppBroadcastRateLimiterTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected User $user;
 

@@ -11,13 +11,13 @@ use App\Models\MembershipPlan;
 use App\Models\Permission;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class MembershipPlanResourceTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     /**
      * BaseResource::canAccess() requires the "view_any_{table}" permission

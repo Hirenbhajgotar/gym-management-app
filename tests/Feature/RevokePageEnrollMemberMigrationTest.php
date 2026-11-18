@@ -6,14 +6,14 @@ namespace Tests\Feature;
 
 use App\Enums\DefaultRole;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class RevokePageEnrollMemberMigrationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_revoke_page_enroll_member_migration_up_revokes_and_deletes_permission(): void
     {
