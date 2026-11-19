@@ -112,7 +112,7 @@ class AdmsDeviceCommand extends Model
             ->whereIn('status', [AdmsCommandStatusEnum::ACKNOWLEDGED, AdmsCommandStatusEnum::FAILED, AdmsCommandStatusEnum::CANCELLED])
             // Preserved evidence is retained for as long as the obligation it proves is
             // outstanding. It is not an in-flight row and must never age out.
-            ->whereNull('preserved_evidence_at')
+            ->withoutPreservedEvidence()
             ->where(function (Builder $query) use ($cutoff) {
                 $query->where('acknowledged_at', '<=', $cutoff)
                     ->orWhere(function (Builder $sub) use ($cutoff) {
@@ -271,12 +271,52 @@ class AdmsDeviceCommand extends Model
     }
 
     /**
+     * Rows that are not preserved evidence — the complement of
+     * {@see self::preservedEvidence()}.
+     *
+     * Leasing, reclaim and retention all exclude durable evidence through this scope,
+     * so the rule lives in one place rather than a retyped `whereNull` in each scan.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function withoutPreservedEvidence(Builder $query): void
+    {
+        $query->whereNull('preserved_evidence_at');
+    }
+
+    /**
      * @param  Builder<self>  $query
      */
     #[Scope]
     protected function forDevice(Builder $query, int $deviceId): void
     {
         $query->where('device_id', $deviceId);
+    }
+
+    /**
+     * SENT rows whose lease is no longer live: never stamped, stamped before the
+     * threshold, or explicitly expired.
+     *
+     * This is the single definition of a stale lease. Both the lease scan in
+     * {@see self::leaseNext()} and the reclaim console command apply it, so the
+     * two cannot drift on which rows are recoverable.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function staleLease(Builder $query, int $leaseSeconds): void
+    {
+        $staleThreshold = now()->subSeconds($leaseSeconds);
+
+        $query->where(function (Builder $query) use ($staleThreshold): void {
+            $query->whereNull('leased_at')
+                ->orWhere('leased_at', '<', $staleThreshold)
+                ->orWhere(function (Builder $sub): void {
+                    $sub->whereNotNull('expires_at')
+                        ->where('expires_at', '<', now());
+                });
+        });
     }
 
     /**
@@ -525,25 +565,17 @@ class AdmsDeviceCommand extends Model
         $maxAttempts = AdmsCommandKey::maxAttempts();
 
         return DB::transaction(function () use ($deviceId, $duration, $maxAttempts) {
-            $staleThreshold = now()->subSeconds($duration);
-
             /** @var Collection<int, self> $candidates */
             $candidates = self::query()
                 ->where('device_id', $deviceId)
-                ->where(function (Builder $query) use ($staleThreshold, $maxAttempts) {
+                ->withoutPreservedEvidence()
+                ->where(function (Builder $query) use ($duration, $maxAttempts) {
                     $query->where(function (Builder $pendingQuery) use ($maxAttempts) {
                         $pendingQuery->where('status', AdmsCommandStatusEnum::PENDING)
                             ->where('attempt_count', '<', $maxAttempts);
-                    })->orWhere(function (Builder $sub) use ($staleThreshold, $maxAttempts) {
+                    })->orWhere(function (Builder $sub) use ($duration, $maxAttempts) {
                         $sub->where('status', AdmsCommandStatusEnum::SENT)
-                            ->where(function (Builder $nested) use ($staleThreshold) {
-                                $nested->whereNull('leased_at')
-                                    ->orWhere('leased_at', '<', $staleThreshold)
-                                    ->orWhere(function (Builder $exp) {
-                                        $exp->whereNotNull('expires_at')
-                                            ->where('expires_at', '<', now());
-                                    });
-                            })
+                            ->staleLease($duration)
                             ->where('attempt_count', '<', $maxAttempts);
                     });
                 })
