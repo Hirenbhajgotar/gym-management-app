@@ -6,9 +6,9 @@ namespace Tests\Unit\Enums;
 
 use App\Enums\WhatsAppBroadcastStatusEnum;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
-final class WhatsAppBroadcastStatusEnumTest extends TestCase
+final class WhatsAppBroadcastStatusEnumTest extends LightweightTestCase
 {
     #[Test]
     public function it_computes_completed_when_all_succeed(): void

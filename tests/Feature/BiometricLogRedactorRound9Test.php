@@ -8,9 +8,9 @@ use App\Biometrics\Services\BiometricLogRedactor;
 use App\Services\ErrorReporting\RequestOriginResolver;
 use Illuminate\Http\Request;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
-class BiometricLogRedactorRound9Test extends TestCase
+class BiometricLogRedactorRound9Test extends LightweightTestCase
 {
     #[DataProvider('structuralJsonProvider')]
     public function test_json_documents_with_only_a_sensitive_key_are_redacted(string $input, string $expected): void

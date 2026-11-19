@@ -7,10 +7,10 @@ namespace Tests\Unit;
 use App\Helpers\Number;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
 #[CoversClass(Number::class)]
-final class NumberHelperTest extends TestCase
+final class NumberHelperTest extends LightweightTestCase
 {
     #[Test]
     public function it_formats_indian_numbers_with_lakh_crore_grouping(): void

@@ -35,11 +35,13 @@ use Illuminate\Testing\TestResponse;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Concerns\ReusesMigratedTestDatabase;
+use Tests\Concerns\SkipsFilamentBoot;
 use Tests\TestCase;
 
 class AdmsProtocolTest extends TestCase
 {
     use ReusesMigratedTestDatabase;
+    use SkipsFilamentBoot;
 
     /** Secret every webhook-capable device in this suite is provisioned with. */
     private const WEBHOOK_SECRET = 'test-webhook-secret';
@@ -54,6 +56,9 @@ class AdmsProtocolTest extends TestCase
 
     protected function setUp(): void
     {
+        // Must precede parent::setUp(): that is where the application is created.
+        $this->skipFilamentBoot();
+
         parent::setUp();
 
         config(['biometrics.adms.require_comm_key' => false]);
@@ -86,6 +91,13 @@ class AdmsProtocolTest extends TestCase
             'ip_address' => '127.0.0.1',
             'consented_at' => now(),
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        $this->restoreFilamentBoot();
     }
 
     public function test_adms_cdata_processes_attlog_check_in(): void
@@ -845,15 +857,17 @@ XML;
         return $uris;
     }
 
-    #[DataProvider('cdataUriProvider')]
-    public function test_adms_handshake_is_served_on_every_cdata_surface_and_alias(string $uri): void
+    public function test_adms_handshake_is_served_on_every_cdata_surface_and_alias(): void
     {
-        $response = $this->get($uri . '?SN=TEST-SN-001');
+        // One test, one application boot: the four surfaces are independent requests.
+        foreach (self::cdataUriProvider() as [$uri]) {
+            $response = $this->get($uri . '?SN=TEST-SN-001');
 
-        $response->assertOk();
-        $this->assertStringStartsWith('text/plain', (string) $response->headers->get('Content-Type'));
-        $this->assertStringContainsString('charset=utf-8', (string) $response->headers->get('Content-Type'));
-        $this->assertSame('OK', $response->getContent());
+            $response->assertOk();
+            $this->assertStringStartsWith('text/plain', (string) $response->headers->get('Content-Type'));
+            $this->assertStringContainsString('charset=utf-8', (string) $response->headers->get('Content-Type'));
+            $this->assertSame('OK', $response->getContent());
+        }
 
         $this->device->refresh();
         $this->assertNotNull($this->device->last_heartbeat_at);
@@ -886,50 +900,52 @@ XML;
         }
     }
 
-    #[DataProvider('getRequestUriProvider')]
-    public function test_adms_getrequest_returns_the_pending_command_on_every_surface_and_alias(string $uri): void
+    public function test_adms_getrequest_returns_the_pending_command_on_every_surface_and_alias(): void
     {
-        $command = AdmsDeviceCommand::factory()->userDelete((string) $this->member->id)->create([
-            'gym_id' => $this->gym->id,
-            'device_id' => $this->device->id,
-        ]);
+        foreach (self::getRequestUriProvider() as [$uri]) {
+            $command = AdmsDeviceCommand::factory()->userDelete((string) $this->member->id)->create([
+                'gym_id' => $this->gym->id,
+                'device_id' => $this->device->id,
+            ]);
 
-        $response = $this->get($uri . '?SN=TEST-SN-001');
+            $response = $this->get($uri . '?SN=TEST-SN-001');
 
-        $response->assertOk();
-        $content = (string) $response->getContent();
-        $this->assertStringStartsWith('C:' . $command->id . ':', $content);
-        $this->assertStringContainsString('DATA DELETE USERINFO', $content);
-        $this->assertStringContainsString("PIN={$this->member->id}", $content);
-        $this->assertSame(AdmsCommandStatusEnum::SENT, $command->fresh()?->status);
+            $response->assertOk();
+            $content = (string) $response->getContent();
+            $this->assertStringStartsWith('C:' . $command->id . ':', $content);
+            $this->assertStringContainsString('DATA DELETE USERINFO', $content);
+            $this->assertStringContainsString("PIN={$this->member->id}", $content);
+            $this->assertSame(AdmsCommandStatusEnum::SENT, $command->fresh()?->status);
+        }
     }
 
-    #[DataProvider('deviceCmdUriProvider')]
-    public function test_adms_devicecmd_acknowledges_on_every_surface_and_alias(string $uri): void
+    public function test_adms_devicecmd_acknowledges_on_every_surface_and_alias(): void
     {
-        $command = AdmsDeviceCommand::factory()->sent()->create([
-            'gym_id' => $this->gym->id,
-            'device_id' => $this->device->id,
-        ]);
+        foreach (self::deviceCmdUriProvider() as [$uri]) {
+            $command = AdmsDeviceCommand::factory()->sent()->create([
+                'gym_id' => $this->gym->id,
+                'device_id' => $this->device->id,
+            ]);
 
-        $response = $this->call(
-            'POST',
-            $uri . '?SN=TEST-SN-001',
-            [],
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'],
-            "ID={$command->id}&Return=0"
-        );
+            $response = $this->call(
+                'POST',
+                $uri . '?SN=TEST-SN-001',
+                [],
+                [],
+                [],
+                ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'],
+                "ID={$command->id}&Return=0"
+            );
 
-        $response->assertOk();
-        $this->assertSame('OK', $response->getContent());
-        $this->assertDatabaseHas('adms_device_commands', [
-            'id' => $command->id,
-            'status' => 'acknowledged',
-            'device_return_code' => '0',
-        ]);
-        $this->assertSame(AdmsCommandStatusEnum::ACKNOWLEDGED, $command->fresh()?->status);
+            $response->assertOk();
+            $this->assertSame('OK', $response->getContent());
+            $this->assertDatabaseHas('adms_device_commands', [
+                'id' => $command->id,
+                'status' => 'acknowledged',
+                'device_return_code' => '0',
+            ]);
+            $this->assertSame(AdmsCommandStatusEnum::ACKNOWLEDGED, $command->fresh()?->status);
+        }
     }
 
     #[DataProvider('aspxCdataUriProvider')]
@@ -1014,10 +1030,11 @@ XML;
         ];
     }
 
-    #[DataProvider('unsupportedAliasMethodProvider')]
-    public function test_aspx_aliases_reject_methods_their_canonical_twins_reject(string $method, string $uri): void
+    public function test_aspx_aliases_reject_methods_their_canonical_twins_reject(): void
     {
-        $this->call($method, $uri . '?SN=TEST-SN-001')->assertStatus(405);
+        foreach (self::unsupportedAliasMethodProvider() as [$method, $uri]) {
+            $this->call($method, $uri . '?SN=TEST-SN-001')->assertStatus(405);
+        }
     }
 
     public function test_every_iclock_route_has_an_aspx_twin_with_the_same_contract(): void

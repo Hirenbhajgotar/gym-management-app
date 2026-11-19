@@ -6,9 +6,9 @@ namespace Tests\Unit;
 
 use App\Models\WhatsAppPhoneNumber;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
-class WhatsAppPhoneNumberTest extends TestCase
+class WhatsAppPhoneNumberTest extends LightweightTestCase
 {
     #[Test]
     public function it_strips_spaces_from_international_number(): void

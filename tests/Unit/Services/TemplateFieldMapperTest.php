@@ -10,9 +10,9 @@ use App\Enums\WhatsAppTemplateStatusEnum;
 use App\Services\Meta\MetaTemplateService;
 use App\Services\WhatsApp\TemplateFieldMapper;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
-class TemplateFieldMapperTest extends TestCase
+class TemplateFieldMapperTest extends LightweightTestCase
 {
     private function mapper(): TemplateFieldMapper
     {

@@ -12,10 +12,10 @@ use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Psr\Http\Message\RequestInterface;
 use RuntimeException;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 use Twilio\Exceptions\RestException;
 
-class WhatsAppFailureClassifierTest extends TestCase
+class WhatsAppFailureClassifierTest extends LightweightTestCase
 {
     protected function tearDown(): void
     {

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Biometrics\Services\BiometricLogRedactor;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
-class BiometricLogRedactorRound7Test extends TestCase
+class BiometricLogRedactorRound7Test extends LightweightTestCase
 {
     public function test_redact_text_handles_real_multiline_dump_output(): void
     {
