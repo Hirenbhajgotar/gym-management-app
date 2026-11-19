@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Biometrics\ValueObjects\AdmsCommandKey;
+use App\Biometrics\ValueObjects\DeliveryLease;
 use App\Casts\AdmsUserTableCast;
 use App\Enums\AdmsCommandStatusEnum;
 use App\Enums\AdmsUserTableEnum;
@@ -613,6 +614,45 @@ class AdmsDeviceCommand extends Model
 
             return $command;
         });
+    }
+
+    /**
+     * Lease the next deliverable command and hand back its ready wire in one transition.
+     *
+     * This is the single seam of the poll path. PIN filtering, stale selection,
+     * quarantine of unusable PINs, compare-and-set and high-water marking live in
+     * {@see self::leaseNext()}; this method adds serialisation, CRLF framing and
+     * the empty-wire safety release. The lease transaction has committed before
+     * the {@see DeliveryLease} is returned, so the adapter never holds a row lock
+     * while the terminal is being addressed. `null` means the terminal gets OK.
+     */
+    public static function leaseNextForDelivery(int $deviceId, ?int $leaseSeconds = null): ?DeliveryLease
+    {
+        $command = self::leaseNext($deviceId, $leaseSeconds);
+
+        if ($command === null) {
+            return null;
+        }
+
+        $wire = $command->toAdmsCommandString();
+
+        if ($wire === '') {
+            // The lease predicate and the serializer must agree on what is deliverable.
+            // If they ever diverge, returning the row to the queue is the only safe move:
+            // sending an empty body would look like "no command" while having already
+            // consumed one of the command's few hardware deliveries.
+            $command->releaseUnusableLease();
+
+            Log::warning('ADMS: leased a command that cannot be expressed; returned it to the queue', [
+                'command_id' => $command->id,
+                'device_id' => $deviceId,
+                'command_type' => $command->command_type,
+            ]);
+
+            return null;
+        }
+
+        return DeliveryLease::for($command, rtrim($wire) . "\r\n");
     }
 
     /**

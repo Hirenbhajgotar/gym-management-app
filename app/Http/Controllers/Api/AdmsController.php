@@ -112,34 +112,18 @@ class AdmsController extends Controller
         $device->update(['last_heartbeat_at' => now()]);
         BiometricDevice::clearMissCounter($device->id);
 
-        // Dequeue the oldest pending command for this device atomically
+        // One call to the ledger owns the whole transition: select, quarantine an
+        // unusable PIN, compare-and-set, high-water mark and serialize the wire. The
+        // lease transaction has committed by the time the lease is returned, so no
+        // row lock is held while the terminal is being addressed.
         $leaseDuration = config()->integer('biometrics.adms.command_lease_seconds', 600);
-        /** @var AdmsDeviceCommand|null $command */
-        $command = AdmsDeviceCommand::leaseNext($device->id, $leaseDuration);
+        $lease = AdmsDeviceCommand::leaseNextForDelivery($device->id, $leaseDuration);
 
-        if (! $command) {
+        if ($lease === null) {
             return $this->plainResponse('OK');
         }
 
-        $commandString = $command->toAdmsCommandString();
-
-        if ($commandString === '') {
-            // The lease and the serializer must agree on what is deliverable. If they
-            // ever diverge, returning the row to the queue is the only safe move:
-            // sending an empty body would look like "no command" while having already
-            // consumed one of the command's few hardware deliveries.
-            $command->releaseUnusableLease();
-
-            Log::warning('ADMS: leased a command that cannot be expressed; returned it to the queue', [
-                'command_id' => $command->id,
-                'device_id' => $device->id,
-                'command_type' => $command->command_type,
-            ]);
-
-            return $this->plainResponse('OK');
-        }
-
-        return $this->plainResponse(rtrim($commandString) . "\r\n");
+        return $this->plainResponse($lease->wire);
     }
 
     /**
