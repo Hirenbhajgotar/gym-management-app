@@ -7,14 +7,14 @@ namespace Tests\Feature\Permissions;
 use App\Models\Gym;
 use App\Models\Permission;
 use App\Services\RolesAndPermissionsService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class RolesAndPermissionsSeederTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected RolesAndPermissionsService $service;
 

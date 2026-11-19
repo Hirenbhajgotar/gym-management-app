@@ -15,18 +15,18 @@ use App\Models\User;
 use App\Models\WhatsAppAccount;
 use App\Providers\MetaWhatsAppProvider;
 use Filament\Notifications\Notification;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\Expectation;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class RegisterWabaPhoneActionTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected function setUp(): void
     {

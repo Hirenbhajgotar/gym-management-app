@@ -7,8 +7,8 @@ namespace Tests\Feature;
 use App\Models\Gym;
 use App\Models\GymSetting;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -23,7 +23,7 @@ use Tests\TestCase;
  */
 class BackfillBiometricConsentNotificationSettingMigrationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     private const SETTING_KEY = 'biometric_consent_notifications';
 

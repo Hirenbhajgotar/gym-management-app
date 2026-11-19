@@ -7,13 +7,13 @@ namespace Tests\Feature;
 use App\Enums\BiometricDeviceStatusEnum;
 use App\Models\BiometricDevice;
 use App\Models\Gym;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BiometricCommKeyVerifierUpgradeTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

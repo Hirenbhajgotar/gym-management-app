@@ -11,12 +11,12 @@ use App\Filament\Admin\Clusters\Reports\Pages\RevenueReports;
 use App\Models\Gym;
 use App\Models\ShareableReportLink;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class ShareableReportLinkTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected User $user;
 

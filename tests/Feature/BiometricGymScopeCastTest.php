@@ -8,7 +8,7 @@ use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\Gym;
 use App\Models\GymMember;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -24,7 +24,7 @@ use Tests\TestCase;
  */
 class BiometricGymScopeCastTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_the_models_meeting_at_a_strict_gym_id_comparison_declare_the_integer_cast(): void
     {

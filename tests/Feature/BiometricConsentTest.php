@@ -14,17 +14,17 @@ use App\Models\BiometricDevice;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Services\Biometric\BiometricConsentEligibility;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BiometricConsentTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_consent_page_returns_200_with_valid_signed_url(): void
     {

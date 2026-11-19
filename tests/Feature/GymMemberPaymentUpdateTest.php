@@ -10,13 +10,13 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\MembershipPlan;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class GymMemberPaymentUpdateTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_member_attributes_are_updated_on_payment_creation()
     {

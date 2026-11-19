@@ -6,14 +6,14 @@ namespace Tests\Unit\Actions\Frontend;
 
 use App\Actions\Frontend\RequestCallbackAction;
 use App\Models\RequestContact;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class RequestCallbackActionTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     #[Test]
     public function it_creates_a_callback_request_record_with_provided_details(): void

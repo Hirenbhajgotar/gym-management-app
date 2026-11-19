@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
 /**
  * `biometrics.device_throttle` is read by the `biometric-api` rate limiter registered in
@@ -13,7 +13,7 @@ use Tests\TestCase;
  * limit is covered end-to-end by `Tests\Feature\BiometricRateLimiterTest`; this class pins
  * the config entry itself so the value cannot drift from what the docs and `.env.example` state.
  */
-class BiometricThrottleConfigTest extends TestCase
+class BiometricThrottleConfigTest extends LightweightTestCase
 {
     #[Test]
     public function device_throttle_defaults_to_the_documented_value(): void

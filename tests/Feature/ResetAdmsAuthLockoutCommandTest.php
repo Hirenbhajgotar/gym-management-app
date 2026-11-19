@@ -6,14 +6,14 @@ namespace Tests\Feature;
 
 use App\Biometrics\Services\AdmsDeviceAuthenticator;
 use App\Models\BiometricDevice;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use RuntimeException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class ResetAdmsAuthLockoutCommandTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_serial_selector_unlocks_an_administratively_disabled_device(): void
     {

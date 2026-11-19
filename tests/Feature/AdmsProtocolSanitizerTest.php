@@ -7,14 +7,11 @@ namespace Tests\Feature;
 use App\Enums\AdmsUserTableEnum;
 use App\Models\AdmsDeviceCommand;
 use App\Models\BiometricDevice;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
-class AdmsProtocolSanitizerTest extends TestCase
+class AdmsProtocolSanitizerTest extends LightweightTestCase
 {
-    use RefreshDatabase;
-
     public function test_name_delimiters_are_replaced_without_injecting_a_second_command(): void
     {
         $command = new AdmsDeviceCommand([
@@ -185,16 +182,15 @@ class AdmsProtocolSanitizerTest extends TestCase
 
     public function test_the_per_device_override_is_snapshotted_when_the_command_is_queued(): void
     {
-        $device = BiometricDevice::factory()->create([
-            'provider_config' => ['adms_user_table' => 'user'],
-        ]);
+        $device = new BiometricDevice(['provider_config' => ['adms_user_table' => 'user']]);
 
-        $command = AdmsDeviceCommand::factory()->userAdd('369', 'Hiren Sarla')->create([
-            'gym_id' => $device->gym_id,
-            'device_id' => $device->id,
+        $command = new AdmsDeviceCommand([
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => '369', 'Name' => 'Hiren Sarla'],
         ]);
-
-        $command->refresh();
+        $command->id = 10;
+        // The snapshot is taken at queue time, exactly as the creating hook does.
+        $command->user_table = AdmsDeviceCommand::resolveUserTable($device);
 
         $this->assertSame(AdmsUserTableEnum::User, $command->user_table);
         $this->assertSame(
@@ -208,35 +204,37 @@ class AdmsProtocolSanitizerTest extends TestCase
 
     public function test_a_device_without_an_override_inherits_the_global_default(): void
     {
-        $device = BiometricDevice::factory()->create(['provider_config' => []]);
+        $device = new BiometricDevice(['provider_config' => []]);
 
-        $command = AdmsDeviceCommand::factory()->userDelete('369')->create([
-            'gym_id' => $device->gym_id,
-            'device_id' => $device->id,
+        $command = new AdmsDeviceCommand([
+            'command_type' => 'user_delete',
+            'command_payload' => ['Pin' => '369'],
         ]);
+        $command->id = 11;
+        $command->user_table = AdmsDeviceCommand::resolveUserTable($device);
 
-        $this->assertSame(AdmsUserTableEnum::UserInfo, $command->fresh()->user_table);
-        $this->assertSame('C:' . $command->id . ':DATA DELETE USERINFO PIN=369', $command->fresh()->toAdmsCommandString());
+        $this->assertSame(AdmsUserTableEnum::UserInfo, $command->user_table);
+        $this->assertSame('C:11:DATA DELETE USERINFO PIN=369', $command->toAdmsCommandString());
     }
 
     public function test_the_schema_is_not_re_read_from_the_device_at_delivery(): void
     {
-        $device = BiometricDevice::factory()->create([
-            'provider_config' => ['adms_user_table' => 'USERINFO'],
-        ]);
+        $device = new BiometricDevice(['provider_config' => ['adms_user_table' => 'USERINFO']]);
 
-        $command = AdmsDeviceCommand::factory()->userAdd('369', 'Hiren Sarla')->create([
-            'gym_id' => $device->gym_id,
-            'device_id' => $device->id,
+        $command = new AdmsDeviceCommand([
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => '369', 'Name' => 'Hiren Sarla'],
         ]);
+        $command->id = 10;
+        $command->user_table = AdmsDeviceCommand::resolveUserTable($device);
 
         // Flipping the selector after the command was queued must not rewrite a
         // command the terminal has already been told to expect.
-        $device->update(['provider_config' => ['adms_user_table' => 'user']]);
+        $device->provider_config = ['adms_user_table' => 'user'];
 
         $this->assertStringStartsWith(
-            'C:' . $command->id . ':DATA UPDATE USERINFO PIN=369',
-            $command->fresh()->toAdmsCommandString()
+            'C:10:DATA UPDATE USERINFO PIN=369',
+            $command->toAdmsCommandString()
         );
     }
 

@@ -6,9 +6,9 @@ namespace Tests\Unit\Helpers;
 
 use App\Helpers\WhatsAppSanitizer;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
-class WhatsAppSanitizerTest extends TestCase
+class WhatsAppSanitizerTest extends LightweightTestCase
 {
     #[Test]
     public function it_masks_meta_access_token(): void

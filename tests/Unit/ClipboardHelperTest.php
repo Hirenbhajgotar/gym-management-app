@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Helpers\ClipboardHelper;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
-class ClipboardHelperTest extends TestCase
+class ClipboardHelperTest extends LightweightTestCase
 {
     public function test_copy_script_never_emits_an_empty_javascript_value_for_invalid_utf8(): void
     {

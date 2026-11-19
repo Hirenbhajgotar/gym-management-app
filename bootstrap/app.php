@@ -10,9 +10,11 @@ use App\Http\Middleware\ExportDownloadMiddleware;
 use App\Http\Middleware\TeamsPermission;
 use App\Services\ErrorReporting\ExceptionTraceFormatter;
 use App\Services\ErrorReportService;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Foundation\PackageManifest;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Log;
@@ -212,6 +214,33 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // });
     })
     ->create();
+
+/*
+ * Test-only escape hatch for protocol/webhook suites that never render Filament.
+ *
+ * FilamentServiceProvider::boot() registers every panel route on each application
+ * boot, which costs ~10s per test on this project. Tests that exercise only the
+ * API can opt out with TESTS_SKIP_FILAMENT_PROVIDER=1 (set in setUp(), before
+ * the application is created). Production never sets the flag, so the provider
+ * list is untouched there.
+ */
+$app->instance(PackageManifest::class, new class(new Filesystem(), $app->basePath(), $app->bootstrapPath('cache/packages.php')) extends PackageManifest
+{
+    /** @return array<int, string> */
+    public function providers()
+    {
+        $providers = parent::providers();
+
+        if (getenv('TESTS_SKIP_FILAMENT_PROVIDER') !== '1') {
+            return $providers;
+        }
+
+        return array_values(array_filter(
+            $providers,
+            static fn (string $provider): bool => $provider !== \Filament\FilamentServiceProvider::class
+        ));
+    }
+});
 
 $app->booted(function (Application $app): void {
     if ($app->environment('testing')) {

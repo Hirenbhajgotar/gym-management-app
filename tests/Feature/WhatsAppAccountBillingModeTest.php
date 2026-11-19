@@ -8,8 +8,8 @@ use App\Enums\WhatsAppBillingModeEnum;
 use App\Enums\WhatsAppProviderTypeEnum;
 use App\Models\Gym;
 use App\Models\WhatsAppAccount;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -19,7 +19,7 @@ use Tests\TestCase;
  */
 class WhatsAppAccountBillingModeTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

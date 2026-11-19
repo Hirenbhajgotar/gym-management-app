@@ -10,12 +10,12 @@ use App\Models\BiometricTemplate;
 use App\Models\Gym;
 use App\Models\GymMember;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BackfillHardwareConfirmedAtMigrationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_migration_up_backfills_hardware_confirmed_at_for_synced_templates(): void
     {

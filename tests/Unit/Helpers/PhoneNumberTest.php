@@ -8,9 +8,9 @@ use App\Helpers\PhoneNumber;
 use Illuminate\Support\Stringable;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
-class PhoneNumberTest extends TestCase
+class PhoneNumberTest extends LightweightTestCase
 {
     #[Test]
     public function get_iso_country_code_returns_in_for_indian_number(): void

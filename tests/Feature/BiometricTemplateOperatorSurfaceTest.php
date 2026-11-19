@@ -21,7 +21,6 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
@@ -31,6 +30,7 @@ use RuntimeException;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -40,7 +40,7 @@ use Tests\TestCase;
  */
 class BiometricTemplateOperatorSurfaceTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

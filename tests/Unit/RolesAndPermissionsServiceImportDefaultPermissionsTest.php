@@ -8,13 +8,13 @@ use App\Enums\DefaultRole;
 use App\Enums\PermissionCategory;
 use App\Models\Permission;
 use App\Services\RolesAndPermissionsService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase as TestsTestCase;
 
 class RolesAndPermissionsServiceImportDefaultPermissionsTest extends TestsTestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected RolesAndPermissionsService $service;
 

@@ -14,13 +14,13 @@ use App\Models\BiometricDevice;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BiometricCheckInTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     /** Secret every webhook-capable device in this suite is provisioned with. */
     private const WEBHOOK_SECRET = 'test-webhook-secret';

@@ -18,17 +18,17 @@ use App\Models\Trainer;
 use App\Models\User;
 use App\Services\ReportCacheService;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Livewire\Livewire;
 use Livewire\Livewire\Features\SupportTesting\Testable;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 final class MemberReportsTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     private User $gymOwner;
 

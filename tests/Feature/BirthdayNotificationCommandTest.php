@@ -7,10 +7,10 @@ namespace Tests\Feature;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Notifications\BirthdayNotification;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\PendingCommand;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -20,7 +20,7 @@ use Tests\TestCase;
  */
 class BirthdayNotificationCommandTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     /**
      * @param  array<string, mixed>  $overrides

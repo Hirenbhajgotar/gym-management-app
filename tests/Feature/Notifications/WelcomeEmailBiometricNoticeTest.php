@@ -12,14 +12,14 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Notifications\Member\WelcomeNotification;
 use App\Services\Biometric\BiometricConsentUrlFactory;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class WelcomeEmailBiometricNoticeTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_welcome_notification_includes_biometric_notice_and_link_when_gym_has_active_device(): void
     {

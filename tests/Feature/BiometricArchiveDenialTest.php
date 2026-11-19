@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use Illuminate\Testing\TestResponse;
 use App\Biometrics\BiometricProviderRegistry;
 use App\Biometrics\Contracts\BiometricProvider;
 use App\Biometrics\DTOs\BiometricSample;
@@ -24,10 +23,11 @@ use App\Models\BiometricTemplate;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Services\QRAttendanceService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Testing\TestResponse;
 use Mockery;
 use ReflectionMethod;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -44,7 +44,7 @@ use Tests\TestCase;
  */
 class BiometricArchiveDenialTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     /** getDenialMessage()'s catch-all arm: the answer that tells the operator nothing. */
     private const GENERIC_DENIAL_MESSAGE = 'Access denied. Please contact reception.';

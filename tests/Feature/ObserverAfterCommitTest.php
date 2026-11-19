@@ -8,15 +8,15 @@ use App\Enums\UserStatus;
 use App\Models\Gym;
 use App\Models\ReportGoal;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class ObserverAfterCommitTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_report_goal_cache_is_cleared_only_after_commit(): void
     {

@@ -27,7 +27,6 @@ use App\Models\User;
 use App\Services\MemberArchiveService;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Queue\Job;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Queue\Jobs\SyncJob;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -35,6 +34,7 @@ use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -44,7 +44,7 @@ use Tests\TestCase;
  */
 class BiometricErasureHardeningTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

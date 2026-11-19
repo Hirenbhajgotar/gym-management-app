@@ -20,12 +20,12 @@ use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppAccountRelease;
 use App\Models\WhatsAppPhoneNumber;
 use App\Services\TwilioAccountManager;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use Spatie\Activitylog\Models\Activity;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -39,7 +39,7 @@ use Tests\TestCase;
  */
 class BiometricErasureRound5RemediationTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

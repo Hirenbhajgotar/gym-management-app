@@ -11,12 +11,12 @@ use App\Models\MembershipPlan;
 use App\Models\User;
 use App\Services\LeadConversionService;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class LeadConversionTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_lead_can_be_converted_to_member_with_notes_and_payment(): void
     {

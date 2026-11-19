@@ -20,16 +20,16 @@ use App\Models\WhatsAppTemplate;
 use App\Services\WhatsApp\BroadcastOrchestrator;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\Sequence;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 #[CoversClass(BroadcastOrchestrator::class)]
 final class WhatsAppBroadcastOrchestratorTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected User $user;
 

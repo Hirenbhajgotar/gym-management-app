@@ -13,13 +13,13 @@ use App\Models\WhatsAppTemplate;
 use App\Services\Meta\MetaTemplateService;
 use App\Services\WhatsAppTemplateService;
 use Database\Seeders\WhatsAppDefaultTemplatesSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class WhatsAppTemplateServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

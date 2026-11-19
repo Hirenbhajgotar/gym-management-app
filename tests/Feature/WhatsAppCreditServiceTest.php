@@ -10,8 +10,8 @@ use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppMessageCredit;
 use App\Services\WhatsApp\WhatsAppCreditService;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 /**
@@ -23,7 +23,7 @@ use Tests\TestCase;
  */
 class WhatsAppCreditServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

@@ -9,11 +9,11 @@ use App\Models\Gym;
 use App\Models\Role;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Env;
 use RuntimeException;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 
 /**
  * Base test case for the WhatsAppSetup suite.
@@ -25,7 +25,7 @@ use Spatie\Permission\PermissionRegistrar;
  */
 abstract class WhatsAppSetupTestCase extends BaseTestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected function setUp(): void
     {

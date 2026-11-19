@@ -8,13 +8,13 @@ use App\Enums\PaymentStatus;
 use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\MemberPayment;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class CheckMembershipExpiryCommandTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     #[Test]
     public function it_marks_expired_members_as_expired(): void

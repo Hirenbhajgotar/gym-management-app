@@ -21,17 +21,17 @@ use App\Services\Meta\MetaContext;
 use App\Services\Meta\MetaMessagingService;
 use App\Services\WhatsApp\WhatsAppCreditService;
 use Exception;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\Expectation;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class MetaMessagingServiceTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     #[Test]
     public function it_sends_text_message_using_phone_number_id_endpoint_and_deducts_credits(): void

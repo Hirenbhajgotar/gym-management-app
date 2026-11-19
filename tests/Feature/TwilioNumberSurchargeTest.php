@@ -16,13 +16,13 @@ use App\Models\WhatsAppMessageCredit;
 use App\Models\WhatsAppPackage;
 use App\Models\WhatsAppPhoneNumber;
 use App\Services\WhatsAppBillingService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class TwilioNumberSurchargeTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

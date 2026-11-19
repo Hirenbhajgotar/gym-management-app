@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\ErrorReport;
-use App\Enums\ErrorStatus;
-use App\Enums\ErrorPriority;
-use App\Services\ExceptionStorageService;
 use App\Biometrics\Services\BiometricLogRedactor;
+use App\Enums\ErrorPriority;
+use App\Enums\ErrorStatus;
+use App\Models\ErrorReport;
 use App\Services\ErrorReportService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Services\ExceptionStorageService;
 use RuntimeException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BiometricLogRedactorTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_sensitive_keys_are_redacted(): void
     {

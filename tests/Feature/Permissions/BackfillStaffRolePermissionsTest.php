@@ -8,15 +8,15 @@ use App\Models\Gym;
 use App\Models\Permission;
 use App\Models\PermissionSetting;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BackfillStaffRolePermissionsTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     /**
      * The 24 permission slugs the migration grants to manager + receptionist

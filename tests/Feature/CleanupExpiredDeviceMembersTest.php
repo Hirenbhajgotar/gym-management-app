@@ -17,14 +17,14 @@ use App\Models\Gym;
 use App\Models\GymMember;
 use App\Models\GymSetting;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\PendingCommand;
 use Spatie\Activitylog\Models\Activity;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class CleanupExpiredDeviceMembersTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected User $user;
 

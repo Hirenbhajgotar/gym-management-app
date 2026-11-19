@@ -7,7 +7,7 @@ namespace Tests\Unit\Biometrics;
 use App\Enums\AdmsUserTableEnum;
 use App\Models\AdmsDeviceCommand;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
 /**
  * Wire-format specification tests for ADMS terminal commands.
@@ -18,7 +18,7 @@ use Tests\TestCase;
  * - Clean token structure without empty tokens (`Passwd=`, `Card=`) or speculative access control (`Grp=1`, `TZ=...`).
  * - Hardware introspection `DATA QUERY USERINFO PIN={pin}` support.
  */
-class AdmsDeviceCommandWireFormatTest extends TestCase
+class AdmsDeviceCommandWireFormatTest extends LightweightTestCase
 {
     #[Test]
     public function user_add_with_userinfo_schema_produces_device_native_wire_format(): void

@@ -9,15 +9,15 @@ use App\Enums\PermissionCategory;
 use App\Filament\Admin\Resources\GymMemberResource;
 use App\Models\Gym;
 use App\Models\Permission;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use ReflectionClass;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class MemberArchivePermissionsTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     /**
      * @var array<int, string>

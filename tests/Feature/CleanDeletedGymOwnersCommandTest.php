@@ -15,15 +15,15 @@ use App\Models\User;
 use App\Models\WhatsAppAccount;
 use App\Models\WhatsAppAccountRelease;
 use App\Models\WhatsAppPhoneNumber;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class CleanDeletedGymOwnersCommandTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected function setUp(): void
     {

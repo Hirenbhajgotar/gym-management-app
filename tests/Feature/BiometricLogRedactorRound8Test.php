@@ -9,9 +9,9 @@ use App\Services\ErrorReporting\RequestOriginResolver;
 use Illuminate\Http\Request;
 use PHPUnit\Framework\Attributes\DataProvider;
 use stdClass;
-use Tests\TestCase;
+use Tests\LightweightTestCase;
 
-class BiometricLogRedactorRound8Test extends TestCase
+class BiometricLogRedactorRound8Test extends LightweightTestCase
 {
     #[DataProvider('escapedQuoteProvider')]
     public function test_escaped_quotes_do_not_disable_assignment_redaction(string $input, string $expected): void

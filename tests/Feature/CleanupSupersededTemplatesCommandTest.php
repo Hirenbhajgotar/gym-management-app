@@ -11,13 +11,13 @@ use App\Models\BiometricDevice;
 use App\Models\BiometricTemplate;
 use App\Models\Gym;
 use App\Models\GymMember;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class CleanupSupersededTemplatesCommandTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 

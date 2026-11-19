@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Filament\SuperAdmin;
 
-use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages\ListErrorReports;
 use App\Enums\DefaultRole;
 use App\Enums\ErrorPriority;
 use App\Enums\ErrorStatus;
 use App\Filament\SuperAdmin\Resources\ErrorReportResource;
 use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages\EditErrorReport;
+use App\Filament\SuperAdmin\Resources\ErrorReportResource\Pages\ListErrorReports;
 use App\Models\ErrorReport;
 use App\Models\Role;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class ErrorReportEditTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected User $superAdmin;
 

@@ -8,14 +8,14 @@ use App\Filament\Admin\Resources\TrainerResource\Pages\ManageTrainers;
 use App\Models\Gym;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class TrainerImportTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     public function test_can_import_trainers()
     {

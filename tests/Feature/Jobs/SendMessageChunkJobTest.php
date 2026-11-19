@@ -23,7 +23,6 @@ use App\Providers\TwilioWhatsAppProvider;
 use App\Services\WhatsApp\WhatsAppCreditService;
 use Exception;
 use Illuminate\Contracts\Queue\Job;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -34,12 +33,13 @@ use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 #[CoversClass(SendMessageChunkJob::class)]
 final class SendMessageChunkJobTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     private const WABA_ID = 'WABA_123456';
 

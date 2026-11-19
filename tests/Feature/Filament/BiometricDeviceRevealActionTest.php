@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Filament;
 
-use Spatie\Permission\PermissionRegistrar;
-use App\Biometrics\Services\DeviceTokenReveal;
-use Spatie\Activitylog\Models\Activity;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Cache\CacheManager;
 use App\Biometrics\Services\CommKeyReveal;
+use App\Biometrics\Services\DeviceTokenReveal;
 use App\Biometrics\Services\WebhookSecretReveal;
 use App\Enums\BiometricDevicePurpose;
 use App\Enums\BiometricDeviceStatusEnum;
@@ -21,15 +17,19 @@ use App\Models\Gym;
 use App\Models\Role;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Cache\CacheManager;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
+use Tests\Concerns\ReusesMigratedTestDatabase;
 use Tests\TestCase;
 
 class BiometricDeviceRevealActionTest extends TestCase
 {
-    use RefreshDatabase;
+    use ReusesMigratedTestDatabase;
 
     protected Gym $gym;
 
