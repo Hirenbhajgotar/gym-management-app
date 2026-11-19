@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Biometrics\ValueObjects\AcknowledgementOutcome;
 use App\Biometrics\ValueObjects\AdmsCommandKey;
 use App\Biometrics\ValueObjects\DeliveryLease;
+use App\Biometrics\ValueObjects\ReclaimSummary;
 use App\Casts\AdmsUserTableCast;
 use App\Enums\AdmsCommandStatusEnum;
 use App\Enums\AdmsUserTableEnum;
@@ -705,6 +706,138 @@ class AdmsDeviceCommand extends Model
             'command_ids' => $commandIds,
             'device_return_code' => self::UNADDRESSABLE_PIN_CODE,
         ]);
+    }
+
+    /**
+     * Recover every stale lease in one sweep and report the transitions performed.
+     *
+     * This is the single seam for the stale-lease sweep. The stale predicate and the
+     * preserved-evidence exclusion are the same ones {@see self::leaseNext()} uses, so
+     * a row that cannot be reclaimed can never be leased either. Every branch is a
+     * compare-and-set from SENT: a row that moved on concurrently (an ACK, a resend,
+     * another sweep) simply loses the race and is counted as a benign miss rather
+     * than raising or overwriting the winning state.
+     */
+    public static function reclaimExpiredLeases(?int $leaseSeconds = null): ReclaimSummary
+    {
+        $duration = $leaseSeconds ?? config()->integer('biometrics.adms.command_lease_seconds', 600);
+        $maxAttempts = AdmsCommandKey::maxAttempts();
+
+        $reclaimed = 0;
+        $failed = 0;
+        $orphaned = 0;
+        $skipped = 0;
+
+        self::query()
+            ->where('status', AdmsCommandStatusEnum::SENT)
+            // A preserved delivered `user_add` is durable evidence, not in-flight work.
+            // It is deliberately kept at `SENT` by the terminal tombstone and must outlive
+            // every lease window; cancelling it would make `wasDeliveredToHardware()` false
+            // and converge a live credential to `Deleted` with no erasure.
+            ->withoutPreservedEvidence()
+            ->staleLease($duration)
+            ->chunkById(100, function (Collection $staleCommands) use (&$reclaimed, &$failed, &$orphaned, &$skipped, $maxAttempts): void {
+                foreach ($staleCommands as $command) {
+                    if ($command->device_id === null) {
+                        // Belt and braces alongside `preserved_evidence_at`: a delivered
+                        // `user_add` for a deleted terminal is evidence even if the marker
+                        // is missing (a restored dump, or a row preserved before this
+                        // column existed). Never cancel it.
+                        if ($command->command_type === 'user_add') {
+                            $orphaned++;
+
+                            continue;
+                        }
+
+                        // The terminal was deleted, so no poll will ever lease this
+                        // row again. Returning it to PENDING would resurrect a
+                        // command that cannot be delivered and would leave it
+                        // immortal: prunable() only keeps PENDING rows alive.
+                        $affected = self::query()
+                            ->where('id', $command->id)
+                            ->where('status', AdmsCommandStatusEnum::SENT)
+                            ->update([
+                                'status' => AdmsCommandStatusEnum::CANCELLED,
+                                'device_return_code' => self::TERMINAL_DELETED_CODE,
+                                'leased_at' => null,
+                                'expires_at' => null,
+                            ]);
+
+                        if ($affected === 0) {
+                            $skipped++;
+
+                            continue;
+                        }
+
+                        $orphaned++;
+
+                        Log::warning('ADMS: stale command for a deleted terminal cancelled; it can never be delivered', [
+                            'command_id' => $command->id,
+                            'gym_id' => $command->gym_id,
+                            'command_type' => $command->command_type,
+                            'attempt_count' => $command->attempt_count,
+                        ]);
+
+                        continue;
+                    }
+
+                    if ($command->attempt_count >= $maxAttempts) {
+                        $affected = self::query()
+                            ->where('id', $command->id)
+                            ->where('status', AdmsCommandStatusEnum::SENT)
+                            ->update([
+                                'status' => AdmsCommandStatusEnum::FAILED,
+                                'device_return_code' => self::TIMEOUT_MAX_ATTEMPTS_CODE,
+                                'leased_at' => null,
+                                'expires_at' => null,
+                            ]);
+
+                        if ($affected === 0) {
+                            $skipped++;
+
+                            continue;
+                        }
+
+                        $failed++;
+
+                        Log::warning("ADMS: Device command failed after maximum retry attempts ({$maxAttempts})", [
+                            'command_id' => $command->id,
+                            'device_id' => $command->device_id,
+                            'gym_id' => $command->gym_id,
+                            'command_type' => $command->command_type,
+                            'attempt_count' => $command->attempt_count,
+                        ]);
+
+                        continue;
+                    }
+
+                    $affected = self::query()
+                        ->where('id', $command->id)
+                        ->where('status', AdmsCommandStatusEnum::SENT)
+                        ->update([
+                            'status' => AdmsCommandStatusEnum::PENDING,
+                            'leased_at' => null,
+                            'expires_at' => null,
+                        ]);
+
+                    if ($affected === 0) {
+                        $skipped++;
+
+                        continue;
+                    }
+
+                    $reclaimed++;
+
+                    Log::info('ADMS: Device command lease expired, returned to pending for retry', [
+                        'command_id' => $command->id,
+                        'device_id' => $command->device_id,
+                        'command_type' => $command->command_type,
+                        'attempt_count' => $command->attempt_count,
+                    ]);
+                }
+            });
+
+        return new ReclaimSummary($reclaimed, $failed, $orphaned, $skipped);
     }
 
     /**
