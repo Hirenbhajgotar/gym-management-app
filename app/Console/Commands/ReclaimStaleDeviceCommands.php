@@ -8,7 +8,6 @@ use App\Biometrics\ValueObjects\AdmsCommandKey;
 use App\Enums\AdmsCommandStatusEnum;
 use App\Models\AdmsDeviceCommand;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 
 class ReclaimStaleDeviceCommands extends Command
@@ -24,8 +23,6 @@ class ReclaimStaleDeviceCommands extends Command
             ? (int) $leaseOption
             : config()->integer('biometrics.adms.command_lease_seconds', 600);
 
-        $staleThreshold = now()->subSeconds($leaseSeconds);
-
         $reclaimedCount = 0;
         $failedCount = 0;
         $orphanedCount = 0;
@@ -37,15 +34,8 @@ class ReclaimStaleDeviceCommands extends Command
             // It is deliberately kept at `SENT` by the terminal tombstone and must outlive
             // every lease window; cancelling it would make `wasDeliveredToHardware()` false
             // and converge a live credential to `Deleted` with no erasure.
-            ->whereNull('preserved_evidence_at')
-            ->where(function (Builder $query) use ($staleThreshold) {
-                $query->whereNull('leased_at')
-                    ->orWhere('leased_at', '<', $staleThreshold)
-                    ->orWhere(function (Builder $sub) {
-                        $sub->whereNotNull('expires_at')
-                            ->where('expires_at', '<', now());
-                    });
-            })
+            ->withoutPreservedEvidence()
+            ->staleLease($leaseSeconds)
             ->chunkById(100, function ($staleCommands) use (&$reclaimedCount, &$failedCount, &$orphanedCount, $maxAttempts) {
                 foreach ($staleCommands as $command) {
                     if ($command->device_id === null) {
