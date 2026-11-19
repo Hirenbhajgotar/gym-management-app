@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Biometrics\ValueObjects\AcknowledgementOutcome;
 use App\Biometrics\ValueObjects\AdmsCommandKey;
 use App\Biometrics\ValueObjects\DeliveryLease;
 use App\Casts\AdmsUserTableCast;
@@ -779,11 +780,12 @@ class AdmsDeviceCommand extends Model
      * therefore *not* an extra delivery: the terminal already received and rejected the
      * command, and the reconciler re-drive that follows will consume the next delivery.
      */
-    public function markAcknowledged(?string $returnCode = null): bool
+    public function acknowledge(?string $returnCode = null): AcknowledgementOutcome
     {
-        // Guard: only SENT commands can transition to ACKNOWLEDGED or FAILED
+        // Safe on any state: a reply for a command that is not currently SENT is a
+        // duplicate or stale response. Ignore it rather than overwrite newer state.
         if ($this->status !== AdmsCommandStatusEnum::SENT) {
-            return false;
+            return AcknowledgementOutcome::ignored($this->status);
         }
 
         $code = $returnCode;
@@ -816,7 +818,7 @@ class AdmsDeviceCommand extends Model
             }
         }
 
-        return DB::transaction(function () use ($isSuccess, $code): bool {
+        $applied = DB::transaction(function () use ($isSuccess, $code): bool {
             $updateData = [
                 'status' => $isSuccess ? AdmsCommandStatusEnum::ACKNOWLEDGED : AdmsCommandStatusEnum::FAILED,
                 'acknowledged_at' => now(),
@@ -844,6 +846,23 @@ class AdmsDeviceCommand extends Model
 
             return true;
         });
+
+        if (! $applied) {
+            // CAS lost a race with the stale-lease sweep or the other ACK path:
+            // report the winning state instead of raising and never overwrite it.
+            return AcknowledgementOutcome::ignored($this->fresh()?->status ?? $this->status);
+        }
+
+        return AcknowledgementOutcome::applied($this->status);
+    }
+
+    /**
+     * Boolean facade over {@see acknowledge()} for callers that only need to know
+     * whether a transition happened.
+     */
+    public function markAcknowledged(?string $returnCode = null): bool
+    {
+        return $this->acknowledge($returnCode)->wasApplied();
     }
 
     /**

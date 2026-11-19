@@ -189,37 +189,28 @@ class AdmsController extends Controller
             return $this->plainResponse('OK');
         }
 
-        if ($command->status === AdmsCommandStatusEnum::SENT) {
-            $acknowledged = $command->markAcknowledged($returnCode);
+        // The ledger owns the status decision: the adapter expresses intent and
+        // reads the typed outcome instead of pre-checking or re-querying status.
+        $outcome = $command->acknowledge($returnCode);
 
-            if ($acknowledged) {
-                Log::info('ADMS: Command acknowledged', [
-                    'device_id' => $device->id,
-                    'serial' => $device->device_serial,
-                    'command_id' => $command->id,
-                    'command_type' => $command->command_type,
-                    'return_code' => $returnCode,
-                    'status' => $command->fresh()?->status?->value,
-                ]);
+        if ($outcome->wasApplied()) {
+            Log::info('ADMS: Command acknowledged', [
+                'device_id' => $device->id,
+                'serial' => $device->device_serial,
+                'command_id' => $command->id,
+                'command_type' => $command->command_type,
+                'return_code' => $returnCode,
+                'status' => $outcome->resultingStatus()->value,
+            ]);
 
-                if ($command->command_type === 'reboot' && $command->fresh()?->status === AdmsCommandStatusEnum::ACKNOWLEDGED) {
-                    $this->notifyRebootInitiator($command, $device);
-                }
-            } else {
-                Log::warning('ADMS: Command acknowledgement failed', [
-                    'device_id' => $device->id,
-                    'serial' => $device->device_serial,
-                    'command_id' => $command->id,
-                    'command_type' => $command->command_type,
-                    'return_code' => $returnCode,
-                    'status' => $command->fresh()?->status?->value,
-                ]);
+            if ($command->command_type === 'reboot' && $outcome->wasAppliedAndAcknowledged()) {
+                $this->notifyRebootInitiator($command, $device);
             }
         } else {
-            Log::warning('ADMS: devicecmd received for non-SENT command', [
+            Log::warning('ADMS: devicecmd acknowledgement ignored for a command that is not SENT', [
                 'device_id' => $device->id,
                 'command_id' => $command->id,
-                'current_status' => $command->status->value,
+                'current_status' => $outcome->resultingStatus()->value,
                 'return_code' => $returnCode,
                 'raw_body' => $body,
             ]);
@@ -270,8 +261,12 @@ class AdmsController extends Controller
             ->where('status', AdmsCommandStatusEnum::SENT)
             ->first();
 
-        if ($sentReboot && $sentReboot->markAcknowledged('0')) {
-            $this->notifyRebootInitiator($sentReboot, $device);
+        if ($sentReboot) {
+            $outcome = $sentReboot->acknowledge('0');
+
+            if ($outcome->wasAppliedAndAcknowledged()) {
+                $this->notifyRebootInitiator($sentReboot, $device);
+            }
         }
 
         Log::info('ADMS: Device handshake', [
