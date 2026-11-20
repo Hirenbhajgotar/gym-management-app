@@ -329,6 +329,41 @@ class AdmsDeviceCommandResendTest extends TestCase
     }
 
     /**
+     * The resource guard at {@see AdmsDeviceCommandResource::isAuthorizedToResend()} is only
+     * one caller. The ledger seam itself must refuse a foreign command too, so a future
+     * adapter cannot re-drive another gym's row by handing the model the wrong record.
+     */
+    public function test_the_resend_seam_refuses_a_command_from_another_tenant(): void
+    {
+        $gymOwnerRole = Role::findOrCreate(DefaultRole::GYM_OWNER->value, 'web');
+        $tenantOwner = User::factory()->create();
+        $this->gym->users()->attach($tenantOwner->id, ['role' => DefaultRole::GYM_OWNER->value]);
+        $tenantOwner->assignRole($gymOwnerRole);
+
+        resolve(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $otherGym = Gym::factory()->create();
+        $otherDevice = BiometricDevice::factory()->create([
+            'gym_id' => $otherGym->id,
+            'adms_enabled' => true,
+        ]);
+        $foreign = $this->failedUserAdd(GymMember::factory()->create(['gym_id' => $otherGym->id]), [
+            'gym_id' => $otherGym->id,
+            'device_id' => $otherDevice->id,
+        ]);
+
+        $this->assertFalse(
+            $foreign->requeueForOperator($tenantOwner),
+            'The ledger seam must not re-drive a command outside the actor\'s tenant.'
+        );
+
+        $freshForeign = $foreign->fresh();
+        $this->assertNotNull($freshForeign);
+        $this->assertSame(AdmsCommandStatusEnum::FAILED, $freshForeign->status);
+        $this->assertSame(3, $freshForeign->attempt_count);
+    }
+
+    /**
      * `prunable()` deliberately retains dead-lettered rows, so a resend must not destroy the
      * evidence that the cap was reached. The reset is audited with the values it replaced.
      */
@@ -368,6 +403,53 @@ class AdmsDeviceCommandResendTest extends TestCase
         $this->assertSame(3, (int) $activity->properties['previous_attempt_count']);
         $this->assertSame('E-DEADLETTER', $activity->properties['previous_device_return_code']);
         $this->assertSame(3, (int) $activity->properties['max_attempt_count']);
+    }
+
+    public function test_a_resend_is_rolled_back_when_the_audit_sink_is_unavailable(): void
+    {
+        $this->actingAs($this->owner);
+        Filament::setTenant($this->gym);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $command = $this->failedUserAdd($this->consentedMember(), [
+            'acknowledged_at' => now()->subDays(200),
+        ]);
+
+        config()->set('activitylog.enabled', false);
+
+        try {
+            Livewire::test(ListAdmsDeviceCommands::class)
+                ->callTableAction('resend', $command);
+        } finally {
+            config()->set('activitylog.enabled', true);
+        }
+
+        $fresh = $command->fresh();
+        $this->assertNotNull($fresh);
+        $this->assertSame(
+            AdmsCommandStatusEnum::FAILED,
+            $fresh->status,
+            'A resend that cannot be audited must leave no unaudited re-drive behind.'
+        );
+        $this->assertSame(3, $fresh->attempt_count);
+        $this->assertSame(3, $fresh->max_attempt_count);
+        $this->assertSame('-1', $fresh->device_return_code);
+    }
+
+    public function test_the_resend_seam_ignores_a_command_outside_the_allowed_states(): void
+    {
+        $command = $this->failedUserAdd($this->consentedMember(), [
+            'status' => AdmsCommandStatusEnum::ACKNOWLEDGED,
+            'attempt_count' => 0,
+            'device_return_code' => '0',
+            'acknowledged_at' => now(),
+        ]);
+
+        $this->assertFalse($command->requeueForOperator($this->owner));
+
+        $fresh = $command->fresh();
+        $this->assertNotNull($fresh);
+        $this->assertSame(AdmsCommandStatusEnum::ACKNOWLEDGED, $fresh->status);
     }
 
     public function test_user_delete_commands_are_not_subject_to_the_consent_gate(): void
