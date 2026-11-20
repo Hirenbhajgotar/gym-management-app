@@ -276,7 +276,10 @@ class AdmsDeviceCommandRetentionAndLeaseTest extends TestCase
             'attempt_count' => AdmsCommandKey::maxAttempts(),
         ]);
 
-        $deadLettered->update(['attempt_count' => 0]);
+        // Drive the reset through the ledger's real resend seam, not a raw update: a test
+        // that bypasses the transition cannot catch a regression that lowers the high-water
+        // mark or skips the audit entry.
+        $this->assertTrue($deadLettered->requeueForOperator());
         $deadLettered->acknowledged_at = now()->subDays(200);
         $deadLettered->updated_at = now()->subDays(200);
         $deadLettered->saveQuietly();

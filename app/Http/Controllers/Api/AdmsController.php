@@ -112,34 +112,18 @@ class AdmsController extends Controller
         $device->update(['last_heartbeat_at' => now()]);
         BiometricDevice::clearMissCounter($device->id);
 
-        // Dequeue the oldest pending command for this device atomically
+        // One call to the ledger owns the whole transition: select, quarantine an
+        // unusable PIN, compare-and-set, high-water mark and serialize the wire. The
+        // lease transaction has committed by the time the lease is returned, so no
+        // row lock is held while the terminal is being addressed.
         $leaseDuration = config()->integer('biometrics.adms.command_lease_seconds', 600);
-        /** @var AdmsDeviceCommand|null $command */
-        $command = AdmsDeviceCommand::leaseNext($device->id, $leaseDuration);
+        $lease = AdmsDeviceCommand::leaseNextForDelivery($device->id, $leaseDuration);
 
-        if (! $command) {
+        if ($lease === null) {
             return $this->plainResponse('OK');
         }
 
-        $commandString = $command->toAdmsCommandString();
-
-        if ($commandString === '') {
-            // The lease and the serializer must agree on what is deliverable. If they
-            // ever diverge, returning the row to the queue is the only safe move:
-            // sending an empty body would look like "no command" while having already
-            // consumed one of the command's few hardware deliveries.
-            $command->releaseUnusableLease();
-
-            Log::warning('ADMS: leased a command that cannot be expressed; returned it to the queue', [
-                'command_id' => $command->id,
-                'device_id' => $device->id,
-                'command_type' => $command->command_type,
-            ]);
-
-            return $this->plainResponse('OK');
-        }
-
-        return $this->plainResponse(rtrim($commandString) . "\r\n");
+        return $this->plainResponse($lease->wire);
     }
 
     /**
@@ -205,37 +189,28 @@ class AdmsController extends Controller
             return $this->plainResponse('OK');
         }
 
-        if ($command->status === AdmsCommandStatusEnum::SENT) {
-            $acknowledged = $command->markAcknowledged($returnCode);
+        // The ledger owns the status decision: the adapter expresses intent and
+        // reads the typed outcome instead of pre-checking or re-querying status.
+        $outcome = $command->acknowledge($returnCode);
 
-            if ($acknowledged) {
-                Log::info('ADMS: Command acknowledged', [
-                    'device_id' => $device->id,
-                    'serial' => $device->device_serial,
-                    'command_id' => $command->id,
-                    'command_type' => $command->command_type,
-                    'return_code' => $returnCode,
-                    'status' => $command->fresh()?->status?->value,
-                ]);
+        if ($outcome->wasApplied()) {
+            Log::info('ADMS: Command acknowledged', [
+                'device_id' => $device->id,
+                'serial' => $device->device_serial,
+                'command_id' => $command->id,
+                'command_type' => $command->command_type,
+                'return_code' => $returnCode,
+                'status' => $outcome->resultingStatus()->value,
+            ]);
 
-                if ($command->command_type === 'reboot' && $command->fresh()?->status === AdmsCommandStatusEnum::ACKNOWLEDGED) {
-                    $this->notifyRebootInitiator($command, $device);
-                }
-            } else {
-                Log::warning('ADMS: Command acknowledgement failed', [
-                    'device_id' => $device->id,
-                    'serial' => $device->device_serial,
-                    'command_id' => $command->id,
-                    'command_type' => $command->command_type,
-                    'return_code' => $returnCode,
-                    'status' => $command->fresh()?->status?->value,
-                ]);
+            if ($command->command_type === 'reboot' && $outcome->wasAppliedAndAcknowledged()) {
+                $this->notifyRebootInitiator($command, $device);
             }
         } else {
-            Log::warning('ADMS: devicecmd received for non-SENT command', [
+            Log::warning('ADMS: devicecmd acknowledgement ignored for a command that is not SENT', [
                 'device_id' => $device->id,
                 'command_id' => $command->id,
-                'current_status' => $command->status->value,
+                'current_status' => $outcome->resultingStatus()->value,
                 'return_code' => $returnCode,
                 'raw_body' => $body,
             ]);
@@ -286,8 +261,12 @@ class AdmsController extends Controller
             ->where('status', AdmsCommandStatusEnum::SENT)
             ->first();
 
-        if ($sentReboot && $sentReboot->markAcknowledged('0')) {
-            $this->notifyRebootInitiator($sentReboot, $device);
+        if ($sentReboot) {
+            $outcome = $sentReboot->acknowledge('0');
+
+            if ($outcome->wasAppliedAndAcknowledged()) {
+                $this->notifyRebootInitiator($sentReboot, $device);
+            }
         }
 
         Log::info('ADMS: Device handshake', [

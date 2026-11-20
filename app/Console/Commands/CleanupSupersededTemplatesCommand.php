@@ -99,9 +99,9 @@ class CleanupSupersededTemplatesCommand extends Command
                     if (! $delivered) {
                         // Never dequeued: cancel the queued `user_add` so the terminal cannot
                         // create the credential after the row is retired, then retire it.
-                        AdmsDeviceCommand::cancelInFlightFor(
+                        AdmsDeviceCommand::cancelActive(
                             $template->enrolled_by_device_id,
-                            $template->resolvedCommandPin()
+                            [$template->resolvedCommandPin()]
                         );
 
                         $retiredUndeliveredPending++;
