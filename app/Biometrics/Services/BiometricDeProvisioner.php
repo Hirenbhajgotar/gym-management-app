@@ -83,7 +83,7 @@ class BiometricDeProvisioner
 
         // Cancel first: a queued or in-flight user_add would otherwise be delivered after the
         // user_delete and re-create the credential the erasure is trying to remove.
-        $cancelled = AdmsDeviceCommand::cancelInFlightFor($template->enrolled_by_device_id, $pin);
+        $cancelled = AdmsDeviceCommand::cancelActive($template->enrolled_by_device_id, [$pin]);
 
         if ($cancelled > 0) {
             Log::info('BiometricDeProvisioner: cancelled in-flight user_add for this PIN', [
@@ -663,7 +663,7 @@ class BiometricDeProvisioner
      * (`acknowledged_at`), the last send for a lease that timed out at the cap (`sent_at`), or
      * `created_at` as the fallback when neither exists. The original credential's `user_add`
      * was either cancelled at archive time by
-     * {@see AdmsDeviceCommand::cancelInFlightFor()} or acknowledged before that failure.
+     * {@see AdmsDeviceCommand::cancelActive()} or acknowledged before that failure.
      *
      * A `SENT` `user_add` counts: the terminal has dequeued the profile and may already hold
      * the credential even though no acknowledgement was recorded — the same rule

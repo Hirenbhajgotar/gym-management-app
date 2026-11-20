@@ -1431,52 +1431,45 @@ class AdmsDeviceCommand extends Model
     }
 
     /**
-     * Cancel pending or in-flight user_delete commands on a device for given pins.
+     * Cancel active commands on a device for a set of PINs — the one cancellation primitive.
      *
-     * @param  array<int, string>  $pins
+     * Every provisioning caller funnels through this method, so the cancellation invariant
+     * lives in one place: a cancelled row becomes `CANCELLED` and has its idempotency key
+     * and lease cleared. Clearing the key frees the slot for the replacement command;
+     * clearing the lease ensures a cancelled command can never be revived by a stale
+     * re-lease. `PENDING` and `SENT` rows are both eligible — a queued or in-flight
+     * `user_add` would otherwise be delivered after the superseding command.
+     *
+     * `exceptIdempotencyKey` protects the command a caller has just queued: rows carrying
+     * that key are skipped so the current command is not cancelled alongside its
+     * predecessors. The SQL NULL comparison is handled explicitly — a row whose key is
+     * already null is still eligible. `commandType` scopes the intent (default
+     * `user_add`); callers such as re-enrolment pass `user_delete` to retire a pending
+     * erasure instead.
+     *
+     * @param  array<int, string|int>  $pins
      */
-    public static function cancelDeleteCommands(int $deviceId, array $pins): int
-    {
-        if (blank($pins)) {
+    public static function cancelActive(
+        int $deviceId,
+        array $pins,
+        ?string $exceptIdempotencyKey = null,
+        ?string $commandType = null
+    ): int {
+        if ($pins === []) {
             return 0;
         }
 
         return self::query()
             ->where('device_id', $deviceId)
-            ->where('command_type', 'user_delete')
+            ->where('command_type', $commandType ?? 'user_add')
             ->whereIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
-            ->where(function (Builder $q) use ($pins) {
+            ->where(function (Builder $query) use ($pins): void {
                 foreach ($pins as $pin) {
-                    $q->orWhere('command_payload->Pin', $pin);
+                    $query->orWhere('command_payload->Pin', $pin);
                 }
             })
-            ->update([
-                'status' => AdmsCommandStatusEnum::CANCELLED,
-                'idempotency_key' => null,
-                'leased_at' => null,
-                'expires_at' => null,
-            ]);
-    }
-
-    /**
-     * Cancel pending or in-flight commands on a device for a given pin,
-     * optionally preserving a specific in-flight idempotency key.
-     *
-     * Handles SQL NULL comparison correctly via whereNull()->orWhere().
-     */
-    public static function cancelInFlightFor(
-        int $deviceId,
-        string $pin,
-        ?string $exceptIdempotencyKey = null,
-        string $commandType = 'user_add'
-    ): int {
-        return self::query()
-            ->where('device_id', $deviceId)
-            ->where('command_type', $commandType)
-            ->whereIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
-            ->where('command_payload->Pin', $pin)
-            ->when($exceptIdempotencyKey !== null, function (Builder $q) use ($exceptIdempotencyKey): void {
-                $q->where(function (Builder $sub) use ($exceptIdempotencyKey): void {
+            ->when($exceptIdempotencyKey !== null, function (Builder $query) use ($exceptIdempotencyKey): void {
+                $query->where(function (Builder $sub) use ($exceptIdempotencyKey): void {
                     $sub->whereNull('idempotency_key')
                         ->orWhere('idempotency_key', '!=', $exceptIdempotencyKey);
                 });
@@ -1487,6 +1480,29 @@ class AdmsDeviceCommand extends Model
                 'leased_at' => null,
                 'expires_at' => null,
             ]);
+    }
+
+    /**
+     * Cancel pending or in-flight user_delete commands on a device for given pins.
+     *
+     * @param  array<int, string>  $pins
+     */
+    public static function cancelDeleteCommands(int $deviceId, array $pins): int
+    {
+        return self::cancelActive($deviceId, $pins, null, 'user_delete');
+    }
+
+    /**
+     * Cancel pending or in-flight commands on a device for a given pin,
+     * optionally preserving a specific in-flight idempotency key.
+     */
+    public static function cancelInFlightFor(
+        int $deviceId,
+        string $pin,
+        ?string $exceptIdempotencyKey = null,
+        string $commandType = 'user_add'
+    ): int {
+        return self::cancelActive($deviceId, [$pin], $exceptIdempotencyKey, $commandType);
     }
 
     /**

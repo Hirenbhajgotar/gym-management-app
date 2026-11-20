@@ -75,9 +75,9 @@ class BiometricTemplatePropagator
                         BiometricConsentRequiredException::class
                     );
 
-                    $cancelledDeletes = AdmsDeviceCommand::cancelInFlightFor(
+                    $cancelledDeletes = AdmsDeviceCommand::cancelActive(
                         $sibling->id,
-                        $commandPin,
+                        [$commandPin],
                         commandType: 'user_delete'
                     );
                     if ($cancelledDeletes > 0) {
@@ -100,7 +100,7 @@ class BiometricTemplatePropagator
                         AdmsCommandKey::STAGE_SYNC
                     );
 
-                    AdmsDeviceCommand::cancelInFlightFor($sibling->id, $commandPin, $idempotencyKey);
+                    AdmsDeviceCommand::cancelActive($sibling->id, [$commandPin], $idempotencyKey);
 
                     AdmsDeviceCommand::query()->create([
                         'gym_id' => $sibling->gym_id,
