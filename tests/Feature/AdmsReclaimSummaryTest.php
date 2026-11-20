@@ -101,6 +101,44 @@ final class AdmsReclaimSummaryTest extends TestCase
         $this->assertNull($orphan->expires_at);
     }
 
+    public function test_reclaim_expired_leases_terminalises_a_marker_less_null_device_user_add_orphan_as_cancelled(): void
+    {
+        $orphan = AdmsDeviceCommand::factory()->userAdd('42', 'Orphan')->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => null,
+            'status' => AdmsCommandStatusEnum::SENT,
+            'attempt_count' => 1,
+            'leased_at' => now()->subHour(),
+            'expires_at' => now()->subMinute(),
+        ]);
+
+        $preserved = AdmsDeviceCommand::factory()->userAdd('43', 'Evidence')->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => null,
+            'status' => AdmsCommandStatusEnum::SENT,
+            'attempt_count' => 1,
+            'leased_at' => now()->subHour(),
+            'preserved_evidence_at' => now()->subDay(),
+        ]);
+
+        $summary = AdmsDeviceCommand::reclaimExpiredLeases(600);
+
+        $this->assertSame(1, $summary->orphanedCount());
+        $this->assertSame(0, $summary->reclaimedCount());
+
+        $orphan->refresh();
+
+        $this->assertSame(AdmsCommandStatusEnum::CANCELLED, $orphan->status);
+        $this->assertSame(AdmsDeviceCommand::TERMINAL_DELETED_CODE, $orphan->device_return_code);
+        $this->assertNull($orphan->leased_at);
+        $this->assertNull($orphan->expires_at);
+
+        $preserved->refresh();
+
+        $this->assertSame(AdmsCommandStatusEnum::SENT, $preserved->status);
+        $this->assertNotNull($preserved->preserved_evidence_at);
+    }
+
     public function test_reclaim_expired_leases_fails_an_exhausted_command_with_the_terminal_attempt_code(): void
     {
         $maxAttempts = AdmsCommandKey::maxAttempts();

@@ -14,10 +14,10 @@ namespace App\Biometrics\ValueObjects;
 final readonly class ReclaimSummary
 {
     public function __construct(
-        public int $reclaimed = 0,
-        public int $failed = 0,
-        public int $orphaned = 0,
-        public int $skipped = 0,
+        private int $reclaimed = 0,
+        private int $failed = 0,
+        private int $orphaned = 0,
+        private int $concurrentMisses = 0,
     ) {}
 
     /**
@@ -49,6 +49,6 @@ final readonly class ReclaimSummary
      */
     public function concurrentMisses(): int
     {
-        return $this->skipped;
+        return $this->concurrentMisses;
     }
 }

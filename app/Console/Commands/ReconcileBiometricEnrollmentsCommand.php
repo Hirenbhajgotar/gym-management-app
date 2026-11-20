@@ -200,17 +200,7 @@ class ReconcileBiometricEnrollmentsCommand extends Command
                 if ($dryRun) {
                     $reconciledCount++;
                 } else {
-                    if ($existingReconcile !== null && $existingReconcile->status === AdmsCommandStatusEnum::FAILED) {
-                        $existingReconcile->update([
-                            'status' => AdmsCommandStatusEnum::PENDING,
-                            'idempotency_key' => $idempotencyKey,
-                            'sent_at' => null,
-                            'acknowledged_at' => null,
-                            'leased_at' => null,
-                            'expires_at' => null,
-                            'device_return_code' => null,
-                        ]);
-
+                    if ($existingReconcile !== null && $existingReconcile->requeueFailedReconciliation($idempotencyKey)) {
                         $reconciledCount++;
 
                         Log::info('ReconcileBiometricEnrollmentsCommand: re-drove failed user_add command', [

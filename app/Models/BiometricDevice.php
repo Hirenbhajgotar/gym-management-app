@@ -140,15 +140,6 @@ class BiometricDevice extends Model
      */
     private array $writtenOffTemplateIds = [];
 
-    /**
-     * The ledger's typed report of the terminalisation performed by this deletion.
-     *
-     * The adapter holds the outcome rather than re-querying the ledger: the audit
-     * entry and the operator warning are both rendered from the same counts and the
-     * same evidence timestamp the ledger actually wrote.
-     */
-    private ?DeletionTerminalisation $deletionTerminalisation = null;
-
     protected $fillable = [
         'gym_id',
         'device_name',
@@ -213,29 +204,24 @@ class BiometricDevice extends Model
         static::saving(static function (self $device): void {
             $device->deriveProviderConfigProvenance();
         });
-
-        static::deleting(static function (self $device): void {
-            // Order is load-bearing: the tombstone reads `SENT` `user_add` rows as delivery
-            // evidence, so the ledger must not be cancelled before it has decided.
-            $device->tombstoneEnrolledTemplates();
-            $device->cancelOrphanedCommands();
-        });
-
-        static::deleted(static function (self $device): void {
-            $device->recordDeletionAudit();
-        });
     }
 
     /**
      * Delete the terminal and its credential tombstones atomically.
      *
-     * The `deleting` hook parks each credential the terminal may still hold, cancels the
-     * ledger rows that can never be delivered again, and the `deleted` hook writes the
-     * audit entry. All of it must commit or roll back with the row itself: a parked
-     * template that survives a failed delete advertises an erasure obligation for a
-     * terminal that still exists, and an audit entry written before the delete commits
-     * would record a deletion that never happened. The transaction is opened here so every
-     * model path — the row action, the bulk action and a direct `delete()` — shares it.
+     * This path parks each credential the terminal may still hold, cancels the ledger
+     * rows that can never be delivered again, deletes the row and writes the audit entry
+     * from the outcome the ledger returned. All of it must commit or roll back with the
+     * row itself: a parked template that survives a failed delete advertises an erasure
+     * obligation for a terminal that still exists, and an audit entry written before the
+     * delete commits would record a deletion that never happened. The transaction is opened
+     * here so every model path — the row action, the bulk action and a direct `delete()` —
+     * shares it.
+     *
+     * Order is load-bearing: the tombstone reads `SENT` `user_add` rows as delivery evidence,
+     * so the ledger must not be cancelled before it has decided. The audit runs only after
+     * the DELETE succeeds and receives the typed outcome as a parameter, so no state is
+     * parked on the model in between.
      *
      * A `deleting` listener can halt the delete by returning `false`, which Eloquent
      * reports as a normal `false` return *after* the tombstone has already written. That
@@ -261,9 +247,14 @@ class BiometricDevice extends Model
                     return false;
                 }
 
+                $this->tombstoneEnrolledTemplates();
+                $terminalisation = $this->cancelOrphanedCommands();
+
                 if (parent::delete() !== true) {
                     throw DeviceDeletionVetoedException::whileDeleting();
                 }
+
+                $this->recordDeletionAudit($terminalisation);
 
                 return true;
             });
@@ -275,12 +266,13 @@ class BiometricDevice extends Model
     /**
      * Delegate a "quiet" delete to the audited path.
      *
-     * `Model::deleteQuietly()` runs the delete inside `withoutEvents()`, which mutes the
-     * `deleting` and `deleted` hooks — so it used to commit a terminal delete with no
-     * credential tombstone, no cancelled commands and no audit entry, while returning
-     * `true`. This is a compliance-critical path, so the quiet variant must not be a
-     * bypass. Query-builder deletes (`BiometricDevice::query()->delete()`) still bypass
-     * model events; callers must not use them for this model.
+     * `Model::deleteQuietly()` runs the delete inside `withoutEvents()`, which would skip
+     * the model's own lifecycle work — here a quiet delete used to commit a terminal delete
+     * with no credential tombstone, no cancelled commands and no audit entry, while returning
+     * `true`. This is a compliance-critical path, so the quiet variant must not be a bypass:
+     * all of that work now lives in the `delete()` override every instance path crosses.
+     * Query-builder deletes (`BiometricDevice::query()->delete()`) still bypass it; callers
+     * must not use them for this model.
      */
     public function deleteQuietly(): bool
     {
@@ -464,7 +456,7 @@ class BiometricDevice extends Model
     }
 
     /**
-     * Ask the ledger to terminalise this terminal's orphan rows and keep its report.
+     * Ask the ledger to terminalise this terminal's orphan rows and return its report.
      *
      * The ledger now owns every branch of the orphan invariant — PENDING rows are
      * CANCELLED, other SENT rows are FAILED, and a delivered SENT `user_add` is stamped
@@ -472,14 +464,14 @@ class BiometricDevice extends Model
      * ("this terminal id is being deleted") and renders the typed outcome it gets back.
      * The call sits in the deletion transaction opened by {@see self::delete()}, after
      * the tombstone has read the preserved rows and before the DELETE nulls the key.
+     * The caller passes the returned outcome straight to {@see self::recordDeletionAudit()}.
      */
-    private function cancelOrphanedCommands(): void
+    private function cancelOrphanedCommands(): DeletionTerminalisation
     {
-        $this->deletionTerminalisation = AdmsDeviceCommand::terminaliseForDeletedDevice($this->id);
+        $outcome = AdmsDeviceCommand::terminaliseForDeletedDevice($this->id);
 
-        if ($this->deletionTerminalisation->terminalisedCount() === 0
-            && $this->deletionTerminalisation->preservedCount() === 0) {
-            return;
+        if ($outcome->terminalisedCount() === 0 && $outcome->preservedCount() === 0) {
+            return $outcome;
         }
 
         // A terminal offline for weeks can carry hundreds of rows. The ids are not copied
@@ -490,17 +482,11 @@ class BiometricDevice extends Model
             'device_id' => $this->id,
             'gym_id' => $this->gym_id,
             'device_serial' => $this->device_serial,
-            'cancelled_command_count' => $this->deletionTerminalisation->terminalisedCount(),
-            'preserved_delivered_user_add_count' => $this->deletionTerminalisation->preservedCount(),
+            'cancelled_command_count' => $outcome->terminalisedCount(),
+            'preserved_delivered_user_add_count' => $outcome->preservedCount(),
         ]);
-    }
 
-    /**
-     * The ledger outcome from this terminal's deletion, for callers that need to render it.
-     */
-    public function lastDeletionTerminalisation(): ?DeletionTerminalisation
-    {
-        return $this->deletionTerminalisation;
+        return $outcome;
     }
 
     /**
@@ -520,8 +506,12 @@ class BiometricDevice extends Model
      * only relied on an exception. The refusal is explicit: configure a sink that
      * shares the connection, or delete the terminal through a path that can write
      * one.
+     *
+     * The ledger's typed outcome is passed in rather than read back off the model, so
+     * the audit and the operator warning are rendered from the same counts and the same
+     * evidence timestamp the ledger actually wrote.
      */
-    private function recordDeletionAudit(): void
+    private function recordDeletionAudit(DeletionTerminalisation $outcome): void
     {
         $this->assertAuditSinkIsTransactional();
 
@@ -533,12 +523,12 @@ class BiometricDevice extends Model
                 'device_serial' => $this->device_serial,
                 'template_ids' => $this->parkedTemplateIds,
                 'written_off_template_ids' => $this->writtenOffTemplateIds,
-                'cancelled_command_count' => $this->deletionTerminalisation?->terminalisedCount() ?? 0,
-                'preserved_delivered_user_add_count' => $this->deletionTerminalisation?->preservedCount() ?? 0,
+                'cancelled_command_count' => $outcome->terminalisedCount(),
+                'preserved_delivered_user_add_count' => $outcome->preservedCount(),
                 // The full id set is queryable from the ledger: cancelled rows carry
                 // `terminal_deleted`, preserved rows carry `preserved_evidence_at`.
                 // The timestamp is the ledger's evidence marker, not a second clock read.
-                'evidence_recorded_at' => ($this->deletionTerminalisation?->evidenceRecordedAt() ?? now())->toIso8601String(),
+                'evidence_recorded_at' => $outcome->evidenceRecordedAt()->toIso8601String(),
             ])
             ->log('Biometric terminal deleted');
     }
