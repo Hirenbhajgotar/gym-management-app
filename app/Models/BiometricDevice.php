@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Biometrics\ValueObjects\AdmsCommandKey;
 use App\Biometrics\ValueObjects\CommKeyAliasStripping;
+use App\Biometrics\ValueObjects\DeletionTerminalisation;
 use App\Casts\ProviderConfigCast;
 use App\Enums\AdmsCommandStatusEnum;
 use App\Enums\AdmsUserTableEnum;
@@ -140,18 +141,13 @@ class BiometricDevice extends Model
     private array $writtenOffTemplateIds = [];
 
     /**
-     * Ledger rows terminalised because the terminal they targeted no longer exists.
+     * The ledger's typed report of the terminalisation performed by this deletion.
      *
-     * @var array<int, int>
+     * The adapter holds the outcome rather than re-querying the ledger: the audit
+     * entry and the operator warning are both rendered from the same counts and the
+     * same evidence timestamp the ledger actually wrote.
      */
-    private array $cancelledCommandIds = [];
-
-    /**
-     * Delivered `user_add` rows deliberately left `SENT` as durable delivery evidence.
-     *
-     * @var array<int, int>
-     */
-    private array $preservedCommandIds = [];
+    private ?DeletionTerminalisation $deletionTerminalisation = null;
 
     protected $fillable = [
         'gym_id',
@@ -468,96 +464,21 @@ class BiometricDevice extends Model
     }
 
     /**
-     * Terminalise every ledger row this terminal can never deliver again.
+     * Ask the ledger to terminalise this terminal's orphan rows and keep its report.
      *
-     * The foreign key nulls when the delete commits, so a `PENDING` command would
-     * otherwise have no device to lease it, no terminal to poll it, and no path back to
-     * a terminal state. This method therefore terminalises `PENDING` rows as `CANCELLED`
-     * and delivered (`SENT`) rows as `FAILED`, both carrying
-     * {@see AdmsDeviceCommand::TERMINAL_DELETED_CODE} so a cancelled orphan is
-     * distinguishable from an operator cancellation.
-     *
-     * A `SENT` `user_add` is deliberately left `SENT`: it is the durable evidence
-     * {@see BiometricTemplate::wasDeliveredToHardware()} probes after the foreign key is
-     * nulled. Cancelling it (as this method used to) destroyed the only proof that a
-     * credential reached the terminal, and the abandoned-placeholder sweep then wrote off
-     * a live credential. An undelivered `PENDING` `user_add` is still cancelled, because
-     * the terminal provably never received it.
-     *
-     * The idempotency key is deliberately preserved: it is the durable evidence of what
-     * the row was for, and a replacement terminal uses a device-scoped key of its own.
+     * The ledger now owns every branch of the orphan invariant — PENDING rows are
+     * CANCELLED, other SENT rows are FAILED, and a delivered SENT `user_add` is stamped
+     * and left SENT as durable evidence — so this adapter expresses only the intent
+     * ("this terminal id is being deleted") and renders the typed outcome it gets back.
+     * The call sits in the deletion transaction opened by {@see self::delete()}, after
+     * the tombstone has read the preserved rows and before the DELETE nulls the key.
      */
     private function cancelOrphanedCommands(): void
     {
-        $this->cancelledCommandIds = [];
-        $this->preservedCommandIds = [];
+        $this->deletionTerminalisation = AdmsDeviceCommand::terminaliseForDeletedDevice($this->id);
 
-        $candidates = AdmsDeviceCommand::query()
-            ->where('device_id', $this->id)
-            ->whereIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
-            ->get(['id', 'status', 'command_type']);
-
-        $cancelIds = [];
-        $failIds = [];
-
-        foreach ($candidates as $command) {
-            $id = $command->id;
-
-            if ($id <= 0) {
-                continue;
-            }
-
-            if ($command->command_type === 'user_add' && $command->status === AdmsCommandStatusEnum::SENT) {
-                $this->preservedCommandIds[] = $id;
-
-                continue;
-            }
-
-            if ($command->status === AdmsCommandStatusEnum::SENT) {
-                $failIds[] = $id;
-
-                continue;
-            }
-
-            $cancelIds[] = $id;
-        }
-
-        if ($cancelIds !== []) {
-            AdmsDeviceCommand::query()
-                ->whereIn('id', $cancelIds)
-                ->where('status', AdmsCommandStatusEnum::PENDING)
-                ->update([
-                    'status' => AdmsCommandStatusEnum::CANCELLED,
-                    'device_return_code' => AdmsDeviceCommand::TERMINAL_DELETED_CODE,
-                    'leased_at' => null,
-                    'expires_at' => null,
-                ]);
-        }
-
-        if ($failIds !== []) {
-            AdmsDeviceCommand::query()
-                ->whereIn('id', $failIds)
-                ->where('status', AdmsCommandStatusEnum::SENT)
-                ->update([
-                    'status' => AdmsCommandStatusEnum::FAILED,
-                    'device_return_code' => AdmsDeviceCommand::TERMINAL_DELETED_CODE,
-                    'leased_at' => null,
-                    'expires_at' => null,
-                ]);
-        }
-
-        if ($this->preservedCommandIds !== []) {
-            // The marker is what lets the reclaim sweep and `prunable()` tell this row
-            // apart from a live in-flight `SENT` command after the foreign key is nulled.
-            AdmsDeviceCommand::query()
-                ->whereIn('id', $this->preservedCommandIds)
-                ->where('status', AdmsCommandStatusEnum::SENT)
-                ->update(['preserved_evidence_at' => now()]);
-        }
-
-        $this->cancelledCommandIds = [...$cancelIds, ...$failIds];
-
-        if ($this->cancelledCommandIds === [] && $this->preservedCommandIds === []) {
+        if ($this->deletionTerminalisation->terminalisedCount() === 0
+            && $this->deletionTerminalisation->preservedCount() === 0) {
             return;
         }
 
@@ -569,9 +490,17 @@ class BiometricDevice extends Model
             'device_id' => $this->id,
             'gym_id' => $this->gym_id,
             'device_serial' => $this->device_serial,
-            'cancelled_command_count' => count($this->cancelledCommandIds),
-            'preserved_delivered_user_add_count' => count($this->preservedCommandIds),
+            'cancelled_command_count' => $this->deletionTerminalisation->terminalisedCount(),
+            'preserved_delivered_user_add_count' => $this->deletionTerminalisation->preservedCount(),
         ]);
+    }
+
+    /**
+     * The ledger outcome from this terminal's deletion, for callers that need to render it.
+     */
+    public function lastDeletionTerminalisation(): ?DeletionTerminalisation
+    {
+        return $this->deletionTerminalisation;
     }
 
     /**
@@ -604,11 +533,12 @@ class BiometricDevice extends Model
                 'device_serial' => $this->device_serial,
                 'template_ids' => $this->parkedTemplateIds,
                 'written_off_template_ids' => $this->writtenOffTemplateIds,
-                'cancelled_command_count' => count($this->cancelledCommandIds),
-                'preserved_delivered_user_add_count' => count($this->preservedCommandIds),
+                'cancelled_command_count' => $this->deletionTerminalisation?->terminalisedCount() ?? 0,
+                'preserved_delivered_user_add_count' => $this->deletionTerminalisation?->preservedCount() ?? 0,
                 // The full id set is queryable from the ledger: cancelled rows carry
                 // `terminal_deleted`, preserved rows carry `preserved_evidence_at`.
-                'evidence_recorded_at' => now()->toIso8601String(),
+                // The timestamp is the ledger's evidence marker, not a second clock read.
+                'evidence_recorded_at' => ($this->deletionTerminalisation?->evidenceRecordedAt() ?? now())->toIso8601String(),
             ])
             ->log('Biometric terminal deleted');
     }

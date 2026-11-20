@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Biometrics\ValueObjects\AcknowledgementOutcome;
 use App\Biometrics\ValueObjects\AdmsCommandKey;
+use App\Biometrics\ValueObjects\DeletionTerminalisation;
 use App\Biometrics\ValueObjects\DeliveryLease;
 use App\Biometrics\ValueObjects\ReclaimSummary;
 use App\Casts\AdmsUserTableCast;
@@ -838,6 +839,99 @@ class AdmsDeviceCommand extends Model
             });
 
         return new ReclaimSummary($reclaimed, $failed, $orphaned, $skipped);
+    }
+
+    /**
+     * Terminalise every ledger row a deleted terminal can never deliver again.
+     *
+     * This is the single device-deletion seam. The caller invokes it inside the
+     * device-deletion transaction, after the tombstone has read the SENT `user_add`
+     * rows as delivery evidence and before the DELETE nulls the foreign key. It
+     * deliberately opens no transaction of its own: atomicity with the tombstone,
+     * the delete and the audit entry belongs to the caller.
+     *
+     * The three branches hold the ledger's orphan invariant in one place:
+     * `PENDING` rows become `CANCELLED`, other `SENT` rows become `FAILED`, and a
+     * delivered `SENT` `user_add` is stamped and left `SENT` because that status is
+     * the durable proof of delivery. Terminalised rows carry
+     * {@see self::TERMINAL_DELETED_CODE} and have their lease cleared; the
+     * idempotency key is retained as evidence of what the row was for. A preserved
+     * row is not given a return code — it is stamped, not failed or cancelled.
+     */
+    public static function terminaliseForDeletedDevice(int $deviceId): DeletionTerminalisation
+    {
+        $cancelIds = [];
+        $failIds = [];
+        $preserveIds = [];
+
+        self::query()
+            ->where('device_id', $deviceId)
+            ->whereIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
+            ->get(['id', 'status', 'command_type'])
+            ->each(static function (self $command) use (&$cancelIds, &$failIds, &$preserveIds): void {
+                $id = $command->id;
+
+                if ($id <= 0) {
+                    return;
+                }
+
+                if ($command->command_type === 'user_add' && $command->status === AdmsCommandStatusEnum::SENT) {
+                    $preserveIds[] = $id;
+
+                    return;
+                }
+
+                if ($command->status === AdmsCommandStatusEnum::SENT) {
+                    $failIds[] = $id;
+
+                    return;
+                }
+
+                $cancelIds[] = $id;
+            });
+
+        if ($cancelIds !== []) {
+            self::query()
+                ->whereIn('id', $cancelIds)
+                ->where('status', AdmsCommandStatusEnum::PENDING)
+                ->update([
+                    'status' => AdmsCommandStatusEnum::CANCELLED,
+                    'device_return_code' => self::TERMINAL_DELETED_CODE,
+                    'leased_at' => null,
+                    'expires_at' => null,
+                ]);
+        }
+
+        if ($failIds !== []) {
+            self::query()
+                ->whereIn('id', $failIds)
+                ->where('status', AdmsCommandStatusEnum::SENT)
+                ->update([
+                    'status' => AdmsCommandStatusEnum::FAILED,
+                    'device_return_code' => self::TERMINAL_DELETED_CODE,
+                    'leased_at' => null,
+                    'expires_at' => null,
+                ]);
+        }
+
+        $recordedAt = now();
+
+        if ($preserveIds !== []) {
+            // The marker is what lets the reclaim sweep and `prunable()` tell this
+            // row apart from a live in-flight `SENT` command after the foreign key
+            // is nulled — the evidence must outlive the terminal itself.
+            self::query()
+                ->whereIn('id', $preserveIds)
+                ->where('status', AdmsCommandStatusEnum::SENT)
+                ->update(['preserved_evidence_at' => $recordedAt]);
+        }
+
+        return new DeletionTerminalisation(
+            cancelled: count($cancelIds),
+            failed: count($failIds),
+            preserved: count($preserveIds),
+            recordedAt: $recordedAt,
+        );
     }
 
     /**
