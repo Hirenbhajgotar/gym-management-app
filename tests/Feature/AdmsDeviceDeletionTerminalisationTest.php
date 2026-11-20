@@ -55,6 +55,18 @@ final class AdmsDeviceDeletionTerminalisationTest extends TestCase
         $this->restoreFilamentBoot();
     }
 
+    public function test_deletion_outcome_is_passed_to_the_audit_without_a_model_handoff(): void
+    {
+        $this->assertFalse(
+            method_exists(BiometricDevice::class, 'lastDeletionTerminalisation'),
+            'The test-only outcome accessor must be removed; the outcome is passed to the audit directly.'
+        );
+        $this->assertFalse(
+            property_exists(BiometricDevice::class, 'deletionTerminalisation'),
+            'The deletion outcome must not be parked on the model as state.'
+        );
+    }
+
     public function test_terminalise_for_deleted_device_returns_a_typed_outcome_and_terminalises_only_that_devices_rows(): void
     {
         $pending = AdmsDeviceCommand::factory()->create([
@@ -125,7 +137,7 @@ final class AdmsDeviceDeletionTerminalisationTest extends TestCase
         $this->assertNotEmpty($outcome->evidenceRecordedAt()->toIso8601String());
     }
 
-    public function test_deleting_a_terminal_receives_the_typed_outcome_and_keeps_evidence_after_the_foreign_key_nulls(): void
+    public function test_deleting_a_terminal_terminalises_orphans_and_keeps_evidence_after_the_foreign_key_nulls(): void
     {
         $pending = AdmsDeviceCommand::factory()->create([
             'gym_id' => $this->gym->id,
@@ -150,14 +162,6 @@ final class AdmsDeviceDeletionTerminalisationTest extends TestCase
         ]);
 
         $this->assertTrue($this->device->delete());
-
-        $outcome = $this->device->lastDeletionTerminalisation();
-
-        $this->assertInstanceOf(DeletionTerminalisation::class, $outcome);
-        $this->assertSame(1, $outcome->cancelledCount());
-        $this->assertSame(1, $outcome->failedCount());
-        $this->assertSame(1, $outcome->preservedCount());
-        $this->assertSame(2, $outcome->terminalisedCount());
 
         $this->assertSame(AdmsCommandStatusEnum::CANCELLED, $pending->refresh()->status);
         $this->assertSame(AdmsCommandStatusEnum::FAILED, $sent->refresh()->status);
@@ -187,7 +191,7 @@ final class AdmsDeviceDeletionTerminalisationTest extends TestCase
         $this->assertSame(1, (int) $preservedCount);
 
         $this->assertSame(
-            $outcome->evidenceRecordedAt()->toIso8601String(),
+            $preserved->preserved_evidence_at->toIso8601String(),
             $properties->get('evidence_recorded_at'),
             'The audit timestamp must be the one stamped on the preserved evidence, not a second reading of the clock.'
         );

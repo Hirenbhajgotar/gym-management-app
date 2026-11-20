@@ -32,6 +32,8 @@ class AdmsCommandLedgerContractTest extends TestCase
             'terminaliseForDeletedDevice',
             'cancelActive',
             'requeueForOperator',
+            'requeueTerminalUserDelete',
+            'requeueFailedReconciliation',
         ] as $method) {
             $this->assertTrue(
                 method_exists(AdmsDeviceCommand::class, $method),

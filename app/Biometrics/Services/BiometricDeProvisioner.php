@@ -547,36 +547,18 @@ class BiometricDeProvisioner
             // obligation and keeps its counter.
             $attemptCount = ($startsNewEpoch || $isTransientTimeout) ? 0 : $existing->attempt_count;
 
-            // Compare-and-set on a terminal row: a concurrent lease between the read above and
-            // this write would otherwise be regressed to PENDING and delivered twice.
-            //
-            // The `$affected === 0` arm is defensive. `$hasLiveCommand` above already refused a
-            // row that was live at read time, so the arm can only fire for a row that went live
-            // in the window between that read and this update — a race no test can schedule. It
-            // is kept because the window is real under concurrency, and the cost of being wrong
-            // is a duplicate hardware delivery.
-            $affected = AdmsDeviceCommand::query()
-                ->whereKey($existing->getKey())
-                ->where('device_id', $deviceId)
-                ->whereNotIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
-                ->update([
-                    'status' => AdmsCommandStatusEnum::PENDING,
-                    'sent_at' => null,
-                    'acknowledged_at' => null,
-                    'leased_at' => null,
-                    'expires_at' => null,
-                    'device_return_code' => null,
-                    'attempt_count' => $attemptCount,
-                    'transient_rearm_count' => $isTransientTimeout
-                        ? $existing->transient_rearm_count + 1
-                        : 0,
-                    'epoch_credential_user_add_id' => $epochUserAddId ?? $existing->epoch_credential_user_add_id,
-                    'user_table' => $redriveUserTable instanceof AdmsUserTableEnum ? $redriveUserTable->value : null,
-                ]);
-
-            if ($affected === 0) {
-                // Someone moved the row back into flight between the read and the CAS; it is
-                // live, so re-driving it here would duplicate the delivery.
+            // The ledger owns the compare-and-set: a concurrent lease between the read above
+            // and this write would otherwise be regressed to PENDING and delivered twice. A
+            // false return means the row went live in that window — `$hasLiveCommand` already
+            // refused a row that was live at read time, so this arm is a defensive guard for a
+            // race no test can schedule but whose cost is a duplicate hardware delivery.
+            if (! $existing->requeueTerminalUserDelete(
+                $deviceId,
+                $attemptCount,
+                $isTransientTimeout,
+                $epochUserAddId,
+                $redriveUserTable,
+            )) {
                 return BiometricDeProvisionOutcome::AlreadyQueued;
             }
 
