@@ -153,7 +153,7 @@ class BiometricEnrollController extends Controller
                 $pins = array_values(array_unique($pins));
 
                 // Cancel any pending or in-flight delete commands on this device for this member
-                AdmsDeviceCommand::cancelDeleteCommands($device->id, $pins);
+                AdmsDeviceCommand::cancelActive($device->id, $pins, null, 'user_delete');
 
                 // Supersede older templates for this member, device and modality.
                 //
@@ -307,7 +307,7 @@ class BiometricEnrollController extends Controller
                     $pins[] = $existingTemplate->resolvedCommandPin();
                 }
                 $pins = array_values(array_unique($pins));
-                AdmsDeviceCommand::cancelDeleteCommands($device->id, $pins);
+                AdmsDeviceCommand::cancelActive($device->id, $pins, null, 'user_delete');
 
                 $biometricType = $validated['biometric_type'];
 
