@@ -296,7 +296,7 @@ class EnrollBiometricAction
                     $pins[] = $existingTemplate->resolvedCommandPin();
                 }
                 $pins = array_values(array_unique($pins));
-                AdmsDeviceCommand::cancelDeleteCommands($device->id, $pins);
+                AdmsDeviceCommand::cancelActive($device->id, $pins, null, 'user_delete');
 
                 // Supersede older templates for this member, device and modality.
                 //
@@ -355,7 +355,7 @@ class EnrollBiometricAction
                 ]);
 
                 // Cancel prior in-flight user_add commands while protecting newly queued key
-                AdmsDeviceCommand::cancelInFlightFor($device->id, (string) $member->id, $idempotencyKey);
+                AdmsDeviceCommand::cancelActive($device->id, [(string) $member->id], $idempotencyKey);
 
                 // Audit log with operator attribution using Spatie activity log
                 activity('biometric')

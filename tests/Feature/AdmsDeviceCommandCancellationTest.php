@@ -183,6 +183,80 @@ class AdmsDeviceCommandCancellationTest extends TestCase
         $this->assertNull($sent->idempotency_key);
     }
 
+    public function test_cancel_active_cancels_superseded_user_add_for_pin_clearing_keys_and_leases(): void
+    {
+        $pin = '4101';
+        $supersededKey = "user_add:{$this->device->id}:{$pin}:old";
+        $currentKey = "user_add:{$this->device->id}:{$pin}:current";
+
+        $superseded = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => $pin, 'Name' => 'Old'],
+            'status' => AdmsCommandStatusEnum::PENDING,
+            'idempotency_key' => $supersededKey,
+            'leased_at' => now()->subMinutes(2),
+            'expires_at' => now()->addMinutes(8),
+        ]);
+
+        $current = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => $pin, 'Name' => 'Current'],
+            'status' => AdmsCommandStatusEnum::SENT,
+            'sent_at' => now()->subMinutes(1),
+            'idempotency_key' => $currentKey,
+            'leased_at' => now()->subMinute(),
+            'expires_at' => now()->addMinutes(9),
+        ]);
+
+        $delete = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_delete',
+            'command_payload' => ['Pin' => $pin],
+            'status' => AdmsCommandStatusEnum::PENDING,
+            'idempotency_key' => "user_delete:{$this->device->id}:{$pin}",
+        ]);
+
+        $otherPin = AdmsDeviceCommand::query()->create([
+            'gym_id' => $this->gym->id,
+            'device_id' => $this->device->id,
+            'command_type' => 'user_add',
+            'command_payload' => ['Pin' => '4102', 'Name' => 'Other'],
+            'status' => AdmsCommandStatusEnum::PENDING,
+            'idempotency_key' => "user_add:{$this->device->id}:4102",
+        ]);
+
+        $cancelled = AdmsDeviceCommand::cancelActive(
+            $this->device->id,
+            [$pin],
+            $currentKey,
+            'user_add'
+        );
+
+        $this->assertSame(1, $cancelled);
+
+        $superseded->refresh();
+        $this->assertSame(AdmsCommandStatusEnum::CANCELLED, $superseded->status);
+        $this->assertNull($superseded->idempotency_key);
+        $this->assertNull($superseded->leased_at);
+        $this->assertNull($superseded->expires_at);
+
+        $current->refresh();
+        $this->assertSame(AdmsCommandStatusEnum::SENT, $current->status);
+        $this->assertSame($currentKey, $current->idempotency_key);
+        $this->assertNotNull($current->leased_at);
+
+        $delete->refresh();
+        $this->assertSame(AdmsCommandStatusEnum::PENDING, $delete->status);
+
+        $otherPin->refresh();
+        $this->assertSame(AdmsCommandStatusEnum::PENDING, $otherPin->status);
+    }
+
     public function test_mark_acknowledged_preserves_idempotency_key_on_success_and_failure(): void
     {
         $command = AdmsDeviceCommand::query()->create([

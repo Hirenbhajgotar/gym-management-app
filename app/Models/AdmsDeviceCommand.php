@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Biometrics\ValueObjects\AcknowledgementOutcome;
 use App\Biometrics\ValueObjects\AdmsCommandKey;
+use App\Biometrics\ValueObjects\DeletionTerminalisation;
+use App\Biometrics\ValueObjects\DeliveryLease;
+use App\Biometrics\ValueObjects\ReclaimSummary;
 use App\Casts\AdmsUserTableCast;
 use App\Enums\AdmsCommandStatusEnum;
 use App\Enums\AdmsUserTableEnum;
@@ -112,7 +116,7 @@ class AdmsDeviceCommand extends Model
             ->whereIn('status', [AdmsCommandStatusEnum::ACKNOWLEDGED, AdmsCommandStatusEnum::FAILED, AdmsCommandStatusEnum::CANCELLED])
             // Preserved evidence is retained for as long as the obligation it proves is
             // outstanding. It is not an in-flight row and must never age out.
-            ->whereNull('preserved_evidence_at')
+            ->withoutPreservedEvidence()
             ->where(function (Builder $query) use ($cutoff) {
                 $query->where('acknowledged_at', '<=', $cutoff)
                     ->orWhere(function (Builder $sub) use ($cutoff) {
@@ -271,12 +275,52 @@ class AdmsDeviceCommand extends Model
     }
 
     /**
+     * Rows that are not preserved evidence — the complement of
+     * {@see self::preservedEvidence()}.
+     *
+     * Leasing, reclaim and retention all exclude durable evidence through this scope,
+     * so the rule lives in one place rather than a retyped `whereNull` in each scan.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function withoutPreservedEvidence(Builder $query): void
+    {
+        $query->whereNull('preserved_evidence_at');
+    }
+
+    /**
      * @param  Builder<self>  $query
      */
     #[Scope]
     protected function forDevice(Builder $query, int $deviceId): void
     {
         $query->where('device_id', $deviceId);
+    }
+
+    /**
+     * SENT rows whose lease is no longer live: never stamped, stamped before the
+     * threshold, or explicitly expired.
+     *
+     * This is the single definition of a stale lease. Both the lease scan in
+     * {@see self::leaseNext()} and the reclaim console command apply it, so the
+     * two cannot drift on which rows are recoverable.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function staleLease(Builder $query, int $leaseSeconds): void
+    {
+        $staleThreshold = now()->subSeconds($leaseSeconds);
+
+        $query->where(function (Builder $query) use ($staleThreshold): void {
+            $query->whereNull('leased_at')
+                ->orWhere('leased_at', '<', $staleThreshold)
+                ->orWhere(function (Builder $sub): void {
+                    $sub->whereNotNull('expires_at')
+                        ->where('expires_at', '<', now());
+                });
+        });
     }
 
     /**
@@ -525,25 +569,17 @@ class AdmsDeviceCommand extends Model
         $maxAttempts = AdmsCommandKey::maxAttempts();
 
         return DB::transaction(function () use ($deviceId, $duration, $maxAttempts) {
-            $staleThreshold = now()->subSeconds($duration);
-
             /** @var Collection<int, self> $candidates */
             $candidates = self::query()
                 ->where('device_id', $deviceId)
-                ->where(function (Builder $query) use ($staleThreshold, $maxAttempts) {
+                ->withoutPreservedEvidence()
+                ->where(function (Builder $query) use ($duration, $maxAttempts) {
                     $query->where(function (Builder $pendingQuery) use ($maxAttempts) {
                         $pendingQuery->where('status', AdmsCommandStatusEnum::PENDING)
                             ->where('attempt_count', '<', $maxAttempts);
-                    })->orWhere(function (Builder $sub) use ($staleThreshold, $maxAttempts) {
+                    })->orWhere(function (Builder $sub) use ($duration, $maxAttempts) {
                         $sub->where('status', AdmsCommandStatusEnum::SENT)
-                            ->where(function (Builder $nested) use ($staleThreshold) {
-                                $nested->whereNull('leased_at')
-                                    ->orWhere('leased_at', '<', $staleThreshold)
-                                    ->orWhere(function (Builder $exp) {
-                                        $exp->whereNotNull('expires_at')
-                                            ->where('expires_at', '<', now());
-                                    });
-                            })
+                            ->staleLease($duration)
                             ->where('attempt_count', '<', $maxAttempts);
                     });
                 })
@@ -581,6 +617,45 @@ class AdmsDeviceCommand extends Model
 
             return $command;
         });
+    }
+
+    /**
+     * Lease the next deliverable command and hand back its ready wire in one transition.
+     *
+     * This is the single seam of the poll path. PIN filtering, stale selection,
+     * quarantine of unusable PINs, compare-and-set and high-water marking live in
+     * {@see self::leaseNext()}; this method adds serialisation, CRLF framing and
+     * the empty-wire safety release. The lease transaction has committed before
+     * the {@see DeliveryLease} is returned, so the adapter never holds a row lock
+     * while the terminal is being addressed. `null` means the terminal gets OK.
+     */
+    public static function leaseNextForDelivery(int $deviceId, ?int $leaseSeconds = null): ?DeliveryLease
+    {
+        $command = self::leaseNext($deviceId, $leaseSeconds);
+
+        if ($command === null) {
+            return null;
+        }
+
+        $wire = $command->toAdmsCommandString();
+
+        if ($wire === '') {
+            // The lease predicate and the serializer must agree on what is deliverable.
+            // If they ever diverge, returning the row to the queue is the only safe move:
+            // sending an empty body would look like "no command" while having already
+            // consumed one of the command's few hardware deliveries.
+            $command->releaseUnusableLease();
+
+            Log::warning('ADMS: leased a command that cannot be expressed; returned it to the queue', [
+                'command_id' => $command->id,
+                'device_id' => $deviceId,
+                'command_type' => $command->command_type,
+            ]);
+
+            return null;
+        }
+
+        return DeliveryLease::for($command, rtrim($wire) . "\r\n");
     }
 
     /**
@@ -632,6 +707,220 @@ class AdmsDeviceCommand extends Model
             'command_ids' => $commandIds,
             'device_return_code' => self::UNADDRESSABLE_PIN_CODE,
         ]);
+    }
+
+    /**
+     * Recover every stale lease in one sweep and report the transitions performed.
+     *
+     * This is the single seam for the stale-lease sweep. The stale predicate and the
+     * preserved-evidence exclusion are the same ones {@see self::leaseNext()} uses, so
+     * a row that cannot be reclaimed can never be leased either. Every branch is a
+     * compare-and-set from SENT: a row that moved on concurrently (an ACK, a resend,
+     * another sweep) simply loses the race and is counted as a benign miss rather
+     * than raising or overwriting the winning state.
+     */
+    public static function reclaimExpiredLeases(?int $leaseSeconds = null): ReclaimSummary
+    {
+        $duration = $leaseSeconds ?? config()->integer('biometrics.adms.command_lease_seconds', 600);
+        $maxAttempts = AdmsCommandKey::maxAttempts();
+
+        $reclaimed = 0;
+        $failed = 0;
+        $orphaned = 0;
+        $concurrentMisses = 0;
+
+        self::query()
+            ->where('status', AdmsCommandStatusEnum::SENT)
+            ->withoutPreservedEvidence()
+            ->staleLease($duration)
+            ->chunkById(100, function (Collection $staleCommands) use (&$reclaimed, &$failed, &$orphaned, &$concurrentMisses, $maxAttempts): void {
+                foreach ($staleCommands as $command) {
+                    if ($command->device_id === null) {
+                        // No poll will ever lease a row whose terminal is gone. A marker-less
+                        // delivered `user_add` is terminalised too: leaving it SENT would make
+                        // the sweep report a cancellation it never performed and strand an
+                        // immortal row, while rows carrying the durable-evidence marker are
+                        // excluded from this scan by `withoutPreservedEvidence()`.
+                        $affected = self::terminaliseAs(
+                            [$command->id],
+                            AdmsCommandStatusEnum::SENT,
+                            AdmsCommandStatusEnum::CANCELLED,
+                            self::TERMINAL_DELETED_CODE,
+                        );
+
+                        if ($affected === 0) {
+                            $concurrentMisses++;
+
+                            continue;
+                        }
+
+                        $orphaned++;
+
+                        Log::warning('ADMS: stale command for a deleted terminal cancelled; it can never be delivered', [
+                            'command_id' => $command->id,
+                            'gym_id' => $command->gym_id,
+                            'command_type' => $command->command_type,
+                            'attempt_count' => $command->attempt_count,
+                        ]);
+
+                        continue;
+                    }
+
+                    if ($command->attempt_count >= $maxAttempts) {
+                        $affected = self::terminaliseAs(
+                            [$command->id],
+                            AdmsCommandStatusEnum::SENT,
+                            AdmsCommandStatusEnum::FAILED,
+                            self::TIMEOUT_MAX_ATTEMPTS_CODE,
+                        );
+
+                        if ($affected === 0) {
+                            $concurrentMisses++;
+
+                            continue;
+                        }
+
+                        $failed++;
+
+                        Log::warning("ADMS: Device command failed after maximum retry attempts ({$maxAttempts})", [
+                            'command_id' => $command->id,
+                            'device_id' => $command->device_id,
+                            'gym_id' => $command->gym_id,
+                            'command_type' => $command->command_type,
+                            'attempt_count' => $command->attempt_count,
+                        ]);
+
+                        continue;
+                    }
+
+                    $affected = self::terminaliseAs(
+                        [$command->id],
+                        AdmsCommandStatusEnum::SENT,
+                        AdmsCommandStatusEnum::PENDING,
+                    );
+
+                    if ($affected === 0) {
+                        $concurrentMisses++;
+
+                        continue;
+                    }
+
+                    $reclaimed++;
+
+                    Log::info('ADMS: Device command lease expired, returned to pending for retry', [
+                        'command_id' => $command->id,
+                        'device_id' => $command->device_id,
+                        'command_type' => $command->command_type,
+                        'attempt_count' => $command->attempt_count,
+                    ]);
+                }
+            });
+
+        return new ReclaimSummary($reclaimed, $failed, $orphaned, $concurrentMisses);
+    }
+
+    /**
+     * Compare-and-set a set of ledger rows from one status to another.
+     *
+     * Every branch clears the lease in the same statement as the status change, so a
+     * row moved by a concurrent writer loses the race (zero affected rows) instead of
+     * being overwritten with stale state. A null code leaves `device_return_code`
+     * untouched for the transitions that carry no return code.
+     *
+     * @param  list<int>  $ids
+     */
+    private static function terminaliseAs(
+        array $ids,
+        AdmsCommandStatusEnum $fromStatus,
+        AdmsCommandStatusEnum $toStatus,
+        ?string $code = null,
+    ): int {
+        if ($ids === []) {
+            return 0;
+        }
+
+        return self::query()
+            ->whereIn('id', $ids)
+            ->where('status', $fromStatus)
+            ->update([
+                'status' => $toStatus,
+                ...($code !== null ? ['device_return_code' => $code] : []),
+                'leased_at' => null,
+                'expires_at' => null,
+            ]);
+    }
+
+    /**
+     * Terminalise every ledger row a deleted terminal can never deliver again.
+     *
+     * This is the single device-deletion seam. The caller invokes it inside the
+     * device-deletion transaction, after the tombstone has read the SENT `user_add`
+     * rows as delivery evidence and before the DELETE nulls the foreign key. It
+     * deliberately opens no transaction of its own: atomicity with the tombstone,
+     * the delete and the audit entry belongs to the caller.
+     *
+     * The three branches hold the ledger's orphan invariant in one place:
+     * `PENDING` rows become `CANCELLED`, other `SENT` rows become `FAILED`, and a
+     * delivered `SENT` `user_add` is stamped and left `SENT` because that status is
+     * the durable proof of delivery. Terminalised rows carry
+     * {@see self::TERMINAL_DELETED_CODE} and have their lease cleared; the
+     * idempotency key is retained as evidence of what the row was for. A preserved
+     * row is not given a return code — it is stamped, not failed or cancelled.
+     */
+    public static function terminaliseForDeletedDevice(int $deviceId): DeletionTerminalisation
+    {
+        $cancelIds = [];
+        $failIds = [];
+        $preserveIds = [];
+
+        self::query()
+            ->where('device_id', $deviceId)
+            ->whereIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
+            ->get(['id', 'status', 'command_type'])
+            ->each(static function (self $command) use (&$cancelIds, &$failIds, &$preserveIds): void {
+                $id = $command->id;
+
+                if ($id <= 0) {
+                    return;
+                }
+
+                if ($command->command_type === 'user_add' && $command->status === AdmsCommandStatusEnum::SENT) {
+                    $preserveIds[] = $id;
+
+                    return;
+                }
+
+                if ($command->status === AdmsCommandStatusEnum::SENT) {
+                    $failIds[] = $id;
+
+                    return;
+                }
+
+                $cancelIds[] = $id;
+            });
+
+        self::terminaliseAs($cancelIds, AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::CANCELLED, self::TERMINAL_DELETED_CODE);
+
+        self::terminaliseAs($failIds, AdmsCommandStatusEnum::SENT, AdmsCommandStatusEnum::FAILED, self::TERMINAL_DELETED_CODE);
+
+        $recordedAt = now();
+
+        if ($preserveIds !== []) {
+            // The marker is what lets the reclaim sweep and `prunable()` tell this
+            // row apart from a live in-flight `SENT` command after the foreign key
+            // is nulled — the evidence must outlive the terminal itself.
+            self::query()
+                ->whereIn('id', $preserveIds)
+                ->where('status', AdmsCommandStatusEnum::SENT)
+                ->update(['preserved_evidence_at' => $recordedAt]);
+        }
+
+        return new DeletionTerminalisation(
+            cancelled: count($cancelIds),
+            failed: count($failIds),
+            preserved: count($preserveIds),
+            recordedAt: $recordedAt,
+        );
     }
 
     /**
@@ -707,11 +996,12 @@ class AdmsDeviceCommand extends Model
      * therefore *not* an extra delivery: the terminal already received and rejected the
      * command, and the reconciler re-drive that follows will consume the next delivery.
      */
-    public function markAcknowledged(?string $returnCode = null): bool
+    public function acknowledge(?string $returnCode = null): AcknowledgementOutcome
     {
-        // Guard: only SENT commands can transition to ACKNOWLEDGED or FAILED
+        // Safe on any state: a reply for a command that is not currently SENT is a
+        // duplicate or stale response. Ignore it rather than overwrite newer state.
         if ($this->status !== AdmsCommandStatusEnum::SENT) {
-            return false;
+            return AcknowledgementOutcome::ignored($this->status);
         }
 
         $code = $returnCode;
@@ -744,7 +1034,7 @@ class AdmsDeviceCommand extends Model
             }
         }
 
-        return DB::transaction(function () use ($isSuccess, $code): bool {
+        $applied = DB::transaction(function () use ($isSuccess, $code): bool {
             $updateData = [
                 'status' => $isSuccess ? AdmsCommandStatusEnum::ACKNOWLEDGED : AdmsCommandStatusEnum::FAILED,
                 'acknowledged_at' => now(),
@@ -772,6 +1062,23 @@ class AdmsDeviceCommand extends Model
 
             return true;
         });
+
+        if (! $applied) {
+            // CAS lost a race with the stale-lease sweep or the other ACK path:
+            // report the winning state instead of raising and never overwrite it.
+            return AcknowledgementOutcome::ignored($this->fresh()?->status ?? $this->status);
+        }
+
+        return AcknowledgementOutcome::applied($this->status);
+    }
+
+    /**
+     * Boolean facade over {@see acknowledge()} for callers that only need to know
+     * whether a transition happened.
+     */
+    public function markAcknowledged(?string $returnCode = null): bool
+    {
+        return $this->acknowledge($returnCode)->wasApplied();
     }
 
     /**
@@ -1041,6 +1348,71 @@ class AdmsDeviceCommand extends Model
     }
 
     /**
+     * Re-drive a terminal `user_delete` whose prior obligation has been discharged.
+     *
+     * The provisioning adapter decides whether the credential was renewed or the timeout
+     * was transient and passes the resulting budget; the ledger owns the compare-and-set,
+     * so a row that went live between the read and this write loses the race instead of
+     * being regressed and delivered twice. No audit entry and no attempt high-water write
+     * are added — those remain the caller's and the DB's respective concerns.
+     */
+    public function requeueTerminalUserDelete(
+        int $deviceId,
+        int $attemptCount,
+        bool $isTransientTimeout,
+        ?int $epochUserAddId,
+        AdmsUserTableEnum|string|null $redriveUserTable,
+    ): bool {
+        $affected = self::query()
+            ->whereKey($this->getKey())
+            ->where('device_id', $deviceId)
+            ->whereNotIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
+            ->update([
+                'status' => AdmsCommandStatusEnum::PENDING,
+                'sent_at' => null,
+                'acknowledged_at' => null,
+                'leased_at' => null,
+                'expires_at' => null,
+                'device_return_code' => null,
+                'attempt_count' => $attemptCount,
+                'transient_rearm_count' => $isTransientTimeout
+                    ? $this->transient_rearm_count + 1
+                    : 0,
+                'epoch_credential_user_add_id' => $epochUserAddId ?? $this->epoch_credential_user_add_id,
+                'user_table' => $redriveUserTable instanceof AdmsUserTableEnum ? $redriveUserTable->value : null,
+            ]);
+
+        return $affected > 0;
+    }
+
+    /**
+     * Re-drive a failed reconciliation `user_add` in place.
+     *
+     * The reconciler decides that a replacement is due and supplies the idempotency key;
+     * the ledger owns the status guard and the reset. The delivery budget is deliberately
+     * left alone — this is the same re-drive the reconciler performed before the seam
+     * existed, with no audit entry and no new high-water write.
+     */
+    public function requeueFailedReconciliation(string $idempotencyKey): bool
+    {
+        if ($this->status !== AdmsCommandStatusEnum::FAILED) {
+            return false;
+        }
+
+        $this->update([
+            'status' => AdmsCommandStatusEnum::PENDING,
+            'idempotency_key' => $idempotencyKey,
+            'sent_at' => null,
+            'acknowledged_at' => null,
+            'leased_at' => null,
+            'expires_at' => null,
+            'device_return_code' => null,
+        ]);
+
+        return true;
+    }
+
+    /**
      * Return a command to the queue as an audited operator action.
      *
      * The reset and the audit entry share one transaction and one sink assertion: an audit
@@ -1053,6 +1425,14 @@ class AdmsDeviceCommand extends Model
      */
     public function requeueForOperator(?User $actor = null): bool
     {
+        // The seam defends its own tenant boundary: an adapter handing the ledger the wrong
+        // row must not re-drive another gym's command. The policy stays the single source of
+        // truth for who may resend, so a super admin's cross-gym intent still works and every
+        // caller — including future ones — crosses the same guard.
+        if ($actor !== null && ! $actor->can('resend', $this)) {
+            return false;
+        }
+
         $previousAttempts = $this->attempt_count;
         $previousReturnCode = $this->device_return_code;
         $highWater = $this->max_attempt_count;
@@ -1113,52 +1493,45 @@ class AdmsDeviceCommand extends Model
     }
 
     /**
-     * Cancel pending or in-flight user_delete commands on a device for given pins.
+     * Cancel active commands on a device for a set of PINs — the one cancellation primitive.
      *
-     * @param  array<int, string>  $pins
+     * Every provisioning caller funnels through this method, so the cancellation invariant
+     * lives in one place: a cancelled row becomes `CANCELLED` and has its idempotency key
+     * and lease cleared. Clearing the key frees the slot for the replacement command;
+     * clearing the lease ensures a cancelled command can never be revived by a stale
+     * re-lease. `PENDING` and `SENT` rows are both eligible — a queued or in-flight
+     * `user_add` would otherwise be delivered after the superseding command.
+     *
+     * `exceptIdempotencyKey` protects the command a caller has just queued: rows carrying
+     * that key are skipped so the current command is not cancelled alongside its
+     * predecessors. The SQL NULL comparison is handled explicitly — a row whose key is
+     * already null is still eligible. `commandType` scopes the intent (default
+     * `user_add`); callers such as re-enrolment pass `user_delete` to retire a pending
+     * erasure instead.
+     *
+     * @param  array<int, string|int>  $pins
      */
-    public static function cancelDeleteCommands(int $deviceId, array $pins): int
-    {
-        if (blank($pins)) {
+    public static function cancelActive(
+        int $deviceId,
+        array $pins,
+        ?string $exceptIdempotencyKey = null,
+        ?string $commandType = null
+    ): int {
+        if ($pins === []) {
             return 0;
         }
 
         return self::query()
             ->where('device_id', $deviceId)
-            ->where('command_type', 'user_delete')
+            ->where('command_type', $commandType ?? 'user_add')
             ->whereIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
-            ->where(function (Builder $q) use ($pins) {
+            ->where(function (Builder $query) use ($pins): void {
                 foreach ($pins as $pin) {
-                    $q->orWhere('command_payload->Pin', $pin);
+                    $query->orWhere('command_payload->Pin', $pin);
                 }
             })
-            ->update([
-                'status' => AdmsCommandStatusEnum::CANCELLED,
-                'idempotency_key' => null,
-                'leased_at' => null,
-                'expires_at' => null,
-            ]);
-    }
-
-    /**
-     * Cancel pending or in-flight commands on a device for a given pin,
-     * optionally preserving a specific in-flight idempotency key.
-     *
-     * Handles SQL NULL comparison correctly via whereNull()->orWhere().
-     */
-    public static function cancelInFlightFor(
-        int $deviceId,
-        string $pin,
-        ?string $exceptIdempotencyKey = null,
-        string $commandType = 'user_add'
-    ): int {
-        return self::query()
-            ->where('device_id', $deviceId)
-            ->where('command_type', $commandType)
-            ->whereIn('status', [AdmsCommandStatusEnum::PENDING, AdmsCommandStatusEnum::SENT])
-            ->where('command_payload->Pin', $pin)
-            ->when($exceptIdempotencyKey !== null, function (Builder $q) use ($exceptIdempotencyKey): void {
-                $q->where(function (Builder $sub) use ($exceptIdempotencyKey): void {
+            ->when($exceptIdempotencyKey !== null, function (Builder $query) use ($exceptIdempotencyKey): void {
+                $query->where(function (Builder $sub) use ($exceptIdempotencyKey): void {
                     $sub->whereNull('idempotency_key')
                         ->orWhere('idempotency_key', '!=', $exceptIdempotencyKey);
                 });
@@ -1169,6 +1542,16 @@ class AdmsDeviceCommand extends Model
                 'leased_at' => null,
                 'expires_at' => null,
             ]);
+    }
+
+    /**
+     * Cancel pending or in-flight user_delete commands on a device for given pins.
+     *
+     * @param  array<int, string>  $pins
+     */
+    public static function cancelDeleteCommands(int $deviceId, array $pins): int
+    {
+        return self::cancelActive($deviceId, $pins, null, 'user_delete');
     }
 
     /**
