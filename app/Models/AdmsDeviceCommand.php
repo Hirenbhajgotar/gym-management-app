@@ -1371,6 +1371,14 @@ class AdmsDeviceCommand extends Model
      */
     public function requeueForOperator(?User $actor = null): bool
     {
+        // The seam defends its own tenant boundary: an adapter handing the ledger the wrong
+        // row must not re-drive another gym's command. The policy stays the single source of
+        // truth for who may resend, so a super admin's cross-gym intent still works and every
+        // caller — including future ones — crosses the same guard.
+        if ($actor !== null && ! $actor->can('resend', $this)) {
+            return false;
+        }
+
         $previousAttempts = $this->attempt_count;
         $previousReturnCode = $this->device_return_code;
         $highWater = $this->max_attempt_count;
