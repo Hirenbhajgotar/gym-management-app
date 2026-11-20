@@ -1501,19 +1501,6 @@ class AdmsDeviceCommand extends Model
     }
 
     /**
-     * Cancel pending or in-flight commands on a device for a given pin,
-     * optionally preserving a specific in-flight idempotency key.
-     */
-    public static function cancelInFlightFor(
-        int $deviceId,
-        string $pin,
-        ?string $exceptIdempotencyKey = null,
-        string $commandType = 'user_add'
-    ): int {
-        return self::cancelActive($deviceId, [$pin], $exceptIdempotencyKey, $commandType);
-    }
-
-    /**
      * Generate canonical idempotency key for user_add commands across lifecycle stages.
      */
     public static function idempotencyKeyFor(
